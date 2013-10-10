@@ -1,4 +1,4 @@
-all: parser.a
+all: libparser.a
 
 clean:
 	rm -f *.o libparser.a test message_out
