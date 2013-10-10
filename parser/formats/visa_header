@@ -1,0 +1,16 @@
+# This is just an example, not a real Visa header
+#Number	Format		Description
+message BI22SF		Visa Header
+2	F2BCD		Header Format
+3	F2BCD		Text format
+4	F2HEX		Total message length
+5	F6BCD		Destination ID
+6	F6BCD		Source ID
+7	F2BCD		Round-Trip Control Info
+8	F4BCD		BASE I Flags
+9	F24BITSTR	Message Status Flags
+10	F2BCD		Batch Number: Not Used
+11	F6BCD		Reserved for Visa International Use
+12	F2BCD		User Info
+13	F16BITMAP	Bitmap
+14	F4BCD		Reject Data Group

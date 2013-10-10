@@ -1,0 +1,223 @@
+# This is just an example, not a real Visa format
+#Number	Format		Description
+message U788SF		Visa Message
+0	F4BCD		Message type
+1	ISOBITMAP	Message Bit Map
+2	B19BCD		Account Number
+3	F3SF		Processing code
+3.1	F2BCD		processing code
+3.2	F2BCD		account type from
+3.3	F2BCD		account type to
+4	F12BCD		Amount, transaction
+5	F12BCD		Amount, Settlement
+6	F12BCD		Amount, cardholder billing
+7	F10BCD		Transmission date and time
+9	F8BCD		Conversion Rate, Settlement
+10	F8BCD		Converdion rate, cardholder billing
+11	F6BCD		System Trace Audit Number
+12	F6BCD		Time, local transaction
+13	F4BCD		Date, local transaction
+14	F4BCD		Date, expiration
+15	F4BCD		Date, Settlement
+16	F4BCD		Date, Conversion
+18	F4BCD		Merchant type
+19	F3BCD		Acquiring institution country code
+20	F3BCD		PAN Extended, Country Code
+22	F2BCDSF		Point-of-Service Entry Mode Code
+22.1	F2ASC		PAN/date entry mode
+22.2	F1ASC		PAN entry capability
+22.3	F1ASC		filler
+23	F3BCD		Card Sequence Number
+25	F2BCD		Point-of-Service Condition Code
+26	F2BCD		Point-of-Service PIN Capture Code
+28	F9EBCDIC	Amount, Transaction Fee
+32	B11BCD		Acquiring Institution Identification Code
+33	B11BCD		Forwarding Institution Identification Code
+35	B37BCD		Track 2 Data
+37	F12EBCDIC	Retrieval Reference Number
+38	F6EBCDIC	Authorization Identification Response
+39	F2EBCDIC	Response Code
+41	F8EBCDIC	Card Acceptor Terminal Identification
+42	F15EBCDIC	Card Acceptor Identification Code
+43	F40SF		Card Acceptor Name/Location
+43.1	F25EBCDIC	card acceptor name or ATM location
+43.2	F13EBCDIC	city name
+43.3	F2EBCDIC	country code
+44	B25SF		Additional Response Data
+44.1	F1EBCDIC	response source/reason code
+44.2	F1EBCDIC	address verification result code
+44.3    F1EBCDIC        reserved
+44.4    F1EBCDIC        card product type
+44.5    F1EBCDIC        CVV/iCVV results code
+44.6    F2EBCDIC        PACM diversion level
+44.7    F1EBCDIC        PACM diversion reason code
+44.8    F1EBCDIC        card authentication result code
+44.9    F1EBCDIC        Reserved
+44.10   F1EBCDIC        CVV2 results code
+44.11   F2EBCDIC        original response code
+44.12   F1EBCDIC        check settlement code (U.S. only)
+44.13   F1EBCDIC        CAVV results code
+44.14   F4EBCDIC        response reason code
+45	B76EBCDIC	Track 1 Data
+48	B255EBCDIC	Additional Data—Private
+49	F3BCD		Currency Code, Transaction
+50	F3BCD		Currency Code, Settlement
+51	F3BCD		Currency Code, Cardholder Billing
+52	F8HEX		Personal Identification Number (PIN) Data
+53	F8SF		Security-Related Control Information
+53.1	F2BCD		security format code
+53.2	F2BCD           algorithm ID
+53.3	F2BCD           PIN block format code
+53.4	F2BCD           zone key index
+53.5	F2BCD           PIN Data Type
+53.6	F6BCD           Visa Reserved
+54	B120EBCDIC	Additional Amounts
+55	B255SF		Integrated Circuit Card (ICC)-Related Data
+55.1	F1HEX		Dataset ID (01 for VSDC)
+55.2	BB252TLVEMV	Chip Card TLV data elements
+55.2.*	M255HEX		Chip data tag
+59	B14EBCDIC	National Point-of-Service Geographic Data
+60	B12BCDSF	Additional POS Information
+60.1	F1ASC		terminal type
+60.2	F1ASC		terminal entry capability
+60.3	F1ASC		chip condition code
+60.4	F1ASC		special condition indicator—existing debt
+60.5	F2ASC		not applicable
+60.6	F1ASC		transaction indicator
+60.7	F1ASC		card authentication reliability indicator
+60.8	F2ASC		mail/phone/electronic commerce and payment indicator
+60.9	F1ASC		not applicable (SMS only)
+60.10	F1ASC		partial authorization indicator
+61	B36BCD		Other Amounts
+62	B255SF		Custom Payment Service Fields
+62.0	F64BITMAP	Field 62 Bitmap
+62.1	F1EBCDIC	Authorization Characteristics Indicator
+62.2	F15BCD		Transaction Identifier
+62.3	F4EBCDIC	Validation Code
+62.4	F1EBCDIC	Market-Specific Data Identifier
+62.5	F2BCD		Duration
+62.6	F1EBCDIC	Prestigious Property Indicator
+62.17	F15EBCDIC	MasterCard Interchange Compliance
+62.20	F10BCD		Merchant Verification Value
+62.21	F4EBCDIC	Online Risk Assessment Risk Score and Reason Codes
+62.22	F6EBCDIC	Online Risk Assessment Condition Codes
+62.23	F2EBCDIC	Card-Level Results
+62.24	F6EBCDIC	Program Identifier
+63	B255SF		V.I.P. Private-Use Field
+63.0	F24BITMAP	Bitmap
+63.1	F4BCD		Network ID
+63.2	F4BCD		Time (Preauth Time Limit)
+63.3	F4BCD		Message Reason Code
+63.4	F4BCD		STIP/Switch Reason Code
+63.5	F6BCD		n/a
+63.6	F7EBCDIC	Chargeback Reduction/BASE II Flags
+63.7	F16HEX		n/a
+63.8	F8BCD		n/a
+63.9	F28HEX		Fraud Data
+63.10	F26HEX		n/a
+63.11	F1EBCDIC	Reimbursement Attribute
+63.12	F30EBCDIC	Sharing Group Code
+63.13	F6BCD		Decimal Positions Indicator
+63.14	F36EBCDIC	Issuer Currency Conversion Data
+63.15	F9EBCDIC	n/a, reserved for future use
+63.16	F6BCD		n/a
+63.18	F2BCD		n/a
+63.19	F3EBCDIC	Fee Program indicator
+63.20	F2BCD		n/a
+63.21	F1EBCDIC	Charge Indicator
+66	F1BCD		Settlement Code
+68	F3BCD		Receiving Institution Country Code
+70	F3BCD		Network Management Informatioin Code
+73	F6BCD		Date, Action
+90	F21BCDSF	Original Data Elements
+90.1	F4ASC		original message type
+90.2	F6ASC		original trace number
+90.3	F10ASC		original transmission date/time
+90.4	F11ASC		original acquirer ID
+90.5	F11ASC		original forwarding institution ID
+91	F1EBCDIC	File Update Code
+92	F2EBCDIC	File Security Code
+95	F42SF		Replacement amounts
+95.1	F12EBCDIC	actual amount, transaction
+95.2	F12EBCDIC	unused
+95.3	F9EBCDIC	unused
+95.4	F9EBCDIC	unused
+100	B11BCD		Receiving Institution Identification Code
+101	B17EBCDIC	File Name
+102	B28EBCDIC	Account Identification 1
+103	B28EBCDIC	Account Identification 2
+104	B255TLV1HEX	Transaction-Specific Data
+104.*	BB252TLV1HEX	dataset ID
+104.*.*	B250EBCDIC	data
+116	B255TLV1HEX	Card Issuer Reference Data
+116.*	BB252TLV1HEX	dataset ID
+116.*.*	B250EBCDIC	data
+117	B255SF		National Use
+117.1	F3EBCDIC	country code
+117.2	U252EBCDIC	data
+118	B255SF		Intra-Country Data
+118.1	F3EBCDIC	country code
+118.2	U252EBCDIC	data
+121	B11EBCDIC	Issuing Institution Identification Code
+123	B1TLV1HEX	Verification Data
+123.*	BB252TLV1HEX	dataset ID
+123.*.*	B250EBCDIC	Verification Data TLV element
+125	B255EBCDIC	Supporting Information
+126	B255SF		Visa Private-Use Fields
+126.0	F64BITMAP	Field126 Bitmap
+126.6	F17SF		Cardholder Certificate Serial Number
+126.6.0	F1HEX		number of significant digits
+126.6.1	F16HEX		cardholder certificate serial number
+126.7	F17SF		Merchant Certificate Serial Number
+126.7.0	F1HEX		number of significatn digits
+126.7.1	F16HEX		merchant certificate serial number
+126.8	F20HEX		Transaction ID (XID)
+126.9	F20SF		TransStain/CAVV Data
+126.9.1	F2BCD		3-D Secure Authentication Results Code
+126.9.2	F2BCD		Second Factor Authentication Code
+126.9.3	F2BCD		CAVV Key Indicator
+126.9.4	F3BCD		CAVV Value
+126.9.5	F4BCD		CAVV Unpredictable Number
+126.9.6	F16BCD		Authentication Tracking Number
+126.9.7 F1BCDSF		Version and Authentication Action
+126.9.7.0 F1ASC		Version
+126.9.7.1 F1ASC		Authentication Value
+126.9.8 F4HEX		IP Address in Hex Format
+126.10	F6SF		CVV2 Authorization Request Data
+126.10.1 F1EBCDIC	Presence Indicator
+126.10.2 F1EBCDIC	Response Type
+126.10.3 F4EBCDIC	CVV2 Value
+126.12	F24BITSTR	Service Indicators
+126.13	F1EBCDIC	POS Environment
+126.14	F1EBCDIC	Payment Guarantee Option
+126.15	F1EBCDIC	MasterCard UCAF Collection Indicator
+126.16	B32EBCDIC	MasterCard UCAF Field
+126.18	F12SF		Agent Unique Account Result
+126.18.0 F1HEX		dataset ID
+126.18.1 F5EBCDIC
+126.18.2 F48BITSTR
+127	B255EBCDIC	File Record(s): Action and Data
+130	F24BITSTR	Terminal Capability Profile
+131	F40BITSTR	Terminal Verification Results (TVR)
+132	F4HEX		Unpredictable Number
+133	F8EBCDIC	Terminal Serial Number
+134	B255HEX		Visa Discretionary Data
+135	B15HEX		Issuer Discretionary Data
+136	F8HEX		Cryptogram
+137	F2HEX		Application Transaction Counter
+138	F16BITSTR	Application Interchange Profile
+139	F10SF		ARPC Response Cryptogram and Code
+139.1	F8HEX		ARPC Cryptogram
+139.2	F2EBCDIC	ARPC response code
+140	B255SF		Issuer Authentication Data
+140.1	F16HEX		IAD
+140.2	U239HEX		Reserved
+142	B255HEX		Issuer Script
+143	B20HEX		Issuer Script Result
+144	F2BCD		Cryptogram Transaction Type
+145	F3BCD		Terminal Country Code
+146	F6BCD		Terminal Transaction Date
+147	F12BCD		Cryptogram Amount
+148	F3BCD		Cryptogram Currency Code
+149	F12BCD		Cryptogram Cashback Amount
+152	F8HEX		Secondary PIN Block
