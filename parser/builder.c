@@ -716,7 +716,7 @@ unsigned int build_bcd(unsigned char *from, unsigned char *to, unsigned int len)
 		if(i!=0 || u==0)
 		{
 			t=from[i*2-u];
-			if(len==37 && !separator_found && t=='^')     //making one exception for track2
+			if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
 			{
 				separator_found=1;
 				to[i]=0xD0;
@@ -731,7 +731,7 @@ unsigned int build_bcd(unsigned char *from, unsigned char *to, unsigned int len)
 		}
 
 		t=from[i*2+1-u];
-		if(len==37 && !separator_found && t=='^')     //making one exception for track2
+		if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
 		{
 			separator_found=1;
 			to[i]|=0xD;

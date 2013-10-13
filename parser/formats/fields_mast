@@ -1,6 +1,7 @@
-# This is just an example, not a real MC format
+# The mast of a sailing vessel is a tall spar, or arrangement of spars, erected more or less vertically on the centre-line of a ship or boat.
+
 #Number	Format		Description
-message U1024SF		MasterCard Message
+message U1024SF		Mast Message
 0	F4EBCDIC	Message type
 1	ISOBITMAP	Message Bit Map
 2	EE19EBCDIC	Primary Account Number
@@ -126,7 +127,7 @@ message U1024SF		MasterCard Message
 48.2.44 EE20HEX		Visa 3-D Secure Electronic Commerce Transaction Identifier (XID)
 48.2.45	EE1EBCDIC	Visa 3-D Secure Electronic Commerce Transaction Response Code
 48.2.46	EE2EBCDIC	Card-Level Result
-48.2.47	EE8EBCDIC	MasterCard Payment Gateway Transaction Indicator
+48.2.47	EE8EBCDIC	MC Payment Gateway Transaction Indicator
 48.2.58	EE33SF		ATM Additional Data
 48.2.58.1 F4EBCDIC	ATM Time
 48.2.58.2 F6EBCDIC	ATM Date
@@ -153,7 +154,7 @@ message U1024SF		MasterCard Message
 48.2.74.* F1EBCDIC	Processing Information
 48.2.75 EE7TLVDSEBCDIC	Fraud Scoring Data
 48.2.75.01 EE3EBCDIC	Fraud Score
-48.2.76	EE1EBCDIC	MasterCard Electronic Acceptance Indicator
+48.2.76	EE1EBCDIC	MC Electronic Acceptance Indicator
 48.2.77 EE3EBCDIC	Payment Transaction Type Indicator
 48.2.78 EE1EBCDIC	U.S. Deferred Billing Indicator (Visa Only)
 48.2.79	EE50TLV1EBCDIC	Chip CVR/TVR Bit Error Results
@@ -170,7 +171,7 @@ message U1024SF		MasterCard Message
 48.2.87	EE1EBCDIC	Card Validation Code Result
 48.2.88	EE1EBCDIC	Magnetic Stripe Compliance Status Indicator
 48.2.89	EE1EBCDIC	Magnetic Stripe Compliance Error Indicator
-48.2.90	EE1EBCDIC	MasterCard Travel Industries Premier Service Interchange Program Indicator
+48.2.90	EE1EBCDIC	MC Travel Industries Premier Service Interchange Program Indicator
 48.2.91	EE19EBCDIC	Acquirer Reference Data (American Express Only)
 48.2.92	EE3EBCDIC	CVC 2
 48.2.93	EE19SF		Fleet Card ID Request Data (Visa Only)
@@ -180,8 +181,8 @@ message U1024SF		MasterCard Message
 48.2.95	EE6EBCDIC	MasterCard Promotion Code
 48.2.96	EE1EBCDIC	Visa Market-Specific Data Identifier (Visa Only)
 48.2.97	EE1EBCDIC	Prestigious Properties Indicator (Visa Only)
-48.2.98	EE6EBCDIC	MasterCard Corporate Fleet Card ID/Driver Number
-48.2.99	EE6EBCDIC	MasterCard Corporate Fleet Card Vehicle Number
+48.2.98	EE6EBCDIC	MC Corporate Fleet Card ID/Driver Number
+48.2.99	EE6EBCDIC	MC Corporate Fleet Card Vehicle Number
 49	F3EBCDIC	Currency Code, Transaction
 50	F3EBCDIC	Currency Code, Settlement
 51	F3EBCDIC	Currency Code, Cardholder Billing

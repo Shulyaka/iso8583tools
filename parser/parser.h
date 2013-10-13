@@ -48,5 +48,6 @@ typedef struct fldformat
 fldformat *load_format(char*);
 void freeFormat(fldformat*);
 field *parse_message(unsigned char*, unsigned int, fldformat*);
+unsigned int get_field_length(unsigned char*, unsigned int, fldformat*);
 #endif
 

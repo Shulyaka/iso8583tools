@@ -42,29 +42,17 @@ field *parse_message(unsigned char *msgbuf, unsigned int length, fldformat *frm)
 	return message;
 }
 
-unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld, fldformat *frm)
+unsigned int get_field_length(unsigned char *buf, unsigned int maxlength, fldformat *frm)
 {
 	unsigned int lenlen=0;
-	//unsigned int length=0;
-	unsigned int ilength=0;
+	unsigned int length=0;
 	unsigned char lengthbuf[7];
-	unsigned int i, j;
 	unsigned char tmpc;
-	int bitmap_found=-1;
-	unsigned int pos;
-	unsigned int sflen;
-	unsigned int taglength;
-	fldformat tmpfrm;
+	unsigned int i;
 
 	if(!buf)
 	{
 		printf("Error: No buf\n");
-		return 0;
-	}
-
-	if(!fld)
-	{
-		printf("Error: No fld\n");
 		return 0;
 	}
 
@@ -92,9 +80,8 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 						printf("Error: Length is too big\n");
 						return 0;
 					}
-				fld->length=0;
 			for(i=0; i<(lenlen>4?4:lenlen); i++)
-				((char *)(&fld->length))[i]=buf[(lenlen>4?4:lenlen)-i-1];
+				((char *)(&length))[i]=buf[(lenlen>4?4:lenlen)-i-1];
 			break;
 
 		case FRM_EMVL:
@@ -110,8 +97,7 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 			else
 				lenlen=1;
 				
-			fld->length=0;
-			((char *)(&fld->length))[0]=buf[lenlen-1];	
+			((char *)(&length))[0]=buf[lenlen-1];	
 			break;
 		
 		case FRM_BCD:
@@ -129,7 +115,7 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 			else
 				parse_hex(buf, lengthbuf, lenlen*2);
 
-			fld->length=atoi(lengthbuf);
+			length=atoi(lengthbuf);
 			break;
 
 		case FRM_ASCII:
@@ -143,7 +129,7 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 
 			tmpc=buf[lenlen];
 			buf[lenlen]='\0';
-			fld->length=atoi(buf);
+			length=atoi(buf);
 			buf[lenlen]=tmpc;
 			break;
 		
@@ -156,20 +142,20 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 						return 0;
 					}
 				
-			if(fld->length>6)
+			if(lenlen>6)
 				parse_ebcdic(buf + lenlen - 6, lengthbuf, 6);
 			else
 				parse_ebcdic(buf, lengthbuf, lenlen);
 
-			fld->length=atoi(lengthbuf);
+			length=atoi(lengthbuf);
 			break;
 
 		case FRM_UNKNOWN:
-			fld->length=maxlength;
+			length=maxlength;
 			break;
 
 		case FRM_FIXED:
-			fld->length=frm->maxLength;
+			length=frm->maxLength;
 			break;
 
 		default:
@@ -179,43 +165,83 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 				return 0;
 			}
 	}
+	
+	return length;
+}
 
-	if(frm->maxLength < fld->length)
-	{
-		if(frm->lengthFormat!=FRM_UNKNOWN)
-			printf("Warning: field length exceeds max, reducing\n");
-		fld->length=frm->maxLength;
-	}
+unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld, fldformat *frm)
+{
+	unsigned int lenlen=0;
+	unsigned int ilength=0;
+	unsigned char lengthbuf[7];
+	unsigned int i, j;
+	int bitmap_found=-1;
+	unsigned int pos;
+	unsigned int sflen;
+	unsigned int taglength;
+	fldformat tmpfrm;
 
-	if((!frm->lengthInclusive && fld->length==0) || (frm->lengthInclusive && fld->length<=lenlen))
+	if(!buf)
 	{
-		printf("Error: Wrong length (%s)\n", frm->description);
+		printf("Error: No buf\n");
 		return 0;
 	}
 
-	if(frm->lengthInclusive)
-		fld->length-=lenlen;
-
-	switch(frm->dataFormat)
+	if(!fld)
 	{
-		case FRM_BITMAP:
-		case FRM_BITSTR:
-			ilength=(fld->length+7)/8;
-			break;
-		case FRM_HEX:
-		case FRM_BCDSF:
-			fld->length=fld->length*2;
-		case FRM_BCD:
-			ilength=(fld->length+1)/2;
-			break;
-		default:
-			ilength=fld->length;
+		printf("Error: No fld\n");
+		return 0;
 	}
 
-	if(lenlen + ilength > maxlength)
+	if(!frm)
 	{
-		printf("Error: Field '%s'(%d) is too long %d+%d>%d\n", frm->description, fld->length, lenlen, ilength, maxlength);
+		printf("Error: No frm\n");
 		return 0;
+	}
+
+	lenlen=frm->lengthLength;
+
+	if(frm->dataFormat!=FRM_ISOBITMAP)
+	{
+		fld->length=get_field_length(buf, maxlength, frm);
+
+		if(frm->maxLength < fld->length)
+		{
+			if(frm->lengthFormat!=FRM_UNKNOWN)
+				printf("Warning: field length exceeds max, reducing\n");
+			fld->length=frm->maxLength;
+		}
+
+		if((!frm->lengthInclusive && fld->length==0) || (frm->lengthInclusive && fld->length<=lenlen))
+		{
+			printf("Error: Wrong length (%s)\n", frm->description);
+			return 0;
+		}
+
+		if(frm->lengthInclusive)
+			fld->length-=lenlen;
+
+		switch(frm->dataFormat)
+		{
+			case FRM_BITMAP:
+			case FRM_BITSTR:
+				ilength=(fld->length+7)/8;
+				break;
+			case FRM_HEX:
+			case FRM_BCDSF:
+				fld->length=fld->length*2;
+			case FRM_BCD:
+				ilength=(fld->length+1)/2;
+				break;
+			default:
+				ilength=fld->length;
+		}
+
+		if(lenlen + ilength > maxlength)
+		{
+			printf("Error: Field '%s'(%d) is too long %d+%d>%d\n", frm->description, fld->length, lenlen, ilength, maxlength);
+			return 0;
+		}
 	}
 
 	//Now we know the length except for ISOBITMAP
@@ -539,14 +565,14 @@ int parse_bcd(unsigned char *from, unsigned char *to, unsigned int len)
 		if(i!=0 || u==0)
 		{
 			t=from[i] >> 4;
-			if(len==37 && !separator_found && t==0xD)     //making one exception for track2
+			if(17<len && len<38 && !separator_found && t==0xD)     //making one exception for track2
 			{
 				separator_found=1;
 				to[i*2-u]='^';
 			}
 			else if (t > 9)
 			{
-				printf("Error: parse_bcd: The string is not BCD\n");
+				printf("Error: parse_bcd: The string is not BCD (%02x, %02x, %d, %d)\n", from[i], t, separator_found, len);
 				return 0;
 			}
 			else
@@ -559,7 +585,7 @@ int parse_bcd(unsigned char *from, unsigned char *to, unsigned int len)
 		}
 
 		t=from[i] & 0x0F;
-		if(len==37 && !separator_found && t==0xD)     //making one exception for track2
+		if(17<len && len<38 && !separator_found && t==0xD)     //making one exception for track2
 		{
 			separator_found=1;
 			to[i*2-u]='^';

@@ -279,7 +279,7 @@ int parseFormat(fldformat *frm, char *format)
 	if(!strcmp(format, "ISOBITMAP"))
 	{
 		frm->dataFormat=FRM_ISOBITMAP;
-		frm->maxLength=3;
+		frm->maxLength=192;
 		return 1;
 	}
 

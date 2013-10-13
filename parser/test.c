@@ -2,7 +2,7 @@
 
 #include "parser.h"
 
-int main_(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	fldformat *frm;
 	field *message;
@@ -83,14 +83,14 @@ int main_(int argc, char **argv)
 }
 
 
-int main(int argc, char **argv)
+int main_(int argc, char **argv)
 {
 	fldformat *frm_header;
 	fldformat *frm_message;
 	field *message;
 	field *header;
 	char header_format_file[]="formats/visa_header";
-	char message_format_file[]="formats/fields_visa";
+	char message_format_file[]="formats/fields_visa.noheader";
 	char msgbuf[1000];
 	char msgbuf2[1000];
 	unsigned int msglen=0;
