@@ -35,7 +35,7 @@ typedef struct fldformat
 	//unsigned int number;
 	unsigned int lengthFormat;
 	unsigned int lengthLength;
-	char lengthInclusive;
+	unsigned short lengthInclusive;
 	unsigned int maxLength;
 	unsigned int dataFormat;
 	unsigned int tagFormat;
@@ -47,7 +47,8 @@ typedef struct fldformat
 
 fldformat *load_format(char*);
 void freeFormat(fldformat*);
-field *parse_message(unsigned char*, unsigned int, fldformat*);
-unsigned int get_field_length(unsigned char*, unsigned int, fldformat*);
+field *parse_message(char*, unsigned int, fldformat*);
+unsigned int get_field_length(char*, unsigned int, fldformat*);
+void print_message(field*, fldformat*);
 #endif
 

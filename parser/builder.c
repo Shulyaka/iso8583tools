@@ -4,19 +4,19 @@
 
 #include "parser.h"
 
-unsigned int build_message(unsigned char*, unsigned int, field*, fldformat*);
-unsigned int build_field(unsigned char*, unsigned int, field*, fldformat*);
+unsigned int build_message(char*, unsigned int, field*, fldformat*);
+unsigned int build_field(char*, unsigned int, field*, fldformat*);
 void freeField(field*);
-unsigned int build_ebcdic(unsigned char*, unsigned char*, unsigned int);
-unsigned int build_hex(unsigned char*, unsigned char*, unsigned int);
-unsigned int build_bcd(unsigned char*, unsigned char*, unsigned int);
-unsigned int build_isobitmap(unsigned char*, unsigned int, field*, fldformat*, unsigned int);
-unsigned int build_bitmap(unsigned char*, unsigned int, field*, fldformat*, unsigned int);
+unsigned int build_ebcdic(char*, char*, unsigned int);
+unsigned int build_hex(char*, char*, unsigned int);
+unsigned int build_bcd(char*, char*, unsigned int);
+unsigned int build_isobitmap(char*, unsigned int, field*, fldformat*, unsigned int);
+unsigned int build_bitmap(char*, unsigned int, field*, fldformat*, unsigned int);
 void print_message(field*, fldformat*);
 unsigned int get_length(field*, fldformat*);
 
 
-unsigned int build_message(unsigned char *buf, unsigned int maxlength, field *fld, fldformat *frm)
+unsigned int build_message(char *buf, unsigned int maxlength, field *fld, fldformat *frm)
 {
 	return build_field(buf, maxlength, fld, frm);
 }
@@ -213,13 +213,13 @@ unsigned int get_length(field *fld, fldformat *frm)
 	return lenlen+blength;
 }
 
-unsigned int build_field(unsigned char *buf, unsigned int maxlength, field *fld, fldformat *frm)
+unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldformat *frm)
 {
 	unsigned int lenlen=0;
 	unsigned int blength=0;
 	unsigned int flength=0;
 	unsigned int mlength=0;
-	unsigned char lengthbuf[7];
+	char lengthbuf[7];
 	unsigned int i, j, pos, sflen, taglength;
 	int bitmap_found=-1;
 	fldformat tmpfrm;
@@ -309,7 +309,7 @@ unsigned int build_field(unsigned char *buf, unsigned int maxlength, field *fld,
 			break;
 
 		case FRM_BCDSF:
-			fld->data=malloc(maxlength*2+1);
+			fld->data=(char*)malloc(maxlength*2+1);
 			
 			tmpfrm.lengthFormat=FRM_FIXED;
 			tmpfrm.lengthLength=0;
@@ -690,18 +690,18 @@ unsigned int build_field(unsigned char *buf, unsigned int maxlength, field *fld,
 	return lenlen+blength;
 }
 
-unsigned int build_ebcdic(unsigned char *from, unsigned char *to, unsigned int len)
+unsigned int build_ebcdic(char *from, char *to, unsigned int len)
 {
 	unsigned int i;
-	const unsigned char ascii2ebcdic[256]="\0\x001\x002\x003\x037\x02D\x02E\x02F\x016\x005\x025\x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013\x03C\x03D\x032\x026\x018\x019\x03F\x027\x022\x01D\x01E\x01F\x040\x05A\x07F\x07B\x05B\x06C\x050\x07D\x04D\x05D\x05C\x04E\x06B\x060\x04B\x061\x0F0\x0F1\x0F2\x0F3\x0F4\x0F5\x0F6\x0F7\x0F8\x0F9\x07A\x05E\x04C\x07E\x06E\x06F\x07C\x0C1\x0C2\x0C3\x0C4\x0C5\x0C6\x0C7\x0C8\x0C9\x0D1\x0D2\x0D3\x0D4\x0D5\x0D6\x0D7\x0D8\x0D9\x0E2\x0E3\x0E4\x0E5\x0E6\x0E7\x0E8\x0E9\x0BA\x0E0\x0BB\x0B0\x06D\x079\x081\x082\x083\x084\x085\x086\x087\x088\x089\x091\x092\x093\x094\x095\x096\x097\x098\x099\x0A2\x0A3\x0A4\x0A5\x0A6\x0A7\x0A8\x0A9\x0C0\x04F\x0D0\x0A1\x007\x020\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x0FF\x040\x040\x04A\x0B1\x040\x0B2\x06A\x040\x040\x0C3\x040\x040\x05F\x040\x0D9\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x07F\x040\x040\x040\x040\x064\x065\x062\x066\x063\x067\x09C\x068\x074\x071\x072\x073\x078\x075\x076\x077\x040\x069\x0ED\x0EE\x0EB\x0EF\x0EC\x040\x080\x0FD\x0FE\x0FB\x0FC\x0AD\x040\x059\x044\x045\x042\x046\x043\x047\x09E\x048\x054\x051\x052\x053\x058\x055\x056\x057\x040\x049\x0CD\x0CE\x0CF\x0CB\x0CC\x040\x070\x0DD\x0DE\x0DB\x0DC\x08D\x040\x0DF";
+	const unsigned char ascii2ebcdic[257]="\0\x001\x002\x003\x037\x02D\x02E\x02F\x016\x005\x025\x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013\x03C\x03D\x032\x026\x018\x019\x03F\x027\x022\x01D\x01E\x01F\x040\x05A\x07F\x07B\x05B\x06C\x050\x07D\x04D\x05D\x05C\x04E\x06B\x060\x04B\x061\x0F0\x0F1\x0F2\x0F3\x0F4\x0F5\x0F6\x0F7\x0F8\x0F9\x07A\x05E\x04C\x07E\x06E\x06F\x07C\x0C1\x0C2\x0C3\x0C4\x0C5\x0C6\x0C7\x0C8\x0C9\x0D1\x0D2\x0D3\x0D4\x0D5\x0D6\x0D7\x0D8\x0D9\x0E2\x0E3\x0E4\x0E5\x0E6\x0E7\x0E8\x0E9\x0BA\x0E0\x0BB\x0B0\x06D\x079\x081\x082\x083\x084\x085\x086\x087\x088\x089\x091\x092\x093\x094\x095\x096\x097\x098\x099\x0A2\x0A3\x0A4\x0A5\x0A6\x0A7\x0A8\x0A9\x0C0\x04F\x0D0\x0A1\x007\x020\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x0FF\x040\x040\x04A\x0B1\x040\x0B2\x06A\x040\x040\x0C3\x040\x040\x05F\x040\x0D9\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x07F\x040\x040\x040\x040\x064\x065\x062\x066\x063\x067\x09C\x068\x074\x071\x072\x073\x078\x075\x076\x077\x040\x069\x0ED\x0EE\x0EB\x0EF\x0EC\x040\x080\x0FD\x0FE\x0FB\x0FC\x0AD\x040\x059\x044\x045\x042\x046\x043\x047\x09E\x048\x054\x051\x052\x053\x058\x055\x056\x057\x040\x049\x0CD\x0CE\x0CF\x0CB\x0CC\x040\x070\x0DD\x0DE\x0DB\x0DC\x08D\x040\x0DF";
 
 	for(i=0; i<len; i++)
-		to[i]=ascii2ebcdic[from[i]];
+		to[i]=ascii2ebcdic[(unsigned char)from[i]];
 	
 	return len;
 }
 
-unsigned int build_bcd(unsigned char *from, unsigned char *to, unsigned int len)
+unsigned int build_bcd(char *from, char *to, unsigned int len)
 {
 	unsigned int i;
 	unsigned int u=len/2*2==len?0:1;
@@ -715,7 +715,7 @@ unsigned int build_bcd(unsigned char *from, unsigned char *to, unsigned int len)
 	{
 		if(i!=0 || u==0)
 		{
-			t=from[i*2-u];
+			t=(unsigned char)from[i*2-u];
 			if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
 			{
 				separator_found=1;
@@ -730,7 +730,7 @@ unsigned int build_bcd(unsigned char *from, unsigned char *to, unsigned int len)
 			}
 		}
 
-		t=from[i*2+1-u];
+		t=(unsigned char)from[i*2+1-u];
 		if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
 		{
 			separator_found=1;
@@ -747,7 +747,7 @@ unsigned int build_bcd(unsigned char *from, unsigned char *to, unsigned int len)
 	return (len+1)/2;
 }
 
-unsigned int build_hex(unsigned char *from, unsigned char *to, unsigned int len)
+unsigned int build_hex(char *from, char *to, unsigned int len)
 {
 	unsigned int i;
 	unsigned char t;
@@ -758,7 +758,7 @@ unsigned int build_hex(unsigned char *from, unsigned char *to, unsigned int len)
 	{
 		if(i!=0 || u==0)
 		{
-			t=from[i*2-u];
+			t=(unsigned char)from[i*2-u];
 			if(t>='0' && t<='9')
 				to[i]=(t-'0')<<4;
 			else if(t>='A' && t<='F')
@@ -772,7 +772,7 @@ unsigned int build_hex(unsigned char *from, unsigned char *to, unsigned int len)
 			}
 		}
 
-		t=from[i*2+1-u];
+		t=(unsigned char)from[i*2+1-u];
 		if(t>='0' && t<='9')
 			to[i]|=t-'0';
 		else if(t>='A' && t<='F')
@@ -788,7 +788,7 @@ unsigned int build_hex(unsigned char *from, unsigned char *to, unsigned int len)
 	return (len+1)/2;
 }
 
-unsigned int build_isobitmap(unsigned char *buf, unsigned int maxlength, field *fld, fldformat *frm, unsigned int index)
+unsigned int build_isobitmap(char *buf, unsigned int maxlength, field *fld, fldformat *frm, unsigned int index)
 {
 	unsigned int i, j;
 
@@ -812,7 +812,7 @@ unsigned int build_isobitmap(unsigned char *buf, unsigned int maxlength, field *
 	return i*8;
 }
 
-unsigned int build_bitmap(unsigned char *buf, unsigned int maxlength, field *fld, fldformat *frm, unsigned int index)
+unsigned int build_bitmap(char *buf, unsigned int maxlength, field *fld, fldformat *frm, unsigned int index)
 {
 	unsigned int i, blength, flength;
 

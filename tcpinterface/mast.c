@@ -3,10 +3,10 @@
 
 fldformat* loadNetFormat(void)
 {
-	return load_format("../parser/formats/fields_mast");
+	return load_format((char*)"../parser/formats/fields_mast");
 }
 
-void processNetMsg(unsigned char *buf, unsigned int length, fldformat *frm)
+void processNetMsg(char *buf, unsigned int length, fldformat *frm)
 {
 	field *message;
 	printf("\nMessage received, length %d\n", length);

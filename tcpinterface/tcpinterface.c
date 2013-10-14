@@ -70,7 +70,7 @@ int tcpconnect(int sct) //blocking
 //-2: Connection is broken
 //-3: Other error (see errno)
 //>0: Valid message received
-int tcpreceive(int sfd, unsigned char *buf, unsigned int maxlen, fldformat *frm)
+int tcpreceive(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 {
 	int i;
 	static unsigned int numread=0;
@@ -180,9 +180,11 @@ int main(void)
 
 	unsigned int timeoutcnt;
 
-	unsigned char buf[1000];
+	char buf[1000];
 
 	fldformat *frm;
+
+	GOOGLE_PROTOBUF_VERIFY_VERSION;
 
 	frm=loadNetFormat();
 
@@ -250,6 +252,6 @@ int main(void)
 	tcpclose(sct);
 	freeFormat(frm);
 	
-	return;
+	return 0;
 }
 

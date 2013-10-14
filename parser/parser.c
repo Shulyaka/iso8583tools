@@ -5,16 +5,15 @@
 #include "parser.h"
 
 //field *parse_message(unsigned char*, unsigned int, fldformat*);
-unsigned int parse_field(unsigned char*, unsigned int, field*, fldformat*);
+unsigned int parse_field(char*, unsigned int, field*, fldformat*);
 void freeField(field*);
-void parse_ebcdic(unsigned char*, unsigned char*, unsigned int);
-int parse_hex(unsigned char*, unsigned char*, unsigned int);
-int parse_bcd(unsigned char*, unsigned char*, unsigned int);
-void print_message(field*, fldformat*);
-unsigned int build_message(unsigned char*, unsigned int, field*, fldformat*);
-unsigned int get_length(field*, fldformat*);
+void parse_ebcdic(char*, char*, unsigned int);
+int parse_hex(char*, char*, unsigned int);
+int parse_bcd(char*, char*, unsigned int);
+//unsigned int build_message(unsigned char*, unsigned int, field*, fldformat*);
+//unsigned int get_length(field*, fldformat*);
 
-field *parse_message(unsigned char *msgbuf, unsigned int length, fldformat *frm)
+field *parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 {
 	field *message;
 
@@ -30,7 +29,7 @@ field *parse_message(unsigned char *msgbuf, unsigned int length, fldformat *frm)
 		return NULL;
 	}
 	
-	message=calloc(1, sizeof(field));
+	message=(field *)calloc(1, sizeof(field));
 
 	if(!parse_field(msgbuf, length, message, frm))
 	{
@@ -42,11 +41,11 @@ field *parse_message(unsigned char *msgbuf, unsigned int length, fldformat *frm)
 	return message;
 }
 
-unsigned int get_field_length(unsigned char *buf, unsigned int maxlength, fldformat *frm)
+unsigned int get_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 {
 	unsigned int lenlen=0;
 	unsigned int length=0;
-	unsigned char lengthbuf[7];
+	char lengthbuf[7];
 	unsigned char tmpc;
 	unsigned int i;
 
@@ -169,11 +168,11 @@ unsigned int get_field_length(unsigned char *buf, unsigned int maxlength, fldfor
 	return length;
 }
 
-unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld, fldformat *frm)
+unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldformat *frm)
 {
 	unsigned int lenlen=0;
 	unsigned int ilength=0;
-	unsigned char lengthbuf[7];
+	char lengthbuf[7];
 	unsigned int i, j;
 	int bitmap_found=-1;
 	unsigned int pos;
@@ -251,7 +250,7 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 	{
 		case FRM_SUBFIELDS:
 			//fld->fields=frm->fields;
-			fld->fld=calloc(frm->maxFields, sizeof(field*));
+			fld->fld=(field**)calloc(frm->maxFields, sizeof(field*));
 			pos=lenlen;
 			for(i=0; i < frm->fields; i++)
 			{
@@ -276,7 +275,7 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 					if(frm->fld[i]->dataFormat==FRM_BITMAP || frm->fld[i]->dataFormat==FRM_ISOBITMAP)
 						bitmap_found=i;
 					
-					fld->fld[i]=calloc(1, sizeof(field));
+					fld->fld[i]=(field*)calloc(1, sizeof(field));
 					sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i], frm->fld[i]);
 					if(!sflen)
 					{
@@ -304,7 +303,7 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 			break;
 
 		case FRM_BCDSF:
-			fld->data=malloc(fld->length+1);
+			fld->data=(char*)malloc(fld->length+1);
 			if(!parse_bcd(buf+lenlen, fld->data, fld->length))
 			{
 				printf("Error: Not BCD field\n");
@@ -339,7 +338,7 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 				return 0;
 			}
 
-			fld->fld=calloc(frm->maxFields, sizeof(field*));
+			fld->fld=(field**)calloc(frm->maxFields, sizeof(field*));
 			pos=lenlen;
 			taglength=frm->dataFormat-FRM_TLV1+1;
 
@@ -363,22 +362,22 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 				}
 
 				fld->fields=i+1;
-				fld->fld[i]=calloc(1, sizeof(field));
+				fld->fld[i]=(field*)calloc(1, sizeof(field));
 
 				switch(frm->tagFormat)
 				{
 					case FRM_EBCDIC:
-						fld->fld[i]->tag=malloc(taglength+1);
+						fld->fld[i]->tag=(char*)malloc(taglength+1);
 						parse_ebcdic(buf+pos, fld->fld[i]->tag, taglength);
 						break;
 					case FRM_BCD:
 					case FRM_HEX:
-						fld->fld[i]->tag=malloc(taglength*2+1);
+						fld->fld[i]->tag=(char*)malloc(taglength*2+1);
 						parse_hex(buf+pos, fld->fld[i]->tag, taglength*2);
 						break;
 					case FRM_ASCII:
 					default:
-						fld->fld[i]->tag=malloc(taglength+1);
+						fld->fld[i]->tag=(char*)malloc(taglength+1);
 						memcpy(fld->fld[i]->tag, buf+pos, taglength);
 						fld->fld[i]->tag[taglength]='\0';
 				}
@@ -405,7 +404,7 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 
 		case FRM_TLVDS:
 
-			fld->fld=calloc(frm->maxFields, sizeof(field*));
+			fld->fld=(field**)calloc(frm->maxFields, sizeof(field*));
 			fld->fields=0;
 			pos=lenlen;
 
@@ -454,7 +453,7 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 				if(j+1>fld->fields)
 					fld->fields=j+1;
 
-				fld->fld[j]=calloc(1, sizeof(field));
+				fld->fld[j]=(field*)calloc(1, sizeof(field));
 
 				pos+=taglength;
 
@@ -479,7 +478,7 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 		case FRM_ISOBITMAP:
 			for(i=0; i==0 || buf[i*8-8]>>7; i++)
 			{
-				fld->data=realloc(fld->data, (i+1)*64);
+				fld->data=(char*)realloc(fld->data, (i+1)*64);
 				fld->length=i*64+63;
 				ilength=i*8+8;
 				if((i+1)*8>maxlength)
@@ -501,7 +500,7 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 
 		case FRM_BITMAP:
 		case FRM_BITSTR:
-			fld->data=calloc(frm->maxLength+1, 1);
+			fld->data=(char*)calloc(frm->maxLength+1, 1);
 			for(i=0; i<fld->length;i++)
 				fld->data[i]=buf[lenlen + i/8] & (1<<(7-i%8)) ? '1':'0';
 
@@ -509,24 +508,24 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 
 		case FRM_BIN:
 		case FRM_ASCII:
-			fld->data=malloc(frm->maxLength+1);
+			fld->data=(char*)malloc(frm->maxLength+1);
 			memcpy(fld->data, buf+lenlen, fld->length);
 			fld->data[fld->length]='\0';
 			break;
 
 		case FRM_HEX:
-			fld->data=malloc(frm->maxLength*2+1);
+			fld->data=(char*)malloc(frm->maxLength*2+1);
 			parse_hex(buf+lenlen, fld->data, fld->length);
 			break;
 
 		case FRM_BCD:
-			fld->data=malloc(frm->maxLength+1);
+			fld->data=(char*)malloc(frm->maxLength+1);
 			if(!parse_bcd(buf+lenlen, fld->data, fld->length))
 				return 0;
 			break;
 
 		case FRM_EBCDIC:
-			fld->data=malloc(frm->maxLength+1);
+			fld->data=(char*)malloc(frm->maxLength+1);
 			parse_ebcdic(buf+lenlen, fld->data, ilength);
 			break;
 
@@ -541,19 +540,19 @@ unsigned int parse_field(unsigned char *buf, unsigned int maxlength, field *fld,
 	return lenlen+ilength;
 }
 
-void parse_ebcdic(unsigned char *from, unsigned char *to, unsigned int len)
+void parse_ebcdic(char *from, char *to, unsigned int len)
 {
 	unsigned int i;
 //	const unsigned char ebcdic2ascii[256]="\0\x001\x002\x003 \t \x07F   \x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013 \n\x008 \x018\x019  \x01C\x01D\x01E\x01F\x080 \x01C  \x00A\x017\x01B     \x005\x006\x007  \x016    \x004    \x014\x015 \x01A  âäàáãåçñ¢.<(+|&éêëèíîïìß!$*);¬-/ÂÄÀÁÃÅÇÑ\x0A6,%_>?øÉÊËÈÍÎÏÌ`:#@'=\"Øabcdefghi   ý  \x010jklmnopqr  Æ æ  ~stuvwxyz   Ý  ^£¥       []    {ABCDEFGHI ôöòóõ}JKLMNOPQR ûüùúÿ\\ STUVWXYZ ÔÖÒÓÕ0123456789 ÛÜÙÚŸ";
-	const unsigned char ebcdic2ascii[256]="\0\x001\x002\x003 \t \x07F   \x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013 \n\x008 \x018\x019  \x01C\x01D\x01E\x01F\x080 \x01C  \x00A\x017\x01B     \x005\x006\x007  \x016    \x004    \x014\x015 \x01A           .<(+|&         !$*); -/        \x0A6,%_>?         `:#@'=\" abcdefghi      \x010jklmnopqr       ~stuvwxyz      ^         []    {ABCDEFGHI      }JKLMNOPQR      \\ STUVWXYZ      0123456789      ";
+	const unsigned char ebcdic2ascii[257]=" \x001\x002\x003 \t \x07F   \x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013 \n\x008 \x018\x019  \x01C\x01D\x01E\x01F\x080 \x01C  \x00A\x017\x01B     \x005\x006\x007  \x016    \x004    \x014\x015 \x01A           .<(+|&         !$*); -/        \x0A6,%_>?         `:#@'=\" abcdefghi      \x010jklmnopqr       ~stuvwxyz      ^         []    {ABCDEFGHI      }JKLMNOPQR      \\ STUVWXYZ      0123456789      ";
 
 	for(i=0; i<len; i++)
-		to[i]=ebcdic2ascii[from[i]];
+		to[i]=ebcdic2ascii[(unsigned char)from[i]];
 	
 	to[len]='\0';
 }
 
-int parse_bcd(unsigned char *from, unsigned char *to, unsigned int len)
+int parse_bcd(char *from, char *to, unsigned int len)
 {
 	unsigned int i;
 	unsigned char t;
@@ -564,7 +563,7 @@ int parse_bcd(unsigned char *from, unsigned char *to, unsigned int len)
 	{
 		if(i!=0 || u==0)
 		{
-			t=from[i] >> 4;
+			t=((unsigned char)from[i]) >> 4;
 			if(17<len && len<38 && !separator_found && t==0xD)     //making one exception for track2
 			{
 				separator_found=1;
@@ -578,13 +577,13 @@ int parse_bcd(unsigned char *from, unsigned char *to, unsigned int len)
 			else
 				to[i*2-u]='0' + t;
 		}
-		else if(from[i]>>4!=0)
+		else if(((unsigned char)from[i])>>4!=0)
 		{
 			printf("Error: parse_bcd: First 4 bits not zero\n");
 			return 0;
 		}
 
-		t=from[i] & 0x0F;
+		t=((unsigned char)from[i]) & 0x0F;
 		if(17<len && len<38 && !separator_found && t==0xD)     //making one exception for track2
 		{
 			separator_found=1;
@@ -602,7 +601,7 @@ int parse_bcd(unsigned char *from, unsigned char *to, unsigned int len)
 	return 1;
 }
 
-int parse_hex(unsigned char *from, unsigned char *to, unsigned int len)
+int parse_hex(char *from, char *to, unsigned int len)
 {
 	unsigned int i;
 	unsigned char t;
@@ -612,19 +611,19 @@ int parse_hex(unsigned char *from, unsigned char *to, unsigned int len)
 	{
 		if(i!=0 || u==0)
 		{
-			t=from[i] >> 4;
+			t=((unsigned char)from[i]) >> 4;
 			if (t > 9)
 				to[i*2-u]='A' + t - 10;
 			else
 				to[i*2-u]='0' + t;
 		}
-		else if(from[i]>>4!=0)
+		else if(((unsigned char)from[i])>>4!=0)
 		{
 			printf("Warning: parse_hex: First 4 bits not zero\n");
 			return 0;
 		}
 
-		t=from[i] & 0x0F;
+		t=((unsigned char)from[i]) & 0x0F;
 		if (t > 9)
 			to[i*2+1-u]='A' + t - 10;
 		else

@@ -22,7 +22,7 @@ fldformat* load_format(char *filename)
 	fldformat *frmroot, *frmtmp, *frmpar;
 	FILE *file;
 
-	frmroot=calloc(1, sizeof(fldformat));
+	frmroot=(fldformat*)calloc(1, sizeof(fldformat));
 	
 	if((file=fopen(filename, "r"))==NULL)
 	{
@@ -66,7 +66,7 @@ fldformat* load_format(char *filename)
 
 		if(k==0 && !strcmp(number, "message"))
 		{
-			frmroot->description=malloc(strlen(descr)+1);
+			frmroot->description=(char*)malloc(strlen(descr)+1);
 			strcpy(frmroot->description, descr);
 
 			parseFormat(frmroot, format);
@@ -78,10 +78,10 @@ fldformat* load_format(char *filename)
 		if(k==0)
 		{
 			printf("Warning: No 'message' format, implying default\n");
-			frmroot->description=malloc(strlen("ISO8583 Message")+1);
+			frmroot->description=(char*)malloc(strlen("ISO8583 Message")+1);
 			strcpy(frmroot->description, "ISO8583 Message");
 			
-			parseFormat(frmroot, "U1024SF");
+			parseFormat(frmroot, (char*)"U1024SF");
 			
 			k++;
 		}
@@ -100,7 +100,7 @@ fldformat* load_format(char *filename)
 			continue;
 		}
 
-		frmtmp->description=malloc(strlen(number)+2+strlen(descr)+1);
+		frmtmp->description=(char*)malloc(strlen(number)+2+strlen(descr)+1);
 		strcpy(frmtmp->description, number);
 		strcpy(frmtmp->description+strlen(frmtmp->description), ". ");
 		strcpy(frmtmp->description+strlen(frmtmp->description), descr);
@@ -214,11 +214,11 @@ fldformat *newFrmChild(fldformat *frm, unsigned int n)
 	}
 
 	if(frm->fields==0)
-		frm->fld=calloc(frm->maxFields, sizeof(fldformat*));
+		frm->fld=(fldformat**)calloc(frm->maxFields, sizeof(fldformat*));
 	
 	frm->fields=n+1;
 
-	frm->fld[n]=calloc(1, sizeof(fldformat));
+	frm->fld[n]=(fldformat*)calloc(1, sizeof(fldformat));
 
 	return frm->fld[n];
 }
