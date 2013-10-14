@@ -1,0 +1,66 @@
+//format-independent message description
+
+message isomessage
+{
+	enum ISOver
+	{
+		ISO1987 = 0;
+		ISO1993 = 1;
+		ISO2003 = 2;
+		ISOCUSTOM = 9;
+	}
+
+	optional ISOver ISOVersion = 1 [default = ISO1987];
+
+	enum MsgClass
+	{
+		AUTHORIZATION = 1;
+		FINANCIAL = 2;
+		FILEACTIONS = 3;
+		REVERSAL = 4;
+		RECONCILIATION = 5;
+		ADMINISTRATIVE = 6;
+		FEECOLLECTION = 7;
+		NETWORKMANAGEMENT = 8;
+		ISORESERVED = 9;
+	}
+
+	required MsgClass MessageClass = 2;
+
+	enum MsgFunction
+	{
+		REQUEST = 0;
+		REQUESTRESP = 1;
+		ADVICE = 2;
+		ADVICERESP = 3;
+		NOTIFICATION = 4;
+		RESPACK = 8;
+		NACK = 9;
+	}
+
+	required MsgFunction MessageFunction = 3;
+
+	enum MsgOrigin
+	{
+		ACQUIRER = 0;
+		ACQREPEAT = 1;
+		ISSUER = 2;
+		ISSREPEAT = 3;
+		OTHER = 4;
+		OTHREPEAT = 5;
+	}
+
+	optional MsgOrigin MessageOrigin = 4 [default = ACQUIRER];
+
+	optional string PAN = 5;
+
+	enum ProcCode
+	{
+		PURCHASE = 00;
+		CASH = 01;
+		CHECK = 03;
+		ACCNTFUNDING = 10;
+	}
+
+	optional ProcCode ProcessingCode = 6;
+}
