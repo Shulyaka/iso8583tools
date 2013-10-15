@@ -1,7 +1,7 @@
 #include "../parser/parser.h"
 #include "../switch/isomessage.pb.h"
 
-void processNetMsg(char*, unsigned int, fldformat*);
-
+field* parseNetMsg(char*, unsigned int, fldformat*);
+int convertNetMsg(isomessage*, field*);
 fldformat* loadNetFormat(void);
 
