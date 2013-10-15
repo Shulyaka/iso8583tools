@@ -2,6 +2,8 @@
 
 message isomessage
 {
+	required string SourceInterface = 1;
+
 	enum ISOver
 	{
 		ISO1987 = 0;
@@ -10,7 +12,7 @@ message isomessage
 		ISOCUSTOM = 9;
 	}
 
-	optional ISOver ISOVersion = 1 [default = ISO1987];
+	optional ISOver ISOVersion = 2 [default = ISO1987];
 
 	enum MsgClass
 	{
@@ -25,7 +27,7 @@ message isomessage
 		ISORESERVED = 9;
 	}
 
-	required MsgClass MessageClass = 2;
+	required MsgClass MessageClass = 3;
 
 	enum MsgFunction
 	{
@@ -38,7 +40,7 @@ message isomessage
 		NACK = 9;
 	}
 
-	required MsgFunction MessageFunction = 3;
+	required MsgFunction MessageFunction = 4;
 
 	enum MsgOrigin
 	{
@@ -50,9 +52,9 @@ message isomessage
 		OTHREPEAT = 5;
 	}
 
-	optional MsgOrigin MessageOrigin = 4 [default = ACQUIRER];
+	optional MsgOrigin MessageOrigin = 5 [default = ACQUIRER];
 
-	optional string PAN = 5;
+	optional string PAN = 6;
 
 	enum ProcCode
 	{
@@ -62,5 +64,5 @@ message isomessage
 		ACCNTFUNDING = 10;
 	}
 
-	optional ProcCode ProcessingCode = 6;
+	optional ProcCode ProcessingCode = 7;
 }
