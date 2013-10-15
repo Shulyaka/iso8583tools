@@ -47,7 +47,9 @@ typedef struct fldformat
 
 fldformat *load_format(char*);
 void freeFormat(fldformat*);
+void freeField(field*);
 field *parse_message(char*, unsigned int, fldformat*);
+unsigned int build_message(char*, unsigned int, field*, fldformat*);
 unsigned int get_field_length(char*, unsigned int, fldformat*);
 void print_message(field*, fldformat*);
 #endif

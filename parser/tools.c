@@ -4,10 +4,6 @@
 
 #include "parser.h"
 
-void freeField(field*);
-void print_message(field*, fldformat*);
-
-
 void print_message(field *fld, fldformat *frm)
 {
 	unsigned int i,j;

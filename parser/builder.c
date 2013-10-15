@@ -4,16 +4,13 @@
 
 #include "parser.h"
 
-unsigned int build_message(char*, unsigned int, field*, fldformat*);
+//unsigned int build_message(char*, unsigned int, field*, fldformat*);
 unsigned int build_field(char*, unsigned int, field*, fldformat*);
-void freeField(field*);
 unsigned int build_ebcdic(char*, char*, unsigned int);
 unsigned int build_hex(char*, char*, unsigned int);
 unsigned int build_bcd(char*, char*, unsigned int);
 unsigned int build_isobitmap(char*, unsigned int, field*, fldformat*, unsigned int);
 unsigned int build_bitmap(char*, unsigned int, field*, fldformat*, unsigned int);
-void print_message(field*, fldformat*);
-unsigned int get_length(field*, fldformat*);
 
 
 unsigned int build_message(char *buf, unsigned int maxlength, field *fld, fldformat *frm)
@@ -140,7 +137,7 @@ unsigned int get_length(field *fld, fldformat *frm)
 					if(strlen(fld->fld[i]->tag)<2)
 						return 0;
 
-					if((((fld->fld[i]->tag[0])-'0')*0x10+((fld->fld[i]->tag[1])-'0'))&0x1F==0x1F)
+					if(((((fld->fld[i]->tag[0])-'0')*0x10+((fld->fld[i]->tag[1])-'0'))&0x1F)==0x1F)
 						taglength=2;
 					else
 						taglength=1;
@@ -375,7 +372,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 					if(sflen<2)
 						return 0;
 
-					if((((fld->fld[i]->tag[0])-'0')*0x10+((fld->fld[i]->tag[1])-'0'))&0x1F==0x1F)
+					if(((((fld->fld[i]->tag[0])-'0')*0x10+((fld->fld[i]->tag[1])-'0'))&0x1F)==0x1F)
 						taglength=2;
 					else
 						taglength=1;

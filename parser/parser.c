@@ -4,14 +4,10 @@
 
 #include "parser.h"
 
-//field *parse_message(unsigned char*, unsigned int, fldformat*);
 unsigned int parse_field(char*, unsigned int, field*, fldformat*);
-void freeField(field*);
 void parse_ebcdic(char*, char*, unsigned int);
 int parse_hex(char*, char*, unsigned int);
 int parse_bcd(char*, char*, unsigned int);
-//unsigned int build_message(unsigned char*, unsigned int, field*, fldformat*);
-//unsigned int get_length(field*, fldformat*);
 
 field *parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 {
@@ -84,7 +80,7 @@ unsigned int get_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 			break;
 
 		case FRM_EMVL:
-			if(buf[0]>127)
+			if((unsigned char)buf[0]>127)
 			{
 				lenlen=2;
 				if(lenlen > maxlength)
@@ -200,6 +196,14 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 
 	lenlen=frm->lengthLength;
 
+	if(frm->lengthFormat==FRM_EMVL)
+	{
+		if((unsigned char)buf[0]>127)
+			lenlen=2;
+		else
+			lenlen=1;
+	}
+
 	if(frm->dataFormat!=FRM_ISOBITMAP)
 	{
 		fld->length=get_field_length(buf, maxlength, frm);
@@ -257,7 +261,6 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 				if(pos==fld->length+lenlen)
 				{
 					//printf("Warning: Some subfields are missing or canceled by bitmap for '%s'\n", frm->description);
-					//fld->fields=i+1;
 					break;
 				}
 
@@ -349,12 +352,12 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 
 				if(frm->dataFormat==FRM_TLVEMV)
 				{
-					if(buf[pos]&0x1F==0x1F)
+					if((buf[pos]&0x1F)==0x1F)
 						taglength=2;
 					else
 						taglength=1;
 				}
-			
+
 				if(pos+taglength>maxlength)
 				{
 					printf("Error: Not enough length for TLV tag\n");
@@ -381,6 +384,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 						memcpy(fld->fld[i]->tag, buf+pos, taglength);
 						fld->fld[i]->tag[taglength]='\0';
 				}
+				//printf("Tag=(%d)'%s'\n", taglength, fld->fld[i]->tag);
 
 				pos+=taglength;
 
@@ -534,8 +538,8 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 			return 0;
 	}
 
-	if(fld->data && frm->dataFormat!=FRM_SUBFIELDS)
-		printf("%s \t[%d] [%s]\n", frm->description, fld->length, fld->data);
+//	if(fld->data && frm->dataFormat!=FRM_SUBFIELDS)
+//		printf("%s \t[%d] [%s]\n", frm->description, fld->length, fld->data);
 
 	return lenlen+ilength;
 }
