@@ -134,13 +134,10 @@ unsigned int get_length(field *fld, fldformat *frm)
 
 				if(frm->dataFormat==FRM_TLVEMV)
 				{
-					if(strlen(fld->fld[i]->tag)<2)
+					if(strlen(fld->fld[i]->tag)!=2 && strlen(fld->fld[i]->tag)!=4)
 						return 0;
 
-					if(((((fld->fld[i]->tag[0])-'0')*0x10+((fld->fld[i]->tag[1])-'0'))&0x1F)==0x1F)
-						taglength=2;
-					else
-						taglength=1;
+					taglength=strlen(fld->fld[i]->tag)/2;
 				}
 			
 				pos+=taglength;
@@ -369,13 +366,10 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 
 				if(frm->dataFormat==FRM_TLVEMV)
 				{
-					if(sflen<2)
+					if(sflen!=2 && sflen!=4)
 						return 0;
 
-					if(((((fld->fld[i]->tag[0])-'0')*0x10+((fld->fld[i]->tag[1])-'0'))&0x1F)==0x1F)
-						taglength=2;
-					else
-						taglength=1;
+					taglength=sflen/2;
 				}
 
 				if(pos+taglength>maxlength)
