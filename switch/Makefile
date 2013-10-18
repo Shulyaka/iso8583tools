@@ -1,16 +1,10 @@
-all: isomessage.pb.o switch_loadbalancer
+all: switch
 
 clean:
-		rm -rf *.o isomessage.pb.cc isomessage.pb.h switch_loadbalancer
+		rm -rf *.o switch
 
-isomessage.pb.o: isomessage.pb.cc
-		g++ -c isomessage.pb.cc
+switch: switch.o ../lib/isomessage.pb.o
+		g++ switch.o ../lib/isomessage.pb.o -l protobuf -o switch
 
-isomessage.pb.cc: isomessage.proto
-		protoc --cpp_out=. isomessage.proto
-
-switch_loadbalancer: switch_loadbalancer.o isomessage.pb.o
-		g++ switch_loadbalancer.o isomessage.pb.o -l protobuf -o switch_loadbalancer
-
-switch_loadbalancer.o: switch_loadbalancer.c
-		g++ -c switch_loadbalancer.c
+switch.o: switch.c
+		g++ -c switch.c

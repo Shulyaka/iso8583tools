@@ -54,7 +54,7 @@ int convertNetMsg(isomessage *visamsg, field *message)
 		return 1;
 	}
 
-	visamsg->set_sourceinterface("VISA");
+	visamsg->set_sourceinterface("visa");
 
 	if(!message->fld[1]->fld[0])
 	{

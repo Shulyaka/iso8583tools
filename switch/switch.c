@@ -4,11 +4,11 @@
 #include <errno.h>
 #include <unistd.h>
 #include <poll.h>
-#include "isomessage.pb.h"
+#include "../lib/isomessage.pb.h"
 
 int main(void)
 {
-	struct sockaddr_un addr;
+	struct sockaddr_un addr={AF_UNIX, "/home/denis/ipc/switch"};
 	struct pollfd sfd[1];
 	isomessage inmsg;
 
@@ -24,10 +24,6 @@ int main(void)
 		printf("Error: Unable to create a socket: %s\n", strerror(errno));
 		return -1;
 	}
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sun_family=AF_UNIX;
-	strncpy(addr.sun_path, "/home/denis/switch", sizeof(addr.sun_path) - 1);
 
 	unlink(addr.sun_path);
 
