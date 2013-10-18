@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <errno.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include "../parser/parser.h"
 #include "net.h"
 #include "tcp.h"
@@ -13,12 +13,13 @@ int main(void)
 	int i;
 	int swfd;
 
+	char buf[1000];
+
 	const unsigned int naptime=10000; //microseconds, must be less than a second
 	const unsigned int tcptimeout=500; //seconds
 
 	unsigned int timeoutcnt;
 
-	char buf[1000];
 	int size;
 
 	field *pmessage;
@@ -48,7 +49,7 @@ int main(void)
 		return 1;
 	}
 
-	swfd=ipcinit();
+	swfd=ipcopen((char *)"visa");
 
 	if(swfd==-1)
 	{
@@ -119,19 +120,11 @@ int main(void)
 			printf("Converted message:\n");
 			smessage.PrintDebugString();
 
-			size=smessage.ByteSize();
-			if(size>sizeof(buf))
-			{      
-				printf("Error: Message is too big (%d bytes)\n", size);
-				freeField(pmessage);
-				continue;
-			}      
+			size=ipcsendmsg(swfd, &smessage, (char *)"switch");
 
-			smessage.SerializeWithCachedSizesToArray((google::protobuf::uint8*)buf);
-
-			if(ipcsend(swfd, buf, size)!=0)
+			if(size<=0)
 			{
-				printf("Error: Unable to send the message to Switch\n");
+				printf("Error: Unable to send the message to switch\n");
 				freeField(pmessage);
 				continue;
 			}
@@ -142,8 +135,8 @@ int main(void)
 		printf("Disconnected.\n");
 	}
 
-	close(sct);
-	close(swfd);
+	tcpclose(sct);
+	ipcclose(swfd);
 	freeFormat(frm);
 	google::protobuf::ShutdownProtobufLibrary();
 	

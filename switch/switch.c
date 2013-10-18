@@ -2,13 +2,13 @@
 #include <sys/un.h>
 #include <stdio.h>
 #include <errno.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <poll.h>
 #include "../lib/isomessage.pb.h"
+#include "../lib/ipc.h"
 
 int main(void)
 {
-	struct sockaddr_un addr={AF_UNIX, "/home/denis/ipc/switch"};
 	struct pollfd sfd[1];
 	isomessage inmsg;
 
@@ -17,20 +17,11 @@ int main(void)
 
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-	sfd[0].fd=socket(AF_UNIX, SOCK_DGRAM, 0);
+	sfd[0].fd=ipcopen((char*)"switch");
 
 	if(sfd[0].fd==-1)
 	{
-		printf("Error: Unable to create a socket: %s\n", strerror(errno));
-		return -1;
-	}
-
-	unlink(addr.sun_path);
-
-	if(bind(sfd[0].fd, (struct sockaddr*)&addr, sizeof(struct sockaddr_un)))
-	{
-		printf("Error: Unable to bind a socket: %s\n", strerror(errno));
-		close(sfd[0].fd);
+		printf("Error: Unable to init IPC\n");
 		return -1;
 	}
 
@@ -48,34 +39,21 @@ int main(void)
 
 		printf("recieving message\n");
 
-		size=recv(sfd[0].fd, buf, sizeof(buf), 0);
+		size=ipcrecvmsg(sfd[0].fd, &inmsg);
 		
-		if(size==-1)
-		{
-			printf("Error: recv: %s\n", strerror(errno));
-			break;
-		}
-
-		if(size==0)
-		{
-			printf("Warning: Client disconnected\n");
+		if(size<=0)
 			continue;
-		}
 
 		printf("Size is %d\n", size);
 
-		if(!inmsg.ParseFromArray(buf, size))
-		{
-			printf("Warning: Unable to parse the message\n");
-			continue;
-		}
-
 		printf("\nIncommingMessage:\n");
 		inmsg.PrintDebugString();
+
+		//processMessage(&inmsg);
 		
 	}
 
-	close(sfd[0].fd);
+	ipcclose(sfd[0].fd);
 
 	google::protobuf::ShutdownProtobufLibrary();
 

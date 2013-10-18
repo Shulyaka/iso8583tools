@@ -165,3 +165,7 @@ int tcpreceive(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 	return frm->lengthLength + length;
 }
 
+int tcpclose(int sfd)
+{
+	return close(sfd);
+}
