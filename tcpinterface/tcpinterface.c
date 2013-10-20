@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <errno.h>
+#include <poll.h>
 //#include <unistd.h>
 #include "../parser/parser.h"
 #include "net.h"
@@ -8,17 +9,12 @@
 
 int main(void)
 {
-	int sct;
-	int sfd;
 	int i;
-	int swfd;
 
-	char buf[1000];
+	struct pollfd sfd[3];
+	const struct timespec timeout={500,0}; //connection timeout in seconds
 
-	const unsigned int naptime=10000; //microseconds, must be less than a second
-	const unsigned int tcptimeout=500; //seconds
-
-	unsigned int timeoutcnt;
+	char buf[10000];
 
 	int size;
 
@@ -40,103 +36,128 @@ int main(void)
 
 	printf("Message format loaded\n");
 
-	sct=tcpinit();
+	sfd[2].fd=tcpinit();
 
-	if(sct==-1)
+	if(sfd[2].fd==-1)
 	{
 		printf("Error: Unable to start TCP connection\n");
 		freeFormat(frm);
 		return 1;
 	}
 
-	swfd=ipcopen((char *)"visa");
+	sfd[0].fd=ipcopen((char *)"visa");
 
-	if(swfd==-1)
+	if(sfd[0].fd==-1)
 	{
 		printf("Error: Unable to connect to switch\n");
-		close(sct);
+		close(sfd[2].fd);
 		freeFormat(frm);
 		return 1;
 	}
 
+	sfd[0].events=POLLIN;
+	sfd[1].events=POLLIN;
+
 	while (1)
 	{
 		printf("Waiting for a connection...\n");
-		sfd=tcpconnect(sct);
-		printf("Connected.\n");
 
-		timeoutcnt=tcptimeout*(1000000/naptime);
+		sfd[1].fd=tcpconnect(sfd[2].fd);
+		printf("Connected.\n");
 
 		while (1)
 		{
-			i=tcpreceive(sfd, buf, sizeof(buf), frm);
+			printf("Waiting for a message...\n");
 
-			if(i==-2)
+			i=ppoll(sfd, 2, &timeout, NULL);
+
+			if(i==-1)
 			{
-				printf("Error: Unable to receive a net message: Connection closed by the remote host\n");
-				close(sfd);
-				break;
-			}
-			else if(i==-3)
-			{
-				printf("Error: Unable to receive a net message: %s\nClosing connection\n", strerror(errno));
-				close(sfd);
-				break;
-			}
-			else if(i==0)
-			{
-				if(timeoutcnt--==0)
+				printf("Error: poll (%hd, %hd): %s\n", sfd[0].revents, sfd[1].revents, strerror(errno));
+				if(sfd[1].revents)
 				{
-					printf("Error: Connection is inactive, closing it\n");
-					close(sfd);
+					tcpclose(sfd[1].fd);
 					break;
 				}
-
-				usleep(10000);
-				continue;
-			}
-			else if(i==-1)
-				printf("Warning: a corrupted message received\n");
-			
-			pmessage=parseNetMsg(buf, i, frm);
-
-			if(!pmessage)
-			{
-				printf("Error: Unable to parse the message\n");
-				continue;
+				else
+					continue;
 			}
 
-			print_message(pmessage, frm);
-
-			smessage.Clear();
-
-			if(convertNetMsg(&smessage, pmessage)!=0)
+			if(i==0)
 			{
-				printf("Error: Unable to translate the message to format-independent representation.\n");
+				printf("Error: Connection is inactive, closing it\n");
+				close(sfd[1].fd);
+				break;
+			}
+
+			if(sfd[1].revents & POLLIN)
+			{
+				printf("Receiving message from net\n");
+
+				pmessage=tcprecvmsg(sfd[1].fd, frm);
+
+				if(!pmessage)
+				{
+					if(errno)
+					{
+						printf("Closing connection\n");
+						close(sfd[1].fd);
+						break;
+					}
+					else
+						continue;
+				}
+
+				print_message(pmessage, frm);
+
+				if(translateNetToSwitch(&smessage, pmessage)!=0)
+				{
+					printf("Error: Unable to translate the message to format-independent representation.\n");
+					freeField(pmessage);
+					continue;
+				}
+
 				freeField(pmessage);
-				continue;
+
+				printf("Converted message:\n");
+				smessage.PrintDebugString();
+
+				size=ipcsendmsg(sfd[0].fd, &smessage, (char *)"switch");
+
+				if(size<=0)
+				{
+					printf("Error: Unable to send the message to switch\n");
+					continue;
+				}
+
+				printf("Message sent, size is %d bytes.\n", size);
 			}
 
-			printf("Converted message:\n");
-			smessage.PrintDebugString();
-
-			size=ipcsendmsg(swfd, &smessage, (char *)"switch");
-
-			if(size<=0)
+			if(sfd[0].revents & POLLIN)
 			{
-				printf("Error: Unable to send the message to switch\n");
-				freeField(pmessage);
-				continue;
-			}
+				printf("Receiving message from switch\n");
 
-			printf("Message sent, size is %d bytes.\n", size);
+				if(ipcrecvmsg(sfd[0].fd, &smessage)<0)
+					continue;
+
+				printf("\nOutgoingMessage:\n");
+		                smessage.PrintDebugString();
+
+//				if(translateSwitchToNet(&smessage, pmessage)!=0)
+//				{
+//					printf("Error: Unable to translate the message from format-independent representation.\n");
+//					continue;
+//				}
+
+
+			}
 
 		}
 		printf("Disconnected.\n");
 	}
 
-	tcpclose(sct);
-	ipcclose(swfd);
+	tcpclose(sfd[2].fd);
+	ipcclose(sfd[0].fd);
 	freeFormat(frm);
 	google::protobuf::ShutdownProtobufLibrary();
 	

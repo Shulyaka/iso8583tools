@@ -33,7 +33,7 @@ field* parseNetMsg(char *buf, unsigned int length, fldformat *frm)
 	return message;
 }
 
-int convertNetMsg(isomessage *mastmsg, field *message)
+int translateNetToSwitch(isomessage *mastmsg, field *message)
 {
 
 	if(!message)
@@ -47,6 +47,8 @@ int convertNetMsg(isomessage *mastmsg, field *message)
 		printf("Error: no mastmsg\n");
 		return 1;
 	}
+
+	mastmsg->Clear();
 
 	mastmsg->set_isoversion(isomessage::ISO1987);
 

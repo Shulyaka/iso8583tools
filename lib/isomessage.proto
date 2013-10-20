@@ -65,4 +65,6 @@ message isomessage
 	}
 
 	optional ProcCode ProcessingCode = 7;
+
+	optional uint32 ResponseCode = 8;
 }

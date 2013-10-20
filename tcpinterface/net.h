@@ -2,6 +2,6 @@
 #include "../lib/isomessage.pb.h"
 
 field* parseNetMsg(char*, unsigned int, fldformat*);
-int convertNetMsg(isomessage*, field*);
+int translateNetToSwitch(isomessage*, field*);
 fldformat* loadNetFormat(void);
 

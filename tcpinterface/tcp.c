@@ -6,7 +6,6 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
-#include "../parser/parser.h"
 #include "net.h"
 #include "tcp.h"
 
@@ -56,17 +55,17 @@ int tcpconnect(int sct) //blocking
 {
 	int sfd;
 	sfd=accept(sct, NULL, NULL);
-	fcntl(sfd, F_SETFL, O_NONBLOCK);
+//	fcntl(sfd, F_SETFL, O_NONBLOCK);
 	return sfd;
 }
 
 //returns:
-//0: No data to receive
+//0: No data to receive or partial message received
 //-1: Corrupted message
 //-2: Connection is broken
 //-3: Other error (see errno)
 //>0: Valid message received
-int tcpreceive(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
+int tcprecv(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 {
 	int i;
 	static unsigned int numread=0;
@@ -169,3 +168,45 @@ int tcpclose(int sfd)
 {
 	return close(sfd);
 }
+
+
+//returns:
+//NULL, errno is set: TCP error
+//NULL, errno is not set: Message error
+//Otherwise, the message pointer is returned
+field *tcprecvmsg(int sfd, fldformat *frm)
+{
+	int size;
+	char buf[10000];
+	int preverrno;
+
+	errno=0;
+
+	size=tcprecv(sfd, buf, sizeof(buf), frm);
+
+	if(size==-2)
+	{
+		printf("Error: Unable to receive a net message: Connection closed by the remote host\n");
+		errno=EBADF;
+		return NULL;
+	} 
+	else if(size==-3)
+	{
+		preverrno=errno;
+		printf("Error: Unable to receive a net message: %s\n", strerror(errno));
+		errno=preverrno;
+		return NULL;
+	}
+	else if(size==-1)
+	{
+		printf("Error: a corrupted message received\n");
+		return NULL;
+	}
+	else if(size==0)
+	{
+		return NULL;
+	}
+
+	return parseNetMsg(buf, size, frm);
+}
+

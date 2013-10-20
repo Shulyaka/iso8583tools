@@ -30,10 +30,13 @@ field* parseNetMsg(char *buf, unsigned int length, fldformat *frm)
 
 	message=parse_message(buf, length, frm);   //TODO: For Visa, parse header (frm->fld[0]) and message(frm->fld[1]) separately to handle reject header properly.
 
+	if(!message)
+		printf("Error: Unable to parse\n");
+
 	return message;
 }
 
-int convertNetMsg(isomessage *visamsg, field *message)
+int translateNetToSwitch(isomessage *visamsg, field *message)
 {
 
 	if(!message)
@@ -53,6 +56,8 @@ int convertNetMsg(isomessage *visamsg, field *message)
 		printf("Error: No message body found\n");
 		return 1;
 	}
+
+	visamsg->Clear();
 
 	visamsg->set_sourceinterface("visa");
 

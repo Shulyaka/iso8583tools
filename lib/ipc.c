@@ -40,7 +40,7 @@ int ipcopen(char *myname)
 	return sfd;
 }
 
-int ipcsend(int sfd, char *buf, int size, char *dest)
+int ipcsend(int sfd, char *buf, int size, const char *dest)
 {
 	static struct sockaddr_un addr = {AF_UNIX, IPCDIR};
 
@@ -83,7 +83,7 @@ int ipcclose(int sfd)
 }
 
 
-int ipcsendmsg(int sfd, isomessage *message, char *dest)
+int ipcsendmsg(int sfd, isomessage *message, const char *dest)
 {
 	static char buf[1000];
 	int size;

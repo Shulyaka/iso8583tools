@@ -7,6 +7,8 @@
 #include "../lib/isomessage.pb.h"
 #include "../lib/ipc.h"
 
+#include "request.h"
+
 int main(void)
 {
 	struct pollfd sfd[1];
@@ -31,7 +33,7 @@ int main(void)
 	{
 		printf("Waiting for a message...\n");
 
-		if(poll(sfd, 1, -1)==-1)
+		if(ppoll(sfd, 1, NULL, NULL)==-1)
 		{
 			printf("Error: poll: %s\n", strerror(errno));
 			break;
@@ -49,7 +51,7 @@ int main(void)
 		printf("\nIncommingMessage:\n");
 		inmsg.PrintDebugString();
 
-		//processMessage(&inmsg);
+		handleRequest(&inmsg, sfd[0].fd);
 		
 	}
 
