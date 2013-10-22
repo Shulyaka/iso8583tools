@@ -7,14 +7,13 @@
 #include "tcp.h"
 #include "../lib/ipc.h"
 
+//int isRequest(isomessage*);
+int declineMsg(isomessage*);
+
 int main(void)
 {
-	int i;
-
 	struct pollfd sfd[3];
 	const struct timespec timeout={500,0}; //connection timeout in seconds
-
-	char buf[10000];
 
 	int size;
 
@@ -69,24 +68,24 @@ int main(void)
 		{
 			printf("Waiting for a message...\n");
 
-			i=ppoll(sfd, 2, &timeout, NULL);
+			size=ppoll(sfd, 2, &timeout, NULL);
 
-			if(i==-1)
+			printf("poll: %d: %hd, %hd\n", size, sfd[0].revents, sfd[1].revents);
+
+			if(size==-1)
 			{
 				printf("Error: poll (%hd, %hd): %s\n", sfd[0].revents, sfd[1].revents, strerror(errno));
 				if(sfd[1].revents)
-				{
-					tcpclose(sfd[1].fd);
 					break;
-				}
 				else
+				{
+					usleep(100000);
 					continue;
+				}
 			}
-
-			if(i==0)
+			else if(size==0)
 			{
-				printf("Error: Connection is inactive, closing it\n");
-				close(sfd[1].fd);
+				printf("Error: Connection is inactive, closing it %s, %ld, %ld\n", strerror(errno), timeout.tv_sec, timeout. tv_nsec);
 				break;
 			}
 
@@ -94,30 +93,87 @@ int main(void)
 			{
 				printf("Receiving message from net\n");
 
-				pmessage=tcprecvmsg(sfd[1].fd, frm);
+				size=tcprecvmsg(sfd[1].fd, &pmessage, frm);
 
-				if(!pmessage)
+				if(size==-1)
 				{
-					if(errno)
-					{
-						printf("Closing connection\n");
-						close(sfd[1].fd);
-						break;
-					}
-					else
-						continue;
+					printf("Closing connection\n");
+					break;
 				}
+				else if(size==0)
+					continue;
 
 				print_message(pmessage, frm);
 
-				if(translateNetToSwitch(&smessage, pmessage)!=0)
+				if(isNetMgmt(pmessage))
 				{
-					printf("Error: Unable to translate the message to format-independent representation.\n");
+					if(isNetRequest(pmessage))
+					{
+						if(!processNetMgmt(pmessage, frm))
+						{
+							printf("Error: Unable to process Network Management request. Message dropped.\n");
+							freeField(pmessage);
+							continue;
+						}
+
+						print_message(pmessage, frm);
+
+						size=tcpsendmsg(sfd[1].fd, pmessage, frm);
+
+						if(size==-1)
+						{
+							printf("Closing connection\n");
+							freeField(pmessage);
+							break;
+						}
+						else if(size==0)
+						{
+							freeField(pmessage);
+							continue;
+						}
+
+						printf("Network Management Message sent (%d bytes)\n", size);
+					}
+
 					freeField(pmessage);
 					continue;
 				}
 
-				freeField(pmessage);
+				if(translateNetToSwitch(&smessage, pmessage)!=0)
+				{
+					printf("Error: Unable to translate the message to format-independent representation.\n");
+
+					if(isNetRequest(pmessage))
+					{
+						if(!declineNetMsg(pmessage, frm))
+						{
+							printf("Error: Unable to decline the request. Message dropped.\n");
+							freeField(pmessage);
+							continue;
+						}
+
+						print_message(pmessage, frm);
+
+						size=tcpsendmsg(sfd[1].fd, pmessage, frm);
+
+						if(size==-1)
+						{
+							printf("Closing connection\n");
+							freeField(pmessage);
+							break;
+						}
+						else if(size==0)
+						{
+							freeField(pmessage);
+							continue;
+						}
+
+						printf("Decline message sent (%d bytes)\n", size);
+					}
+
+					freeField(pmessage);
+					continue;
+				}
 
 				printf("Converted message:\n");
 				smessage.PrintDebugString();
@@ -127,8 +183,40 @@ int main(void)
 				if(size<=0)
 				{
 					printf("Error: Unable to send the message to switch\n");
+
+					if(isNetRequest(pmessage))
+					{
+						if(!declineNetMsg(pmessage, frm))
+						{
+							printf("Error: Unable to decline the request. Message dropped.\n");
+							freeField(pmessage);
+							continue;
+						}
+
+						print_message(pmessage, frm);
+
+						size=tcpsendmsg(sfd[1].fd, pmessage, frm);
+
+						if(size==-1)
+						{
+							printf("Closing connection\n");
+							freeField(pmessage);
+							break;
+						}
+						else if(size==0)
+						{
+							freeField(pmessage);
+							continue;
+						}
+
+						printf("Decline message sent (%d bytes)\n", size);
+					}
+
+					freeField(pmessage);
 					continue;
 				}
+
+				freeField(pmessage);
 
 				printf("Message sent, size is %d bytes.\n", size);
 			}
@@ -143,16 +231,107 @@ int main(void)
 				printf("\nOutgoingMessage:\n");
 		                smessage.PrintDebugString();
 
-//				if(translateSwitchToNet(&smessage, pmessage)!=0)
-//				{
-//					printf("Error: Unable to translate the message from format-independent representation.\n");
-//					continue;
-//				}
+				pmessage=translateSwitchToNet(&smessage, frm);
 
+				if(!pmessage)
+				{
+					printf("Error: Unable to translate the message from format-independent representation.\n");
 
+					if(isRequest(&smessage))
+					{
+						if(!declineMsg(&smessage))
+						{
+							printf("Error: Unable to decline the request. Message dropped.\n");
+							continue;
+						}
+
+						smessage.PrintDebugString();
+
+						size=ipcsendmsg(sfd[0].fd, &smessage, (char *)"switch");
+
+						if(size<=0)
+						{
+							printf("Error: Unable to return the declined message to switch. Message dropped.\n");
+							continue;
+						}
+
+						printf("Decline message sent (%d bytes)\n", size);
+
+					}
+					continue;
+				}
+
+				print_message(pmessage, frm);
+
+				size=tcpsendmsg(sfd[1].fd, pmessage, frm);
+
+				if(size==-1)
+				{
+					printf("Closing connection\n");
+
+					if(isRequest(&smessage))
+					{
+						if(!declineMsg(&smessage))
+						{
+							printf("Error: Unable to decline the request. Message dropped.\n");
+							freeField(pmessage);
+							continue;
+						}
+
+						smessage.PrintDebugString();
+
+						size=ipcsendmsg(sfd[0].fd, &smessage, (char *)"switch");
+
+						if(size<=0)
+						{
+							printf("Error: Unable to return the declined message to switch. Message dropped.\n");
+							freeField(pmessage);
+							continue;
+						}
+
+						printf("Decline message sent (%d bytes)\n", size);
+
+					}
+					freeField(pmessage);
+					break;
+				}
+				else if(size==0)
+				{
+					if(isRequest(&smessage))
+					{
+						if(!declineMsg(&smessage))
+						{
+							printf("Error: Unable to decline the request. Message dropped.\n");
+							freeField(pmessage);
+							continue;
+						}
+
+						smessage.PrintDebugString();
+
+						size=ipcsendmsg(sfd[0].fd, &smessage, (char *)"switch");
+
+						if(size<=0)
+						{
+							printf("Error: Unable to return the declined message to switch. Message dropped.\n");
+							freeField(pmessage);
+							continue;
+						}
+
+						printf("Decline message sent (%d bytes)\n", size);
+					}
+					freeField(pmessage);
+					continue;
+				}
+
+				freeField(pmessage);
+
+				printf("Message sent (%d bytes)\n", size);
 			}
 
 		}
+
+		tcpclose(sfd[1].fd);
+
 		printf("Disconnected.\n");
 	}
 
@@ -164,3 +343,34 @@ int main(void)
 	return 0;
 }
 
+int isRequest(isomessage *message)
+{
+	switch(message->messagefunction())
+	{
+		case isomessage::REQUEST:
+			return 1;
+		case isomessage::ADVICE:
+			return 1;
+		default:
+			return 0;
+	}
+}
+
+int declineMsg(isomessage *message)
+{
+	switch(message->messagefunction())
+	{
+		case isomessage::REQUEST:
+			message->set_messagefunction(isomessage::REQUESTRESP);
+			break;
+		case isomessage::ADVICE:
+			message->set_messagefunction(isomessage::ADVICERESP);
+			break;
+		default:
+			return 1;
+	}
+
+	message->set_responsecode(96);
+
+	return 0;
+}

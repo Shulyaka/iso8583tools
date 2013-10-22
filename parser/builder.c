@@ -12,7 +12,6 @@ unsigned int build_bcd(char*, char*, unsigned int);
 unsigned int build_isobitmap(char*, unsigned int, field*, fldformat*, unsigned int);
 unsigned int build_bitmap(char*, unsigned int, field*, fldformat*, unsigned int);
 
-
 unsigned int build_message(char *buf, unsigned int maxlength, field *fld, fldformat *frm)
 {
 	return build_field(buf, maxlength, fld, frm);
@@ -56,7 +55,7 @@ unsigned int get_length(field *fld, fldformat *frm)
 	{
 		case FRM_SUBFIELDS:
 			pos=lenlen;
-			for(i=0; i < frm->fields; i++)
+			for(i=0; i < fld->fields; i++)
 			{
 				if(pos==frm->maxLength+lenlen)
 					break;
@@ -67,7 +66,10 @@ unsigned int get_length(field *fld, fldformat *frm)
 				if(fld->fld[i] && !frm->fld[i])
 					return 0;
 
-				if(fld->fld[i] && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
+				if(!frm->fld[i])
+					continue;
+
+				if((fld->fld[i] || frm->fld[i]->dataFormat==FRM_ISOBITMAP || frm->fld[i]->dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
 				{
 					if(frm->fld[i]->dataFormat==FRM_ISOBITMAP)
 					{
@@ -79,6 +81,8 @@ unsigned int get_length(field *fld, fldformat *frm)
 						bitmap_found=i;
 						sflen=(frm->fld[i]->maxLength+7)/8;
 					}
+					else if(is_empty(fld->fld[i], frm->fld[i]))
+						continue;
 					else
 						sflen=get_length(fld->fld[i], frm->fld[i]);
 					
@@ -132,6 +136,9 @@ unsigned int get_length(field *fld, fldformat *frm)
 				if(!fld->fld[i]->tag)
 					return 0;
 
+				if(is_empty(fld->fld[i], frm->fld[0]))
+					continue;
+
 				if(frm->dataFormat==FRM_TLVEMV)
 				{
 					if(strlen(fld->fld[i]->tag)!=2 && strlen(fld->fld[i]->tag)!=4)
@@ -159,13 +166,16 @@ unsigned int get_length(field *fld, fldformat *frm)
 			else
 				taglength=2;
 
-			for(i=0; i<frm->maxFields; i++)
+			for(i=0; i<frm->fields; i++)
 			{
 				if(!fld->fld[i])
-					break;
+					continue;
 
-				if(frm->fld[i])
+				if(!frm->fld[i])
 					return 0;
+
+				if(is_empty(fld->fld[i], frm->fld[i]))
+					continue;
 
 				pos+=taglength;
 				
@@ -204,6 +214,8 @@ unsigned int get_length(field *fld, fldformat *frm)
 			return 0;
 	}
 
+	//printf("get_length: %s length %d\n", frm->description, lenlen+blength);
+
 	return lenlen+blength;
 }
 
@@ -236,12 +248,12 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 		return 0;
 	}
 
-	printf("Building %s\n", frm->description);
+//	printf("Building %s\n", frm->description);
 
 	if(fld->data)
 		flength=strlen(fld->data);
-	else if(frm->lengthFormat==FRM_FIXED)
-		flength=frm->maxLength;
+//	else if(frm->lengthFormat==FRM_FIXED)
+//		flength=frm->maxLength;
 
 	if(frm->lengthFormat==FRM_EMVL)
 		if(frm->dataFormat==FRM_BCD || frm->dataFormat==FRM_HEX)
@@ -255,7 +267,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 	{
 		case FRM_SUBFIELDS:
 			pos=lenlen;
-			for(i=0; i < frm->fields; i++)
+			for(i=0; i < fld->fields; i++)
 			{
 				if(pos==frm->maxLength+lenlen)
 					break;
@@ -269,7 +281,10 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 					return 0;
 				}
 
-				if(fld->fld[i] && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
+				if(!frm->fld[i])
+					continue;
+
+				if((fld->fld[i] || frm->fld[i]->dataFormat==FRM_ISOBITMAP || frm->fld[i]->dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
 				{
 					if(pos>maxlength)
 						return 0;
@@ -283,6 +298,11 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 					{
 						bitmap_found=i;
 						sflen=build_bitmap(buf+pos, maxlength-pos, fld, frm, i);
+					}
+					else if(is_empty(fld->fld[i], frm->fld[i]))
+					{
+						printf("Warning: No subfields for subfield %d\n", i);
+						continue;
 					}
 					else
 						sflen=build_field(buf+pos, maxlength-pos, fld->fld[i], frm->fld[i]);
@@ -362,6 +382,9 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 					return 0;
 				}
 
+				if(is_empty(fld->fld[i], frm->fld[0]))
+					continue;
+
 				sflen=strlen(fld->fld[i]->tag);
 
 				if(frm->dataFormat==FRM_TLVEMV)
@@ -426,7 +449,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 			else
 				taglength=2;
 
-			for(i=0; i<frm->maxFields && pos<maxlength; i++)
+			for(i=0; i<frm->fields && pos<maxlength; i++)
 			{
 				if(!fld->fld[i])
 					continue;
@@ -442,6 +465,9 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 					printf("Error: Not enough length for TLV tag\n");
 					return 0;
 				}
+
+				if(is_empty(fld->fld[i], frm->fld[i]))
+					continue;
 
 				switch(frm->tagFormat)
 				{
@@ -545,7 +571,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 		case FRM_BITMAP:
 		case FRM_BITSTR:
 			blength=(flength+7)/8;
-			mlength=blength;
+			mlength=flength;
 
 			if(lenlen+blength>maxlength)
 				return 0;
@@ -605,6 +631,11 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 	switch(frm->lengthFormat)
 	{
 		case FRM_FIXED:
+			if(frm->maxLength != mlength)
+			{
+				printf("Error: Bad length for fixed-length field! %d != %d for %s\n", mlength, frm->maxLength, frm->description);
+				return 0;
+			}
 			break;
 
 		case FRM_BIN:
@@ -677,6 +708,8 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld, fldforma
 				return 0;
 			}
 	}
+
+	//printf("build_field: %s , length %d\n", frm->description, lenlen +blength);
 
 	return lenlen+blength;
 }
@@ -796,7 +829,7 @@ unsigned int build_isobitmap(char *buf, unsigned int maxlength, field *fld, fldf
 			buf[i*64]=0x80;
 
 		for(j=1; j<64; j++)
-			if(fld->fld[i*64+j+index])
+			if(fld->fld[i*64+j+index] && !is_empty(fld->fld[i*64+j+index], frm->fld[i*64+j+index]))
 				buf[i*8+j/8]|=1<<(7-j%8);
 	}
 	
@@ -817,8 +850,44 @@ unsigned int build_bitmap(char *buf, unsigned int maxlength, field *fld, fldform
 	memset(buf, '\0', blength);
 
 	for(i=0; i<flength && i<fld->fields-index-1; i++)
-		if(fld->fld[index+1+i])
+		if(fld->fld[index+1+i] && !is_empty(fld->fld[index+1+i], frm->fld[index+1+i]))
 			buf[i/8]|=1<<(7-i%8);
 
 	return blength;
 }
+
+int is_empty(field *fld, fldformat *frm)
+{
+	int i;
+
+	switch(frm->dataFormat)
+	{
+		case FRM_SUBFIELDS:
+		case FRM_BCDSF:
+		case FRM_TLV1:
+		case FRM_TLV2:
+		case FRM_TLV3:
+		case FRM_TLV4:
+		case FRM_TLVEMV:
+		case FRM_TLVDS:
+			break;
+		case FRM_ISOBITMAP:
+		case FRM_BITMAP:
+			return 0;
+		default:
+			if(!fld->data || !fld->data[0])
+				return 1;
+			else
+				return 0;
+	}
+
+	if(!fld->fld)
+		return 1;
+
+	for(i=0; i<frm->fields; i++)
+		if(fld->fld[i] && frm->fld[i]->dataFormat!=FRM_ISOBITMAP && frm->fld[i]->dataFormat!=FRM_BITMAP && !is_empty(fld->fld[i], frm->fld[i]))
+			return 0;
+
+	return 1;
+}
+

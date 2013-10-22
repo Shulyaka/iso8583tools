@@ -167,7 +167,7 @@ unsigned int get_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldformat *frm)
 {
 	unsigned int lenlen=0;
-	unsigned int ilength=0;
+	unsigned int blength=0;
 	char lengthbuf[7];
 	unsigned int i, j;
 	int bitmap_found=-1;
@@ -228,21 +228,21 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 		{
 			case FRM_BITMAP:
 			case FRM_BITSTR:
-				ilength=(fld->length+7)/8;
+				blength=(fld->length+7)/8;
 				break;
 			case FRM_HEX:
 			case FRM_BCDSF:
 				fld->length=fld->length*2;
 			case FRM_BCD:
-				ilength=(fld->length+1)/2;
+				blength=(fld->length+1)/2;
 				break;
 			default:
-				ilength=fld->length;
+				blength=fld->length;
 		}
 
-		if(lenlen + ilength > maxlength)
+		if(lenlen + blength > maxlength)
 		{
-			printf("Error: Field '%s'(%d) is too long %d+%d>%d\n", frm->description, fld->length, lenlen, ilength, maxlength);
+			printf("Error: Field '%s'(%d) is too long %d+%d>%d\n", frm->description, fld->length, lenlen, blength, maxlength);
 			return 0;
 		}
 	}
@@ -290,7 +290,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 				}
 			}
 
-			fld->fields=i+1;
+			fld->fields=i;
 
 			if(pos!=fld->length+lenlen)
 			{
@@ -484,7 +484,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 			{
 				fld->data=(char*)realloc(fld->data, (i+1)*64);
 				fld->length=i*64+63;
-				ilength=i*8+8;
+				blength=i*8+8;
 				if((i+1)*8>maxlength)
 				{
 					printf("Error: Field is too long\n");
@@ -530,7 +530,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 
 		case FRM_EBCDIC:
 			fld->data=(char*)malloc(frm->maxLength+1);
-			parse_ebcdic(buf+lenlen, fld->data, ilength);
+			parse_ebcdic(buf+lenlen, fld->data, blength);
 			break;
 
 		default:
@@ -541,7 +541,64 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 //	if(fld->data && frm->dataFormat!=FRM_SUBFIELDS)
 //		printf("%s \t[%d] [%s]\n", frm->description, fld->length, fld->data);
 
-	return lenlen+ilength;
+	return lenlen+blength;
+}
+
+field* add_field(field *fld, fldformat *frm, unsigned int n)
+{
+	if(!fld)
+	{
+		printf("Error: no parent field\n");
+		return NULL;
+	}
+
+	if(!frm || !frm->fld || !frm->fld[n])
+	{
+		printf("Error: add_field: No format %d\n", n);
+		return NULL;
+	}
+
+	if(!fld->fld)
+		fld->fld=(field**)calloc(frm->maxFields, sizeof(field*));
+
+	if(!fld->fld[n])
+		fld->fld[n]=(field*)calloc(1, sizeof(field));
+
+	if(fld->fields <= n)
+		fld->fields=n+1;
+
+	if(!fld->fld[n]->data)
+	{
+		switch(frm->fld[n]->dataFormat)
+		{
+			case FRM_ISOBITMAP:
+			case FRM_BITMAP:
+			case FRM_BITSTR:
+			case FRM_BIN:
+			case FRM_ASCII:
+			case FRM_BCD:
+			case FRM_EBCDIC:
+				fld->fld[n]->data=(char*)calloc(frm->fld[n]->maxLength+1, 1);
+				break;
+
+			case FRM_HEX:
+				fld->fld[n]->data=(char*)calloc(frm->fld[n]->maxLength*2 + 1, 1);
+				break;
+
+		}
+	}
+
+	return fld->fld[n];
+}
+
+void remove_field(field *fld, unsigned int n)
+{
+	if(!fld || !fld->fld || !fld->fld[n])
+		return;
+
+	freeField(fld->fld[n]);
+
+	fld->fld[n]=NULL;
 }
 
 void parse_ebcdic(char *from, char *to, unsigned int len)

@@ -164,6 +164,11 @@ int tcprecv(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 	return frm->lengthLength + length;
 }
 
+int tcpsend(int sfd, char *buf, unsigned int length)
+{
+	return write(sfd, buf, length);
+}
+
 int tcpclose(int sfd)
 {
 	return close(sfd);
@@ -171,14 +176,13 @@ int tcpclose(int sfd)
 
 
 //returns:
-//NULL, errno is set: TCP error
-//NULL, errno is not set: Message error
-//Otherwise, the message pointer is returned
-field *tcprecvmsg(int sfd, fldformat *frm)
+//-1: TCP error
+//0: Message error
+//Otherwise, the message size is returned
+int tcprecvmsg(int sfd, field **message, fldformat *frm)
 {
 	int size;
-	char buf[10000];
-	int preverrno;
+	static char buf[10000];
 
 	errno=0;
 
@@ -187,26 +191,56 @@ field *tcprecvmsg(int sfd, fldformat *frm)
 	if(size==-2)
 	{
 		printf("Error: Unable to receive a net message: Connection closed by the remote host\n");
-		errno=EBADF;
-		return NULL;
+		return -1;
 	} 
 	else if(size==-3)
 	{
-		preverrno=errno;
 		printf("Error: Unable to receive a net message: %s\n", strerror(errno));
-		errno=preverrno;
-		return NULL;
+		return -1;
 	}
 	else if(size==-1)
 	{
 		printf("Error: a corrupted message received\n");
-		return NULL;
+		return 0;
 	}
 	else if(size==0)
 	{
-		return NULL;
+		return 0;
 	}
 
-	return parseNetMsg(buf, size, frm);
+	*message=parseNetMsg(buf, size, frm);
+
+	return size;
 }
 
+//returns:
+//0: Message error
+//-1: Tcp error
+//otherwise, message size is returned
+int tcpsendmsg(int sfd, field* message, fldformat *frm)
+{
+	unsigned int length;
+	int size;
+	static char buf[10000];
+
+	length=buildNetMsg(buf, sizeof(buf), message, frm);
+
+	if(!length)
+		return 0;
+
+	size=tcpsend(sfd, buf, length);
+
+	if(size==-1 || size==0)
+	{
+		printf("Error: Unable to send the message to network: %s\n", strerror(errno));
+		return -1;
+	}
+
+	if(size<length)
+	{
+		printf("Warning: A partial message is sent (%d/%d)\n", size, length);
+		return -1;
+	}
+
+	return size;
+}

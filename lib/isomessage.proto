@@ -4,6 +4,20 @@ message isomessage
 {
 	required string SourceInterface = 1;
 
+	optional string SourceStationID = 2;
+
+	optional string VisaRoundTripInf = 3;
+
+	optional string VisaBaseIFlags = 4;
+
+	optional string VisaMsgStatusFlags = 5;
+
+	optional string BatchNumber = 6;
+
+	optional string VisaReserved = 7;
+
+	optional string VisaUserInfo = 8;
+
 	enum ISOver
 	{
 		ISO1987 = 0;
@@ -12,7 +26,7 @@ message isomessage
 		ISOCUSTOM = 9;
 	}
 
-	optional ISOver ISOVersion = 2 [default = ISO1987];
+	optional ISOver ISOVersion = 9 [default = ISO1987];
 
 	enum MsgClass
 	{
@@ -27,7 +41,7 @@ message isomessage
 		ISORESERVED = 9;
 	}
 
-	required MsgClass MessageClass = 3;
+	required MsgClass MessageClass = 10;
 
 	enum MsgFunction
 	{
@@ -40,7 +54,7 @@ message isomessage
 		NACK = 9;
 	}
 
-	required MsgFunction MessageFunction = 4;
+	required MsgFunction MessageFunction = 11;
 
 	enum MsgOrigin
 	{
@@ -52,9 +66,9 @@ message isomessage
 		OTHREPEAT = 5;
 	}
 
-	optional MsgOrigin MessageOrigin = 5 [default = ACQUIRER];
+	optional MsgOrigin MessageOrigin = 12 [default = ACQUIRER];
 
-	optional string PAN = 6;
+	optional string PAN = 13;
 
 	enum ProcCode
 	{
@@ -64,7 +78,30 @@ message isomessage
 		ACCNTFUNDING = 10;
 	}
 
-	optional ProcCode ProcessingCode = 7;
+	optional ProcCode TransactionType = 14;
 
-	optional uint32 ResponseCode = 8;
+	enum AccntType
+	{
+		DEFAULT = 00;
+		SAVINGS = 10;
+		CHECKING = 20;
+		CREDIT = 30;
+		CREDITLINE = 38;
+		CORPORATE = 39;
+		UNIVERSAL = 40;
+		INVESTMENT = 50;
+		IRAINVESTMENT = 58;
+		STOREDVALUE = 60;
+		INSTALLMENT = 70;
+		REVOLVINGLOAN = 90;
+		INSTALLMENTLOAN = 91;
+		REALESTATELOAN = 92;
+	}
+
+	optional AccntType AccountTypeFrom = 15 [default = DEFAULT];
+
+	optional AccntType AccountTypeTo = 16 [default = DEFAULT];
+
+
+	optional uint32 ResponseCode = 39;
 }

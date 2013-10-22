@@ -10,11 +10,11 @@ message 	BB800SF		Visa Message (with header)
 0.4		F2HEX		Total message length
 0.5		F6BCD		Destination ID
 0.6		F6BCD		Source ID
-0.7		F2BCD		Round-Trip Control Info
-0.8		F4BCD		BASE I Flags
+0.7		F8BITSTR	Round-Trip Control Info
+0.8		F16BITSTR	BASE I Flags
 0.9		F24BITSTR	Message Status Flags
-0.10		F2BCD		Batch Number: Not Used
-0.11		F6BCD		Reserved for Visa International Use
+0.10		F1HEX		Batch Number
+0.11		F3HEX		Reserved for Visa International Use
 0.12		F2BCD		User Info
 0.13		F16BITMAP	Bitmap
 0.14		F4BCD		Reject Data Group
@@ -23,7 +23,7 @@ message 	BB800SF		Visa Message (with header)
 1.1		ISOBITMAP	Message Bit Map
 1.2		B19BCD		Account Number
 1.3		F3SF		Processing code
-1.3.1		F2BCD		processing code
+1.3.1		F2BCD		transaction type
 1.3.2		F2BCD		account type from
 1.3.3		F2BCD		account type to
 1.4		F12BCD		Amount, transaction

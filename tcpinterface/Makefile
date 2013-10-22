@@ -1,4 +1,4 @@
-all: tcpif_visa tcpif_mast
+all: tcpif_visa #tcpif_mast
 
 clean:
 	rm -f *.o tcpif_visa tcpif_mast
@@ -7,7 +7,7 @@ tcpif_visa: tcpinterface.o ../lib/ipc.o tcp.o visa.o ../parser/libparser.a ../li
 		g++ -L ../parser tcpinterface.o ../lib/ipc.o tcp.o visa.o ../lib/isomessage.pb.o -lparser -lprotobuf -o tcpif_visa
 
 tcpif_mast: tcpinterface.o ../lib/ipc.o tcp.o mast.o ../parser/libparser.a ../lib/isomessage.pb.o
-		g++ -L ../parser tcpinterface.o ../lib/ipc.o tcp.o visa.o ../lib/isomessage.pb.o -lparser -lprotobuf -o tcpif_mast
+		g++ -L ../parser tcpinterface.o ../lib/ipc.o tcp.o mast.o ../lib/isomessage.pb.o -lparser -lprotobuf -o tcpif_mast
 
 tcpinterface.o: tcpinterface.c net.h tcp.h ../lib/ipc.h
 		g++ -c tcpinterface.c -ggdb
