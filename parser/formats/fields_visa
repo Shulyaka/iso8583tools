@@ -21,17 +21,21 @@ message 	BB800SF		Visa Message (with header)
 1		U788SF		Visa Message
 1.0		F4BCD		Message type
 1.1		ISOBITMAP	Message Bit Map
-1.2		B19BCD		Account Number
+1.2		B19BCD		Primary Account Number
 1.3		F3SF		Processing code
 1.3.1		F2BCD		transaction type
 1.3.2		F2BCD		account type from
 1.3.3		F2BCD		account type to
-1.4		F12BCD		Amount, transaction
+1.4		F12BCD		Amount, Transaction
 1.5		F12BCD		Amount, Settlement
 1.6		F12BCD		Amount, cardholder billing
 1.7		F10BCD		Transmission date and time
-1.9		F8BCD		Conversion Rate, Settlement
-1.10		F8BCD		Converdion rate, cardholder billing
+1.9		F8BCDSF		Conversion Rate, Settlement
+1.9.0		F1ASC		exponent
+1.9.1		F7ASC		mantissa
+1.10		F8BCDSF		Converdion rate, cardholder billing
+1.10.0		F1ASC		exponent
+1.10.1		F7ASC		mantissa
 1.11		F6BCD		System Trace Audit Number
 1.12		F6BCD		Time, local transaction
 1.13		F4BCD		Date, local transaction

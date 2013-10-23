@@ -113,7 +113,7 @@ int tcprecv(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 		if(numread < frm->lengthLength)
 			return 0;
 
-		length=get_field_length(buf, numread, frm);
+		length=parse_field_length(buf, numread, frm);
 
 		if(length==0)
 		{

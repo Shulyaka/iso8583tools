@@ -21,5 +21,5 @@ builder.o: builder.c parser.h
 frmload.o: frmload.c parser.h
 		g++ -c frmload.c -ggdb
 
-tools.o: tools.c parser.c
+tools.o: tools.c parser.h
 		g++ -c tools.c -ggdb

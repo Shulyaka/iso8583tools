@@ -102,6 +102,14 @@ message isomessage
 
 	optional AccntType AccountTypeTo = 16 [default = DEFAULT];
 
+	optional uint64 AmountTransaction = 17; //fixed-point amount excluding any transaction fees
+
+	optional uint64 AmountSettlement = 18;
+
+	optional uint64 AmountBilling = 19;
+
+	optional sint64 TransactionDateTime = 20;
+
 
 	optional uint32 ResponseCode = 39;
 }

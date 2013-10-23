@@ -4,7 +4,7 @@
 
 #include "parser.h"
 
-unsigned int parse_field(char*, unsigned int, field*, fldformat*);
+unsigned int parse_field(char*, unsigned int, field*);
 void parse_ebcdic(char*, char*, unsigned int);
 int parse_hex(char*, char*, unsigned int);
 int parse_bcd(char*, char*, unsigned int);
@@ -27,7 +27,9 @@ field *parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 	
 	message=(field *)calloc(1, sizeof(field));
 
-	if(!parse_field(msgbuf, length, message, frm))
+	message->frm=frm;
+
+	if(!parse_field(msgbuf, length, message))
 	{
 		printf("Error: Can't parse\n");
 		freeField(message);
@@ -37,7 +39,7 @@ field *parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 	return message;
 }
 
-unsigned int get_field_length(char *buf, unsigned int maxlength, fldformat *frm)
+unsigned int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 {
 	unsigned int lenlen=0;
 	unsigned int length=0;
@@ -164,7 +166,7 @@ unsigned int get_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 	return length;
 }
 
-unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldformat *frm)
+unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 {
 	unsigned int lenlen=0;
 	unsigned int blength=0;
@@ -174,6 +176,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 	unsigned int pos;
 	unsigned int sflen;
 	unsigned int taglength;
+	fldformat *frm;
 	fldformat tmpfrm;
 
 	if(!buf)
@@ -187,6 +190,8 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 		printf("Error: No fld\n");
 		return 0;
 	}
+
+	frm=fld->frm;
 
 	if(!frm)
 	{
@@ -206,7 +211,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 
 	if(frm->dataFormat!=FRM_ISOBITMAP)
 	{
-		fld->length=get_field_length(buf, maxlength, frm);
+		fld->length=parse_field_length(buf, maxlength, frm);
 
 		if(frm->maxLength < fld->length)
 		{
@@ -253,7 +258,6 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 	switch(frm->dataFormat)
 	{
 		case FRM_SUBFIELDS:
-			//fld->fields=frm->fields;
 			fld->fld=(field**)calloc(frm->maxFields, sizeof(field*));
 			pos=lenlen;
 			for(i=0; i < frm->fields; i++)
@@ -279,7 +283,8 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 						bitmap_found=i;
 					
 					fld->fld[i]=(field*)calloc(1, sizeof(field));
-					sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i], frm->fld[i]);
+					fld->fld[i]->frm=frm->fld[i];
+					sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i]);
 					if(!sflen)
 					{
 						printf("Error: unable to parse subfield\n");
@@ -322,11 +327,13 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 			tmpfrm.maxFields=frm->maxFields;
 			tmpfrm.fields=frm->fields;
 			tmpfrm.fld=frm->fld;
-			parse_field(fld->data, fld->length, fld, &tmpfrm);
-
+			fld->frm=&tmpfrm;
+			parse_field(fld->data, fld->length, fld);
+			
 			free(fld->data);
 			fld->data=0;
-			
+			fld->frm=frm;			
+
 			break;
 
 		case FRM_TLV1:
@@ -388,7 +395,9 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 
 				pos+=taglength;
 
-				sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i], frm->fld[0]);
+				fld->fld[i]->frm=frm->fld[0];
+
+				sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i]);
 
 				if(!sflen)
 				{
@@ -461,7 +470,9 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 
 				pos+=taglength;
 
-				sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[j], frm->fld[j]);
+				fld->fld[j]->frm=frm->fld[j];
+
+				sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[j]);
 
 				if(!sflen)
 				{
@@ -542,63 +553,6 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld, fldforma
 //		printf("%s \t[%d] [%s]\n", frm->description, fld->length, fld->data);
 
 	return lenlen+blength;
-}
-
-field* add_field(field *fld, fldformat *frm, unsigned int n)
-{
-	if(!fld)
-	{
-		printf("Error: no parent field\n");
-		return NULL;
-	}
-
-	if(!frm || !frm->fld || !frm->fld[n])
-	{
-		printf("Error: add_field: No format %d\n", n);
-		return NULL;
-	}
-
-	if(!fld->fld)
-		fld->fld=(field**)calloc(frm->maxFields, sizeof(field*));
-
-	if(!fld->fld[n])
-		fld->fld[n]=(field*)calloc(1, sizeof(field));
-
-	if(fld->fields <= n)
-		fld->fields=n+1;
-
-	if(!fld->fld[n]->data)
-	{
-		switch(frm->fld[n]->dataFormat)
-		{
-			case FRM_ISOBITMAP:
-			case FRM_BITMAP:
-			case FRM_BITSTR:
-			case FRM_BIN:
-			case FRM_ASCII:
-			case FRM_BCD:
-			case FRM_EBCDIC:
-				fld->fld[n]->data=(char*)calloc(frm->fld[n]->maxLength+1, 1);
-				break;
-
-			case FRM_HEX:
-				fld->fld[n]->data=(char*)calloc(frm->fld[n]->maxLength*2 + 1, 1);
-				break;
-
-		}
-	}
-
-	return fld->fld[n];
-}
-
-void remove_field(field *fld, unsigned int n)
-{
-	if(!fld || !fld->fld || !fld->fld[n])
-		return;
-
-	freeField(fld->fld[n]);
-
-	fld->fld[n]=NULL;
 }
 
 void parse_ebcdic(char *from, char *to, unsigned int len)

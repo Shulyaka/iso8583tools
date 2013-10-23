@@ -54,11 +54,11 @@ int main(int argc, char **argv)
 
 	printf("%s parsed\n", frm->description);
 
-	print_message(message, frm);
+	print_message(message);
 
-	printf("Building %s, estimated length: %d\n", frm->description, get_length(message, frm));
+	printf("Building %s, estimated length: %d\n", frm->description, get_length(message));
 
-	msglen2=build_message(msgbuf2, sizeof(msgbuf2), message, frm);
+	msglen2=build_message(msgbuf2, sizeof(msgbuf2), message);
 
 	if(!msglen2)
 	{
@@ -150,7 +150,7 @@ int main_(int argc, char **argv)
 
 	printf("%s parsed\n", frm_header->description);
 
-	print_message(header, frm_header);
+	print_message(header);
 
 	message=parse_message(msgbuf+header->length+frm_header->lengthInclusive*frm_header->lengthLength, msglen-header->length-frm_header->lengthInclusive*frm_header->lengthLength, frm_message);
 	if(!message)
@@ -164,7 +164,7 @@ int main_(int argc, char **argv)
 
 	printf("%s parsed\n", frm_message->description);
 
-	print_message(message, frm_message);
+	print_message(message);
 
 	sscanf(header->fld[4]->data, "%X", &len);
 	
@@ -178,9 +178,9 @@ int main_(int argc, char **argv)
 		return 1;
 	}
 
-printf("Building %s, estimated length: %d\n", frm_header->description, get_length(header, frm_header));
+printf("Building %s, estimated length: %d\n", frm_header->description, get_length(header));
 
-	msglen2=build_message(msgbuf2, sizeof(msgbuf2), header, frm_header);
+	msglen2=build_message(msgbuf2, sizeof(msgbuf2), header);
 
 	if(!msglen2)
 	{
@@ -198,8 +198,8 @@ printf("Building %s, estimated length: %d\n", frm_header->description, get_lengt
 	for(len=0; len<msglen2; fputc(msgbuf2[len++], file));
 	fclose(file);
 printf("now building the message\n");
-printf("Estimated length: %d\n", get_length(message, frm_message));
-	len=build_message(msgbuf2+msglen2, sizeof(msgbuf2)-msglen2, message, frm_message);
+printf("Estimated length: %d\n", get_length(message));
+	len=build_message(msgbuf2+msglen2, sizeof(msgbuf2)-msglen2, message);
 
 	if(!len)
 	{

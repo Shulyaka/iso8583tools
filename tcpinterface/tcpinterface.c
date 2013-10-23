@@ -7,13 +7,14 @@
 #include "tcp.h"
 #include "../lib/ipc.h"
 
-//int isRequest(isomessage*);
 int declineMsg(isomessage*);
 
 int main(void)
 {
 	struct pollfd sfd[3];
-	const struct timespec timeout={500,0}; //connection timeout in seconds
+	const long timeout=500; //connection timeout in seconds
+
+	struct timespec ts_timeout;
 
 	int size;
 
@@ -68,9 +69,13 @@ int main(void)
 		{
 			printf("Waiting for a message...\n");
 
-			size=ppoll(sfd, 2, &timeout, NULL);
+			ts_timeout.tv_sec=timeout;
+			ts_timeout.tv_nsec=0;
+			errno=0;
 
-			printf("poll: %d: %hd, %hd\n", size, sfd[0].revents, sfd[1].revents);
+			size=ppoll(sfd, 2, &ts_timeout, NULL);
+
+			printf("poll: %d: %hd, %hd: %s\n", size, sfd[0].revents, sfd[1].revents, strerror(errno));
 
 			if(size==-1)
 			{
@@ -85,7 +90,7 @@ int main(void)
 			}
 			else if(size==0)
 			{
-				printf("Error: Connection is inactive, closing it %s, %ld, %ld\n", strerror(errno), timeout.tv_sec, timeout. tv_nsec);
+				printf("Error: Connection is inactive, closing it %ld, %ld\n", ts_timeout.tv_sec, ts_timeout. tv_nsec);
 				break;
 			}
 
@@ -103,7 +108,7 @@ int main(void)
 				else if(size==0)
 					continue;
 
-				print_message(pmessage, frm);
+				print_message(pmessage);
 
 				if(isNetMgmt(pmessage))
 				{
@@ -116,7 +121,7 @@ int main(void)
 							continue;
 						}
 
-						print_message(pmessage, frm);
+						print_message(pmessage);
 
 						size=tcpsendmsg(sfd[1].fd, pmessage, frm);
 
@@ -152,7 +157,7 @@ int main(void)
 							continue;
 						}
 
-						print_message(pmessage, frm);
+						print_message(pmessage);
 
 						size=tcpsendmsg(sfd[1].fd, pmessage, frm);
 
@@ -193,7 +198,7 @@ int main(void)
 							continue;
 						}
 
-						print_message(pmessage, frm);
+						print_message(pmessage);
 
 						size=tcpsendmsg(sfd[1].fd, pmessage, frm);
 
@@ -261,7 +266,7 @@ int main(void)
 					continue;
 				}
 
-				print_message(pmessage, frm);
+				print_message(pmessage);
 
 				size=tcpsendmsg(sfd[1].fd, pmessage, frm);
 

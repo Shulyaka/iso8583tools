@@ -21,15 +21,6 @@
 #define FRM_EMVL 17     // Length format for EMV tags
 #define FRM_TLVDS 18
 
-typedef struct field
-{
-	char* data;
-	char* tag;
-	unsigned int length;
-	unsigned int fields;
-	struct field **fld;
-} field;
-
 typedef struct fldformat
 {
 	//unsigned int number;
@@ -45,16 +36,26 @@ typedef struct fldformat
 	struct fldformat **fld;
 } fldformat;
 
+typedef struct field
+{
+	char* data;
+	char* tag;
+	unsigned int length;
+	unsigned int fields;
+	fldformat *frm;
+	struct field **fld;
+} field;
+
 fldformat *load_format(char*);
 void freeFormat(fldformat*);
 void freeField(field*);
-field* add_field(field*, fldformat*, unsigned int);
+field* add_field(field*, unsigned int);
 void remove_field(field *, unsigned int);
 field *parse_message(char*, unsigned int, fldformat*);
-unsigned int build_message(char*, unsigned int, field*, fldformat*);
-unsigned int get_length(field *fld, fldformat *frm);
-unsigned int get_field_length(char*, unsigned int, fldformat*);
-int is_empty(field *fld, fldformat *frm);
-void print_message(field*, fldformat*);
+unsigned int build_message(char*, unsigned int, field*);
+unsigned int get_length(field*);
+unsigned int parse_field_length(char*, unsigned int, fldformat*);
+int is_empty(field*);
+void print_message(field*);
 #endif
 

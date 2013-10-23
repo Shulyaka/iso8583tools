@@ -2,6 +2,7 @@
 #include "net.h"
 #include <sys/socket.h>
 #include <errno.h>
+#include <time.h>
 
 int ipcconnect(int);
 
@@ -58,11 +59,11 @@ unsigned int buildNetMsg(char *buf, unsigned int maxlength, field *message, fldf
 		return 0;
 	}
 
-	strcpy(add_field(add_field(message, frm, 0), frm->fld[0], 4)->data, "0000");
+	strcpy(add_field(add_field(message, 0), 4)->data, "0000");
 
-	sprintf(message->fld[0]->fld[4]->data, "%04X", get_length(message, frm) - frm->lengthLength);
+	sprintf(message->fld[0]->fld[4]->data, "%04X", get_length(message) - frm->lengthLength);
 
-	return build_message(buf, maxlength, message, frm);
+	return build_message(buf, maxlength, message);
 	
 }
 
@@ -70,6 +71,9 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 {
 	field *header;
 	field *message;
+
+	struct tm datetime, current;
+	time_t now;
 
 	if(!fullmessage)
 	{
@@ -200,8 +204,35 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 		}
 	}
 
+	if(message->fld[4])
+		visamsg->set_amounttransaction(atol(message->fld[4]->data));
 
-				
+	if(message->fld[5])
+		visamsg->set_amountsettlement(atol(message->fld[5]->data));
+
+	if(message->fld[6])
+		visamsg->set_amountbilling(atol(message->fld[6]->data));
+
+	time(&now);
+	gmtime_r(&now, &current);
+
+	if(message->fld[7])
+	{
+		memset(&datetime, 0, sizeof(datetime));
+		sscanf(message->fld[7]->data, "%2d%2d%2d%2d%2d", &datetime.tm_mon, &datetime.tm_mday, &datetime.tm_hour, &datetime.tm_min, &datetime.tm_sec);
+		datetime.tm_mon--;
+
+		datetime.tm_year=current.tm_year;
+
+		if(datetime.tm_mon>8 && current.tm_mon<3)
+			datetime.tm_year--;
+		else if(datetime.tm_mon<3 && current.tm_mon>8)
+			datetime.tm_year++;
+
+		visamsg->set_transactiondatetime(timegm(&datetime));
+	}
+
+	
 
 	return 0;
 }
@@ -214,132 +245,149 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	fldformat *mfrm;
 	field *fullmessage=(field*)calloc(1, sizeof(field));
 
+	fullmessage->frm=frm;
+
+	time_t datetime;
+
 	hfrm=frm->fld[0];
 	mfrm=frm->fld[1];
-	header=add_field(fullmessage, frm, 0);
-	message=add_field(fullmessage, frm, 1);
+	header=add_field(fullmessage, 0);
+	message=add_field(fullmessage, 1);
 
-	strcpy(add_field(header, hfrm, 2)->data, "01");
+	strcpy(add_field(header, 2)->data, "01");
 
 	if(mfrm->fld[62] && mfrm->fld[62]->fld[0] && mfrm->fld[62]->fld[0]->dataFormat==FRM_BITMAP)
-		strcpy(add_field(header, hfrm, 3)->data, "02");
+		strcpy(add_field(header, 3)->data, "02");
 	else
-		strcpy(add_field(header, hfrm, 3)->data, "01");
+		strcpy(add_field(header, 3)->data, "01");
 
 	if(isRequest(visamsg))
 	{
-		strcpy(add_field(header, hfrm, 5)->data, "000000");
-		strcpy(add_field(header, hfrm, 7)->data, "00000000");
-		strcpy(add_field(header, hfrm, 8)->data, "0000000000000000");
-		strcpy(add_field(header, hfrm, 9)->data, "000000000000000000000000");
-		strcpy(add_field(header, hfrm, 10)->data, "00");
-		strcpy(add_field(header, hfrm, 11)->data, "000000");
-		strcpy(add_field(header, hfrm, 12)->data, "00");
+		strcpy(add_field(header, 5)->data, "000000");
+		strcpy(add_field(header, 7)->data, "00000000");
+		strcpy(add_field(header, 8)->data, "0000000000000000");
+		strcpy(add_field(header, 9)->data, "000000000000000000000000");
+		strcpy(add_field(header, 10)->data, "00");
+		strcpy(add_field(header, 11)->data, "000000");
+		strcpy(add_field(header, 12)->data, "00");
 	}
 	else
 	{
-		strncpy(add_field(header, hfrm, 5)->data, visamsg->sourcestationid().c_str(), 6);
-		strncpy(add_field(header, hfrm, 7)->data, visamsg->visaroundtripinf().c_str(), 8);
-		strncpy(add_field(header, hfrm, 8)->data, visamsg->visabaseiflags().c_str(), 16);
-		strncpy(add_field(header, hfrm, 9)->data, visamsg->visamsgstatusflags().c_str(), 24);
-		strncpy(add_field(header, hfrm, 10)->data, visamsg->visamsgstatusflags().c_str(), 2);
-		strncpy(add_field(header, hfrm, 11)->data, visamsg->visareserved().c_str(), 6);
-		strncpy(add_field(header, hfrm, 12)->data, visamsg->visauserinfo().c_str(), 2);
+		strncpy(add_field(header, 5)->data, visamsg->sourcestationid().c_str(), 6);
+		strncpy(add_field(header, 7)->data, visamsg->visaroundtripinf().c_str(), 8);
+		strncpy(add_field(header, 8)->data, visamsg->visabaseiflags().c_str(), 16);
+		strncpy(add_field(header, 9)->data, visamsg->visamsgstatusflags().c_str(), 24);
+		strncpy(add_field(header, 10)->data, visamsg->visamsgstatusflags().c_str(), 2);
+		strncpy(add_field(header, 11)->data, visamsg->visareserved().c_str(), 6);
+		strncpy(add_field(header, 12)->data, visamsg->visauserinfo().c_str(), 2);
 	}
 	
-	strcpy(add_field(header, hfrm, 6)->data, stationid);
+	strcpy(add_field(header, 6)->data, stationid);
 
-	add_field(message, mfrm, 0)->data[0]='0';
+	add_field(message, 0)->data[0]='0';
 	message->fld[0]->data[1]='0'+visamsg->messageclass();
 	message->fld[0]->data[2]='0'+visamsg->messagefunction();
 	message->fld[0]->data[3]='0'+visamsg->messageorigin();
 	
 	if(visamsg->has_pan())
-		strcpy(add_field(message, mfrm, 2)->data, visamsg->pan().c_str());
+		strcpy(add_field(message, 2)->data, visamsg->pan().c_str());
 
 	if(visamsg->has_responsecode())
-		sprintf(add_field(message, mfrm, 39)->data, "%02d", visamsg->responsecode());
+		sprintf(add_field(message, 39)->data, "%02d", visamsg->responsecode());
 
 	if(visamsg->has_transactiontype())
 	{
 		switch(visamsg->transactiontype())
 		{
 			case isomessage::PURCHASE:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 1)->data, "00");
+				strcpy(add_field(add_field(message, 3), 1)->data, "00");
 				break;
 
 			case isomessage::CASH:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 1)->data, "01");
+				strcpy(add_field(add_field(message, 3), 1)->data, "01");
 				break;
 
 			case isomessage::CHECK:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 1)->data, "03");
+				strcpy(add_field(add_field(message, 3), 1)->data, "03");
 				break;
 
 			case isomessage::ACCNTFUNDING:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 1)->data, "10");
+				strcpy(add_field(add_field(message, 3), 1)->data, "10");
 				break;
 		}
 
 		switch(visamsg->accounttypefrom())
 		{
 			case isomessage::DEFAULT:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 2)->data, "00");
+				strcpy(add_field(message->fld[3], 2)->data, "00");
 				break;
 
 			case isomessage::SAVINGS:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 2)->data, "10");
+				strcpy(add_field(message->fld[3], 2)->data, "10");
 				break;
 
 			case isomessage::CHECKING:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 2)->data, "20");
+				strcpy(add_field(message->fld[3], 2)->data, "20");
 				break;
 
 			case isomessage::CREDIT:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 2)->data, "30");
+				strcpy(add_field(message->fld[3], 2)->data, "30");
 				break;
 
 			case isomessage::UNIVERSAL:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 2)->data, "40");
+				strcpy(add_field(message->fld[3], 2)->data, "40");
 				break;
 
 			default:
 				printf("Warning: Unknown account type From: '%d'. Using default.\n", visamsg->accounttypefrom());
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 2)->data, "00");
+				strcpy(add_field(message->fld[3], 2)->data, "00");
 				break;
 		}
 
 		switch(visamsg->accounttypeto())
 		{
 			case isomessage::DEFAULT:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 3)->data, "00");
+				strcpy(add_field(message->fld[3], 3)->data, "00");
 				break;
 
 			case isomessage::SAVINGS:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 3)->data, "10");
+				strcpy(add_field(message->fld[3], 3)->data, "10");
 				break;
 
 			case isomessage::CHECKING:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 3)->data, "20");
+				strcpy(add_field(message->fld[3], 3)->data, "20");
 				break;
 
 			case isomessage::CREDIT:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 3)->data, "30");
+				strcpy(add_field(message->fld[3], 3)->data, "30");
 				break;
 
 			case isomessage::UNIVERSAL:
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 3)->data, "40");
+				strcpy(add_field(message->fld[3], 3)->data, "40");
 				break;
 
 			default:
 				printf("Warning: Unknown account type To: '%d'. Using default.\n", visamsg->accounttypeto());
-				strcpy(add_field(add_field(message, mfrm, 3), mfrm->fld[3], 3)->data, "00");
+				strcpy(add_field(message->fld[3], 3)->data, "00");
 				break;
 		}
 	}
 
+	if(visamsg->has_amounttransaction())
+		snprintf(add_field(message, 4)->data, 13, "%012ld", visamsg->amounttransaction());
 
+	if(visamsg->has_amountsettlement())
+		snprintf(add_field(message, 5)->data, 13, "%012ld", visamsg->amountsettlement());
 
+	if(visamsg->has_amountbilling())
+		snprintf(add_field(message, 6)->data, 13, "%012ld", visamsg->amountbilling());
+
+	if(visamsg->has_transactiondatetime())
+	{
+		datetime=visamsg->transactiondatetime();
+		printf("UTC Transaction date time: %s\n", asctime(gmtime(&datetime)));
+		strftime(add_field(message, 7)->data, 11, "%m%d%H%M%S", gmtime(&datetime));
+	}
 
 
 
@@ -389,7 +437,7 @@ int processNetMgmt(field *message, fldformat *frm)
 	if(mbody->fld[0]->data[2]=='2')
 		mbody->fld[0]->data[2]='3';
 
-	strcpy(add_field(mbody, frm->fld[1], 39)->data, "00");
+	strcpy(add_field(mbody, 39)->data, "00");
 
 	return 1;
 }
@@ -417,8 +465,8 @@ int declineNetMsg(field *message, fldformat *frm)
 	if(mbody->fld[0]->data[2]=='2')
 		mbody->fld[0]->data[2]='3';
 
-	strcpy(add_field(mbody, frm->fld[1], 39)->data, "96");
-	strcpy(add_field(add_field(mbody, frm->fld[1], 44), frm->fld[1]->fld[44], 1)->data, "5");
+	strcpy(add_field(mbody, 39)->data, "96");
+	strcpy(add_field(add_field(mbody, 44), 1)->data, "5");
 
 	remove_field(mbody, 18);
 	remove_field(mbody, 22);

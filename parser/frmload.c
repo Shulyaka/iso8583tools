@@ -464,27 +464,3 @@ int parseFormat(fldformat *frm, char *format)
 	return 1;
 }
 
-void freeFormat(fldformat *frm)
-{
-	unsigned int i;
-
-	if(!frm)
-	{
-		printf("Warning: already freed\n");
-		return;
-	}
-
-	if(frm->fields!=0)
-	{
-		for(i=0; i<frm->fields; i++)
-			if(frm->fld[i]!=NULL)
-				freeFormat(frm->fld[i]);
-		free(frm->fld);
-	}
-
-	if(frm->description!=NULL)
-		free(frm->description);
-
-	free(frm);
-}
-
