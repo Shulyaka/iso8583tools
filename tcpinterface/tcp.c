@@ -217,13 +217,13 @@ int tcprecvmsg(int sfd, field **message, fldformat *frm)
 //0: Message error
 //-1: Tcp error
 //otherwise, message size is returned
-int tcpsendmsg(int sfd, field* message, fldformat *frm)
+int tcpsendmsg(int sfd, field* message)
 {
 	unsigned int length;
 	int size;
 	static char buf[10000];
 
-	length=buildNetMsg(buf, sizeof(buf), message, frm);
+	length=buildNetMsg(buf, sizeof(buf), message);
 
 	if(!length)
 		return 0;

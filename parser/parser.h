@@ -21,6 +21,8 @@
 #define FRM_EMVL 17     // Length format for EMV tags
 #define FRM_TLVDS 18
 
+#include <stdlib.h>
+
 typedef struct fldformat
 {
 	//unsigned int number;
@@ -49,13 +51,17 @@ typedef struct field
 fldformat *load_format(char*);
 void freeFormat(fldformat*);
 void freeField(field*);
-field* add_field(field*, unsigned int);
-void remove_field(field *, unsigned int);
 field *parse_message(char*, unsigned int, fldformat*);
 unsigned int build_message(char*, unsigned int, field*);
 unsigned int get_length(field*);
 unsigned int parse_field_length(char*, unsigned int, fldformat*);
 int is_empty(field*);
 void print_message(field*);
+
+const char* get_field(field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+char* add_field(field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+void remove_field(field *fld,  int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+int has_field(field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+
 #endif
 

@@ -104,60 +104,161 @@ void freeField(field *fld)
 	free(fld);
 }
 
-field* add_field(field *fld, unsigned int n)
+//a segfault-save accessor function. Returns a pointer to the field contents. If the field does not exist, it would be created. If it cannot be created, a valid pointer to a dummy array is returned.
+char* add_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
-	fldformat *frm;
+	static char def[1023];
+	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
+	int i;
 
-	if(!fld)
+	for(i=0; i<10; i++)
 	{
-		printf("Error: no parent field\n");
-		return NULL;
-	}
+		if(!fld || !fld->frm)
+			return def;
 
-	frm=fld->frm;
-
-	if(!frm || !frm->fld || !frm->fld[n])
-	{
-		printf("Error: add_field: No format %d\n", n);
-		return NULL;
-	}
-
-	if(!fld->fld)
-		fld->fld=(field**)calloc(frm->maxFields, sizeof(field*));
-
-	if(!fld->fld[n])
-	{
-		fld->fld[n]=(field*)calloc(1, sizeof(field));
-		fld->fld[n]->frm=frm->fld[n];
-	}
-
-	if(fld->fields <= n)
-		fld->fields=n+1;
-
-	if(!fld->fld[n]->data)
-	{
-		switch(frm->fld[n]->dataFormat)
+		if(n[i]==-1)
 		{
-			case FRM_ISOBITMAP:
-			case FRM_BITMAP:
-			case FRM_BITSTR:
-			case FRM_BIN:
-			case FRM_ASCII:
-			case FRM_BCD:
-			case FRM_EBCDIC:
-				fld->fld[n]->data=(char*)calloc(frm->fld[n]->maxLength+1, 1);
-				break;
-
-			case FRM_HEX:
-				fld->fld[n]->data=(char*)calloc(frm->fld[n]->maxLength*2 + 1, 1);
-				break;
-
+			if(fld->data)
+				return fld->data;
+			else
+			{
+				switch(fld->frm->dataFormat)
+				{
+					case FRM_ISOBITMAP:
+					case FRM_BITMAP:
+					case FRM_BITSTR:
+					case FRM_BIN:
+					case FRM_ASCII:
+					case FRM_BCD:
+					case FRM_EBCDIC:
+						fld->data=(char*)calloc(fld->frm->maxLength+1, 1);
+						break;
+					case FRM_HEX:
+						fld->data=(char*)calloc(fld->frm->maxLength*2 + 1, 1);
+						break;
+					default:
+						return def;
+				}
+				return fld->data;
+			}
 		}
+
+		if(!fld->fld)
+		{
+			if(fld->frm->maxFields)
+				fld->fld=(field**)calloc(fld->frm->maxFields, sizeof(field*));
+			else
+				return def;
+		}
+
+		if(n[i] >= fld->frm->maxFields)
+			return def;
+
+		if(!fld->fld[n[i]])
+		{
+			fld->fld[n[i]]=(field*)calloc(1, sizeof(field));
+			fld->fld[n[i]]->frm=fld->frm->fld[n[i]];
+		}
+
+		if(fld->fields <= n[i])
+			fld->fields=n[i]+1;
+
+		fld=fld->fld[n[i]];
 	}
 
-	return fld->fld[n];
+	if(!fld || !fld->frm)
+		return def;
+
+	if(fld->data)
+		return fld->data;
+
+	switch(fld->frm->dataFormat)
+	{
+		case FRM_ISOBITMAP:
+		case FRM_BITMAP:
+		case FRM_BITSTR:
+		case FRM_BIN:
+		case FRM_ASCII:
+		case FRM_BCD:
+		case FRM_EBCDIC:
+			fld->data=(char*)calloc(fld->frm->maxLength+1, 1);
+			break;
+		case FRM_HEX:
+			fld->data=(char*)calloc(fld->frm->maxLength*2 + 1, 1);
+			break;
+		default:
+			return def;
+	}
+
+	return fld->data;
+} 
+
+//a segfault-safe accessor function. Return a pointer to the fields contents. If the field does not exist, returns a valid pointer to an empty string. The field structure is not modified.
+const char* get_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+{
+	static const char def[]="";
+	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
+	int i;
+
+	for(i=0; i<10; i++)
+	{
+		if(!fld)
+			return def;
+
+		if(n[i]==-1)
+		{
+			if(fld->data)
+				return fld->data;
+			else
+				return def;
+		}
+
+		if(!fld->fld || !fld->fld[n[i]])
+			return def;
+
+		fld=fld->fld[n[i]];
+	}
+
+	if(!fld || !fld->data)
+		return def;
+
+	return fld->data;
 }
 
+void remove_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+{
+	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
+	int i;
+
+	for(i=0; i<9; i++)
+	{
+		if(!fld || !fld->fld || !fld->fld[n[i]])
+			return;
+
+		if(n[i+1]==-1)
+		{
+			freeField(fld->fld[n[i]]);
+			fld->fld[n[i]]=NULL;
+			return;
+		}
+
+		fld=fld->fld[n[i]];
+	}
+
+	if(!fld || !fld->fld || !fld->fld[n[9]])
+		return;
+
+	freeField(fld->fld[n[9]]);
+	fld->fld[n[9]]=NULL;
+	return;
+}
+
+int has_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+{
+	return !strcmp("", get_field(fld, n0, n1, n2, n3, n4, n5, n6, n7, n8, n9));
+}
+
+/*
 void remove_field(field *fld, unsigned int n)
 {
 	if(!fld || !fld->fld || !fld->fld[n])
@@ -167,4 +268,4 @@ void remove_field(field *fld, unsigned int n)
 
 	fld->fld[n]=NULL;
 }
-
+*/

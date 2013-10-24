@@ -114,7 +114,7 @@ int main(void)
 				{
 					if(isNetRequest(pmessage))
 					{
-						if(!processNetMgmt(pmessage, frm))
+						if(!processNetMgmt(pmessage))
 						{
 							printf("Error: Unable to process Network Management request. Message dropped.\n");
 							freeField(pmessage);
@@ -123,7 +123,7 @@ int main(void)
 
 						print_message(pmessage);
 
-						size=tcpsendmsg(sfd[1].fd, pmessage, frm);
+						size=tcpsendmsg(sfd[1].fd, pmessage);
 
 						if(size==-1)
 						{
@@ -150,7 +150,7 @@ int main(void)
 
 					if(isNetRequest(pmessage))
 					{
-						if(!declineNetMsg(pmessage, frm))
+						if(!declineNetMsg(pmessage))
 						{
 							printf("Error: Unable to decline the request. Message dropped.\n");
 							freeField(pmessage);
@@ -159,7 +159,7 @@ int main(void)
 
 						print_message(pmessage);
 
-						size=tcpsendmsg(sfd[1].fd, pmessage, frm);
+						size=tcpsendmsg(sfd[1].fd, pmessage);
 
 						if(size==-1)
 						{
@@ -191,7 +191,7 @@ int main(void)
 
 					if(isNetRequest(pmessage))
 					{
-						if(!declineNetMsg(pmessage, frm))
+						if(!declineNetMsg(pmessage))
 						{
 							printf("Error: Unable to decline the request. Message dropped.\n");
 							freeField(pmessage);
@@ -200,7 +200,7 @@ int main(void)
 
 						print_message(pmessage);
 
-						size=tcpsendmsg(sfd[1].fd, pmessage, frm);
+						size=tcpsendmsg(sfd[1].fd, pmessage);
 
 						if(size==-1)
 						{
@@ -268,7 +268,7 @@ int main(void)
 
 				print_message(pmessage);
 
-				size=tcpsendmsg(sfd[1].fd, pmessage, frm);
+				size=tcpsendmsg(sfd[1].fd, pmessage);
 
 				if(size==-1)
 				{

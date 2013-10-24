@@ -4,12 +4,12 @@
 int isRequest(isomessage*);
 
 field* parseNetMsg(char*, unsigned int, fldformat*);
-unsigned int buildNetMsg(char*, unsigned int, field*, fldformat*);
+unsigned int buildNetMsg(char*, unsigned int, field*);
 int translateNetToSwitch(isomessage*, field*);
 field* translateSwitchToNet(isomessage*, fldformat *);
 fldformat* loadNetFormat(void);
 
 int isNetMgmt(field*);
 int isNetRequest(field*);
-int processNetMgmt(field*, fldformat*);
-int declineNetMsg(field*, fldformat*);
+int processNetMgmt(field*);
+int declineNetMsg(field*);

@@ -1,3 +1,6 @@
+CFLAGS=-ggdb
+
+
 all: tcpif_visa #tcpif_mast
 
 clean:
@@ -10,13 +13,13 @@ tcpif_mast: tcpinterface.o ../lib/ipc.o tcp.o mast.o ../parser/libparser.a ../li
 		g++ -L ../parser tcpinterface.o ../lib/ipc.o tcp.o mast.o ../lib/isomessage.pb.o -lparser -lprotobuf -o tcpif_mast
 
 tcpinterface.o: tcpinterface.c net.h tcp.h ../lib/ipc.h
-		g++ -c tcpinterface.c -ggdb
+		g++ -c tcpinterface.c ${CFLAGS}
 
 visa.o: visa.c net.h ../lib/isomessage.pb.h
-		g++ -c visa.c -ggdb
+		g++ -c visa.c ${CFLAGS}
 
 mast.o: mast.c net.h ../lib/isomessage.pb.h
-		g++ -c mast.c -ggdb
+		g++ -c mast.c ${CFLAGS}
 
 tcp.o: tcp.c tcp.h
-		g++ -c tcp.c -ggdb
+		g++ -c tcp.c ${CFLAGS}
