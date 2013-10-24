@@ -76,6 +76,7 @@ message isomessage
 		CASH = 01;
 		CHECK = 03;
 		ACCNTFUNDING = 10;
+		ORIGINALCREDIT = 26;
 	}
 
 	optional ProcCode TransactionType = 14;

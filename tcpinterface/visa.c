@@ -99,29 +99,29 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	visamsg->Clear();
 
 	visamsg->set_sourceinterface("visa");
-	visamsg->set_sourcestationid(header->fld[6]->data);
-	visamsg->set_visaroundtripinf(header->fld[7]->data);
-	visamsg->set_visabaseiflags(header->fld[8]->data);
-	visamsg->set_visamsgstatusflags(header->fld[9]->data);
-	visamsg->set_batchnumber(header->fld[10]->data);
-	visamsg->set_visareserved(header->fld[11]->data);
-	visamsg->set_visauserinfo(header->fld[12]->data);
+	visamsg->set_sourcestationid(get_field(header, 6));
+	visamsg->set_visaroundtripinf(get_field(header, 7));
+	visamsg->set_visabaseiflags(get_field(header, 8));
+	visamsg->set_visamsgstatusflags(get_field(header, 9));
+	visamsg->set_batchnumber(get_field(header, 10));
+	visamsg->set_visareserved(get_field(header, 11));
+	visamsg->set_visauserinfo(get_field(header, 12));
 
-	if(!message->fld[0])
+	if(!has_field(message, 0))
 	{
 		printf("Error: No message type\n");
 		return 1;
 	}
 
 	visamsg->set_isoversion(isomessage::ISO1987);
-	visamsg->set_messageclass((isomessage_MsgClass)(message->fld[0]->data[1]-'0'));
-	visamsg->set_messagefunction((isomessage_MsgFunction)(message->fld[0]->data[2]-'0'));
-	visamsg->set_messageorigin((isomessage_MsgOrigin)(message->fld[0]->data[3]-'0'));
+	visamsg->set_messageclass((isomessage_MsgClass)(get_field(message, 0)[1]-'0'));
+	visamsg->set_messagefunction((isomessage_MsgFunction)(get_field(message, 0)[2]-'0'));
+	visamsg->set_messageorigin((isomessage_MsgOrigin)(get_field(message, 0)[3]-'0'));
 
-	if(message->fld[2])
-		visamsg->set_pan(message->fld[2]->data);
+	if(has_field(message, 2))
+		visamsg->set_pan(get_field(message, 2));
 
-	if(message->fld[3])
+	if(has_field(message, 3))
 	{
 		switch(atoi(get_field(message, 3,1)))
 		{
@@ -141,8 +141,12 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 				visamsg->set_transactiontype(isomessage::ACCNTFUNDING);
 				break;
 
+			case 26:
+				visamsg->set_transactiontype(isomessage::ORIGINALCREDIT);
+				break;
+
 			default:
-				printf("Error: Unknown processing code: '%s'\n", message->fld[3]->fld[1]->data);
+				printf("Error: Unknown processing code: '%s'\n", get_field(message, 3,1));
 				return 1;
 		}
 
@@ -169,7 +173,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 				break;
 
 			default:
-				printf("Warning: Unknown From account type: '%s'\n", message->fld[3]->fld[2]->data);
+				printf("Warning: Unknown From account type: '%s'\n", get_field(message, 3,2));
 		}
 
 		switch(atoi(get_field(message, 3,3)))
@@ -195,7 +199,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 				break;
 
 			default:
-				printf("Warning: Unknown To account type: '%s'\n", message->fld[3]->fld[3]->data);
+				printf("Warning: Unknown To account type: '%s'\n", get_field(message, 3,3));
 		}
 	}
 
@@ -308,6 +312,15 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 			case isomessage::ACCNTFUNDING:
 				strcpy(add_field(message, 3,1 ), "10");
 				break;
+
+			case isomessage::ORIGINALCREDIT:
+				strcpy(add_field(message, 3,1 ), "26");
+				break;
+
+			default:
+				printf("Error: Unknown transaction type: %d\n", visamsg->transactiontype());
+				freeField(fullmessage);
+				return NULL;
 		}
 
 		switch(visamsg->accounttypefrom())
@@ -416,20 +429,20 @@ int processNetMgmt(field *message)
 	field *header;
 	field *mbody;
 
-	if(!message || !message->fld || !message->fld[1] || !message->fld[1]->fld || !message->fld[1]->fld[0] || !message->fld[1]->fld[0]->data || !message->fld[0] || !message->fld[0]->fld || !message->fld[0]->fld[5] || !message->fld[0]->fld[5]->data || !message->fld[0]->fld[6] || !message->fld[0]->fld[6]->data )
+	if(!message || !message->fld || !message->fld[0] || !message->fld[1])
 		return 0;
 
 	header=message->fld[0];
 	mbody=message->fld[1];
 
-	strcpy(header->fld[5]->data, header->fld[6]->data);
-	strcpy(header->fld[6]->data, stationid);
+	strncpy(add_field(header, 5), get_field(header, 6), 6);
+	strncpy(add_field(header, 6), stationid, 6);
 
-	if(mbody->fld[0]->data[2]=='0')
-		mbody->fld[0]->data[2]='1';
+	if(get_field(mbody, 0)[2]=='0')
+		add_field(mbody, 0)[2]='1';
 
-	if(mbody->fld[0]->data[2]=='2')
-		mbody->fld[0]->data[2]='3';
+	if(get_field(mbody, 0)[2]=='2')
+		add_field(mbody, 0)[2]='3';
 
 	strcpy(add_field(mbody, 39), "00");
 
@@ -438,26 +451,25 @@ int processNetMgmt(field *message)
 
 int declineNetMsg(field *message)
 {
-	char stationid[7];
 	field *header;
 	field *mbody;
 
-	if(!message || !message->fld || !message->fld[1] || !message->fld[1]->fld || !message->fld[1]->fld[0] || !message->fld[1]->fld[0]->data || !message->fld[0] || !message->fld[0]->fld || !message->fld[0]->fld[5] || !message->fld[0]->fld[5]->data || !message->fld[0]->fld[6] || !message->fld[0]->fld[6]->data)
+	if(!message || !message->fld || !message->fld[0] || !message->fld[1])
 		return 0;
 
 	header=message->fld[0];
 	mbody=message->fld[1];
 
-	strncpy(stationid, header->fld[5]->data, 6);
-	strncpy(header->fld[5]->data, header->fld[6]->data, 6);
-	strncpy(header->fld[6]->data, stationid, 6);
-	header->fld[9]->data[16]='1';
+	strncpy(add_field(header, 5), get_field(header, 6), 6);
+	strncpy(add_field(header, 6), stationid, 6);
 
-	if(mbody->fld[0]->data[2]=='0')
-		mbody->fld[0]->data[2]='1';
+	if(get_field(mbody, 0)[2]=='0')
+		add_field(mbody, 0)[2]='1';
 
-	if(mbody->fld[0]->data[2]=='2')
-		mbody->fld[0]->data[2]='3';
+	if(get_field(mbody, 0)[2]=='2')
+		add_field(mbody, 0)[2]='3';
+
+	add_field(header,9)[16]='1';
 
 	strcpy(add_field(mbody, 39 ), "96");
 	strcpy(add_field(mbody, 44,1 ), "5");
