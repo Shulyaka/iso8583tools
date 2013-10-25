@@ -111,6 +111,17 @@ message isomessage
 
 	optional sint64 TransactionDateTime = 20;
 
+	optional string TerminalDate = 21;
+
+	optional string TerminalTime = 22;
+
+	optional double ConversionRateSettlement = 23;
+
+	optional double ConversionRateBilling = 24;
+
+	optional string STAN = 25;
+
+
 
 	optional uint32 ResponseCode = 39;
 }

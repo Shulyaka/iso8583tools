@@ -8,6 +8,14 @@ int ipcconnect(int);
 
 char stationid[7]="456789";
 
+double pow01(unsigned char x)
+{
+	if(!x)
+		return 1;
+
+	return 0.1*pow01(x-1);
+}
+
 fldformat* loadNetFormat(void)
 {
 	return load_format((char*)"../parser/formats/fields_visa");
@@ -68,6 +76,11 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 
 	struct tm datetime, current;
 	time_t now;
+
+	char tmpstr[9];
+
+	time(&now);
+	gmtime_r(&now, &current);
 
 	if(!fullmessage)
 	{
@@ -203,22 +216,19 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 		}
 	}
 
-	if(message->fld[4])
-		visamsg->set_amounttransaction(atol(message->fld[4]->data));
+	if(has_field(message,4))
+		visamsg->set_amounttransaction(atol(get_field(message, 4)));
 
-	if(message->fld[5])
-		visamsg->set_amountsettlement(atol(message->fld[5]->data));
+	if(has_field(message, 5))
+		visamsg->set_amountsettlement(atol(get_field(message, 5)));
 
-	if(message->fld[6])
-		visamsg->set_amountbilling(atol(message->fld[6]->data));
+	if(has_field(message, 6))
+		visamsg->set_amountbilling(atol(get_field(message, 6)));
 
-	time(&now);
-	gmtime_r(&now, &current);
-
-	if(message->fld[7])
+	if(has_field(message, 7))
 	{
 		memset(&datetime, 0, sizeof(datetime));
-		sscanf(message->fld[7]->data, "%2d%2d%2d%2d%2d", &datetime.tm_mon, &datetime.tm_mday, &datetime.tm_hour, &datetime.tm_min, &datetime.tm_sec);
+		sscanf(get_field(message, 7), "%2d%2d%2d%2d%2d", &datetime.tm_mon, &datetime.tm_mday, &datetime.tm_hour, &datetime.tm_min, &datetime.tm_sec);
 		datetime.tm_mon--;
 
 		datetime.tm_year=current.tm_year;
@@ -231,7 +241,38 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 		visamsg->set_transactiondatetime(timegm(&datetime));
 	}
 
+	if(has_field(message, 9))
+		visamsg->set_conversionratesettlement(atof(get_field(message, 9,1))*pow01(get_field(message, 9,0)[0]-'0'));
 	
+	if(has_field(message, 10))
+		visamsg->set_conversionratebilling(atof(get_field(message, 10,1))*pow01(get_field(message, 10,0)[0]-'0'));
+	
+	if(has_field(message, 11))
+	{
+		printf("%d\n", get_field(message, 11));
+		printf("%s\n", get_field(message, 11));
+
+		visamsg->set_stan(get_field(message, 11));
+	}
+
+	if(has_field(message, 12))
+		visamsg->set_terminaltime(get_field(message, 12));
+
+	if(has_field(message, 13))
+	{
+		if(get_field(message, 13)[0]=='1' && current.tm_mon<3)
+			sprintf(tmpstr, "%04d", current.tm_year+1900-1);
+		else if(get_field(message, 13)[0]=='0' && get_field(message, 13)[1]-'0'<4 && current.tm_mon>8)
+			sprintf(tmpstr, "%04d", current.tm_year+1900+1);
+		else
+			sprintf(tmpstr, "%04d", current.tm_year+1900);
+
+		strcpy(tmpstr+4, get_field(message, 13));
+
+		visamsg->set_terminaldate(tmpstr);
+	}
+
+
 
 	return 0;
 }
@@ -396,8 +437,16 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		strftime(add_field(message, 7), 11, "%m%d%H%M%S", gmtime(&datetime));
 	}
 
+	if(visamsg->has_stan())
+		strncpy(add_field(message, 11), visamsg->stan().c_str(), 6);
+	else
+		printf("Warning: No STAN\n");
 
+	if(visamsg->has_terminaltime())
+		strcpy(add_field(message, 12), visamsg->terminaltime().c_str());
 
+	if(visamsg->has_terminaldate())
+		strcpy(add_field(message, 13), visamsg->terminaldate().c_str()+4);
 
 	return fullmessage;
 }
