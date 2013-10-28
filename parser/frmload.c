@@ -459,7 +459,7 @@ int parseFormat(fldformat *frm, char *format)
 		}
 	}
 
-	//printf("Length type: %d, LengthLength: %d, Max Length: %d, data format: %d\n", frm->lengthFormat, frm->lengthLength, frm->maxLength, frm->dataFormat);
+	//printf("Field: %s, Length type: %d, LengthLength: %d, Max Length: %d, data format: %d\n", frm->description, frm->lengthFormat, frm->lengthLength, frm->maxLength, frm->dataFormat);
 
 	return 1;
 }

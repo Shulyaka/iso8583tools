@@ -280,6 +280,8 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 			pos=lenlen;
 			for(i=0; i < fld->fields; i++)
 			{
+				printf("%s, %d\n", frm->description, frm->maxLength);
+
 				if(pos==frm->maxLength+lenlen)
 					break;
 
@@ -295,8 +297,10 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 				if(!frm->fld[i])
 					continue;
 
+				printf("i=%i\n", i);
 				if((fld->fld[i] || frm->fld[i]->dataFormat==FRM_ISOBITMAP || frm->fld[i]->dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
 				{
+				printf("i=%i\n", i);
 					if(pos>maxlength)
 						return 0;
 
@@ -320,7 +324,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 					
 					if(!sflen)
 					{
-						printf("Error: unable to build subfield\n");
+						printf("Error: unable to build subfield %d: %s\n", i, frm->fld[i]->description);
 						return 0;
 					}
 					pos+=sflen;
@@ -330,6 +334,8 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 			flength=pos-lenlen;
 			blength=pos-lenlen;
 			mlength=blength;
+
+			printf("blength=%d, fields=%d\n", blength, fld->fields);
 			
 			break;
 
@@ -338,7 +344,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 			
 			tmpfrm.lengthFormat=FRM_FIXED;
 			tmpfrm.lengthLength=0;
-			tmpfrm.maxLength=fld->length;
+			tmpfrm.maxLength=frm->maxLength*2;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
 			tmpfrm.tagFormat=0;
 			tmpfrm.description=frm->description;
@@ -649,7 +655,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 		case FRM_FIXED:
 			if(frm->maxLength != mlength)
 			{
-				printf("Error: Bad length for fixed-length field! %d != %d for %s\n", mlength, frm->maxLength, frm->description);
+				printf("Error: Bad length for fixed-length field! %d (field) != %d (format) for %s\n", mlength, frm->maxLength, frm->description);
 				return 0;
 			}
 			break;
@@ -725,7 +731,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 			}
 	}
 
-	//printf("build_field: %s , length %d\n", frm->description, lenlen +blength);
+	printf("build_field: %s , length %d\n", frm->description, lenlen +blength);
 
 	return lenlen+blength;
 }

@@ -30,10 +30,10 @@ message 	BB800SF		Visa Message (with header)
 1.5		F12BCD		Amount, Settlement
 1.6		F12BCD		Amount, cardholder billing
 1.7		F10BCD		Transmission date and time
-1.9		F8BCDSF		Conversion Rate, Settlement
+1.9		F4BCDSF		Conversion Rate, Settlement
 1.9.0		F1ASC		exponent
 1.9.1		F7ASC		mantissa
-1.10		F8BCDSF		Converdion rate, cardholder billing
+1.10		F4BCDSF		Converdion rate, cardholder billing
 1.10.0		F1ASC		exponent
 1.10.1		F7ASC		mantissa
 1.11		F6BCD		System Trace Audit Number
@@ -99,7 +99,7 @@ message 	BB800SF		Visa Message (with header)
 1.55.2		BB252TLVEMV	Chip Card TLV data elements
 1.55.2.*	M255HEX		Chip data tag
 1.59		B14EBCDIC	National Point-of-Service Geographic Data
-1.60		B12BCDSF	Additional POS Information
+1.60		B6BCDSF		Additional POS Information
 1.60.1		F1ASC		terminal type
 1.60.2		F1ASC		terminal entry capability
 1.60.3		F1ASC		chip condition code

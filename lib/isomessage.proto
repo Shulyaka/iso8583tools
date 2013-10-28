@@ -109,19 +109,67 @@ message isomessage
 
 	optional uint64 AmountBilling = 19;
 
-	optional sint64 TransactionDateTime = 20;
+	optional sint64 TransactionDateTime = 20; // time_t
 
-	optional string TerminalDate = 21;
+	optional string TerminalDate = 21;   // "YYYYMMDD"
 
-	optional string TerminalTime = 22;
+	optional string TerminalTime = 22;   // "hhmmss"
 
-	optional double ConversionRateSettlement = 23;
+	optional string SettlementDate = 23;   // "YYYYMMDD"
 
-	optional double ConversionRateBilling = 24;
+	optional string ConversionDate = 24;   // "YYYYMMDD"
 
-	optional string STAN = 25;
+	optional double ConversionRateSettlement = 25;
+
+	optional double ConversionRateBilling = 26;
+
+	optional string STAN = 27;
+
+	optional string ExpiryDate = 28;   // "YYMM"
+
+	optional string MCC = 29;
+
+	optional string AcquirerCountry = 30;   // 3-digit code
+
+	optional string IssuerCountry = 31;   // 3-digit code
+
+	enum POSEntryMode
+	{
+		EM_UNKNOWN = 00;
+		MANUAL = 01;
+		BARCODE = 03;
+		OPTICAL = 04;
+		CHIP = 05;
+		MAGSTRIPE = 90;
+		STORED = 96;
+	}
+
+	optional POSEntryMode EntryMode = 32;
+
+	enum EntryModeFlagPosition
+	{
+		CVVUNRELIABLE = 1;
+		MAPPING = 2;
+		CONTACTLESS = 4;
+		FALLBACK = 8;
+		ECOMMERCE = 16;
+	}
+
+	optional uint32 EntryModeFlags = 33;
+
+	enum TermPINCap
+	{
+		PC_UNKNOWN = 0;
+		CANACCEPT = 1;
+		CANNOTACCEPT = 2;
+		PINPADDOWN = 8;
+	}
+
+	optional TermPINCap TerminalPINCapabilities = 34;
 
 
 
-	optional uint32 ResponseCode = 39;
+
+
+	optional uint32 ResponseCode = 139;
 }

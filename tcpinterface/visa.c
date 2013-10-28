@@ -49,6 +49,8 @@ field* parseNetMsg(char *buf, unsigned int length, fldformat *frm)
 
 unsigned int buildNetMsg(char *buf, unsigned int maxlength, field *message)
 {
+	unsigned int length;
+
 	if(!buf)
 	{
 		printf("Error: no buf\n");
@@ -63,7 +65,13 @@ unsigned int buildNetMsg(char *buf, unsigned int maxlength, field *message)
 
 	strcpy(add_field(message, 0,4 ), "0000");
 
-	sprintf(message->fld[0]->fld[4]->data, "%04X", get_length(message) - message->frm->lengthLength);
+	length=get_length(message);
+
+	if(length==0 || snprintf(message->fld[0]->fld[4]->data, 5, "%04X", length - message->frm->lengthLength) > 4)
+	{
+		printf("Error: Unable to calculate the message length (%d)\n", length);
+//		return 0;
+	}
 
 	return build_message(buf, maxlength, message);
 	
@@ -78,6 +86,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	time_t now;
 
 	char tmpstr[9];
+	unsigned int tmpint;
 
 	time(&now);
 	gmtime_r(&now, &current);
@@ -272,6 +281,113 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 		visamsg->set_terminaldate(tmpstr);
 	}
 
+	if(has_field(message, 14))
+		visamsg->set_expirydate(get_field(message, 14));
+
+	if(has_field(message, 15))
+	{
+		if(get_field(message, 15)[0]=='1' && current.tm_mon<3)
+			sprintf(tmpstr, "%04d", current.tm_year+1900-1);
+		else if(get_field(message, 15)[0]=='0' && get_field(message, 15)[1]-'0'<4 && current.tm_mon>8)
+			sprintf(tmpstr, "%04d", current.tm_year+1900+1);
+		else
+			sprintf(tmpstr, "%04d", current.tm_year+1900);
+
+		strcpy(tmpstr+4, get_field(message, 15));
+
+		visamsg->set_settlementdate(tmpstr);
+	}
+
+	if(has_field(message, 16))
+	{
+		if(get_field(message, 16)[0]=='1' && current.tm_mon<3)
+			sprintf(tmpstr, "%04d", current.tm_year+1900-1);
+		else if(get_field(message, 16)[0]=='0' && get_field(message, 16)[1]-'0'<4 && current.tm_mon>8)
+			sprintf(tmpstr, "%04d", current.tm_year+1900+1);
+		else
+			sprintf(tmpstr, "%04d", current.tm_year+1900);
+
+		strcpy(tmpstr+4, get_field(message, 16));
+
+		visamsg->set_conversiondate(tmpstr);
+	}
+
+	if(has_field(message, 18))
+		visamsg->set_mcc(get_field(message, 18));
+
+	if(has_field(message, 19))
+		visamsg->set_acquirercountry(get_field(message, 19));
+
+	if(has_field(message, 20))
+		visamsg->set_issuercountry(get_field(message, 20));
+
+	if(has_field(message, 22))
+	{
+		tmpint=0;
+
+		switch(atoi(get_field(message, 22,1 )))
+		{
+			case 01:
+				visamsg->set_entrymode(isomessage::MANUAL);
+				break;
+			case 02:
+				visamsg->set_entrymode(isomessage::MAGSTRIPE);
+				visamsg->set_entrymodeflags(isomessage::CVVUNRELIABLE);
+				break;
+			case 03:
+				visamsg->set_entrymode(isomessage::BARCODE);
+				break;
+			case 04:
+				visamsg->set_entrymode(isomessage::OPTICAL);
+				break;
+			case 05:
+				visamsg->set_entrymode(isomessage::CHIP);
+				break;
+			case 07:
+				visamsg->set_entrymode(isomessage::CHIP);
+				visamsg->set_entrymodeflags(isomessage::CONTACTLESS);
+				break;
+			case 90:
+				visamsg->set_entrymode(isomessage::MAGSTRIPE);
+				break;
+			case 91:
+				visamsg->set_entrymode(isomessage::MAGSTRIPE);
+				visamsg->set_entrymodeflags(isomessage::CONTACTLESS);
+				break;
+			case 95:
+				visamsg->set_entrymode(isomessage::CHIP);
+				visamsg->set_entrymodeflags(isomessage::CVVUNRELIABLE);
+				break;
+			case 96:
+				visamsg->set_entrymode(isomessage::STORED);
+				break;
+			default:
+				visamsg->set_entrymode(isomessage::EM_UNKNOWN);
+		}
+
+		switch(atoi(get_field(message, 22,2 )))
+		{
+			case 1:
+				visamsg->set_terminalpincapabilities(isomessage::CANACCEPT);
+				break;
+			case 2:
+				visamsg->set_terminalpincapabilities(isomessage::CANNOTACCEPT);
+				break;
+			case 8:
+				visamsg->set_terminalpincapabilities(isomessage::PINPADDOWN);
+				break;
+			default:
+				visamsg->set_terminalpincapabilities(isomessage::PC_UNKNOWN);
+		}
+	}
+
+
+
+
+
+
+
+
 
 
 	return 0;
@@ -447,6 +563,79 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 
 	if(visamsg->has_terminaldate())
 		strcpy(add_field(message, 13), visamsg->terminaldate().c_str()+4);
+
+	if(visamsg->has_expirydate() && isRequest(visamsg))
+		strcpy(add_field(message, 14), visamsg->expirydate().c_str());
+
+	if(visamsg->has_settlementdate() && !isRequest(visamsg))
+		strcpy(add_field(message, 15), visamsg->settlementdate().c_str()+4);
+
+	if(visamsg->has_mcc() && isRequest(visamsg))
+		strcpy(add_field(message, 18), visamsg->mcc().c_str());
+
+	if(visamsg->has_acquirercountry())
+		strcpy(add_field(message, 19), visamsg->acquirercountry().c_str());
+
+	if(visamsg->has_issuercountry())
+		strcpy(add_field(message, 20), visamsg->issuercountry().c_str());
+	
+	if(visamsg->has_entrymode() || visamsg->has_terminalpincapabilities())
+	{
+		switch(visamsg->entrymode())
+		{
+			case isomessage::MANUAL:
+				strcpy(add_field(message, 22,1 ), "01");
+				break;
+			case isomessage::BARCODE:
+				strcpy(add_field(message, 22,1 ), "03");
+				break;
+			case isomessage::OPTICAL:
+				strcpy(add_field(message, 22,1 ), "04");
+				break;
+			case isomessage::CHIP:
+				if(visamsg->entrymodeflags() & isomessage::CONTACTLESS)
+					strcpy(add_field(message, 22,1 ), "07");
+				else if(visamsg->entrymodeflags() & isomessage::CVVUNRELIABLE)
+					strcpy(add_field(message, 22,1 ), "95");
+				else
+					strcpy(add_field(message, 22,1 ), "05");
+				break;
+			case isomessage::MAGSTRIPE:
+				if(visamsg->entrymodeflags() & isomessage::CONTACTLESS)
+					strcpy(add_field(message, 22,1 ), "91");
+				else if(visamsg->entrymodeflags() & isomessage::CVVUNRELIABLE)
+					strcpy(add_field(message, 22,1 ), "02");
+				else
+					strcpy(add_field(message, 22,1 ), "91");
+				break;
+			case isomessage::STORED:
+				strcpy(add_field(message, 22,1 ), "96");
+				break;
+			default:
+				strcpy(add_field(message, 22,1 ), "00");
+		}
+
+		switch(visamsg->terminalpincapabilities())
+		{
+			case isomessage::CANACCEPT:
+				strcpy(add_field(message, 22,2 ), "1");
+				break;
+			case isomessage::CANNOTACCEPT:
+				strcpy(add_field(message, 22,2 ), "2");
+				break;
+			case isomessage::PINPADDOWN:
+				strcpy(add_field(message, 22,2 ), "8");
+				break;
+			default:
+				strcpy(add_field(message, 22,2 ), "0");
+		}
+
+		strcpy(add_field(message, 22,3 ), "0");
+	}
+
+
+
+
 
 	return fullmessage;
 }
