@@ -39,6 +39,8 @@ message isomessage
 		FEECOLLECTION = 7;
 		NETWORKMANAGEMENT = 8;
 		ISORESERVED = 9;
+		PREAUTHORIZATION = 11;
+		PREAUTHCOMPLETION = 12;
 	}
 
 	required MsgClass MessageClass = 10;
@@ -153,6 +155,13 @@ message isomessage
 		CONTACTLESS = 4;
 		FALLBACK = 8;
 		ECOMMERCE = 16;
+		PHONEORDER = 32;
+		CARDNOTPRESENT = 64;
+		CARDHOLDERNOTPRESENT = 128;
+		TERMUNATTENDED = 256;
+		MERCHANTSUSPICIOUS = 512;
+		NOTAUTHORIZED = 1024;
+		RECURRING = 2048;
 	}
 
 	optional uint32 EntryModeFlags = 33;
@@ -167,6 +176,7 @@ message isomessage
 
 	optional TermPINCap TerminalPINCapabilities = 34;
 
+	optional uint32	CardSequenceNumber = 35;
 
 
 

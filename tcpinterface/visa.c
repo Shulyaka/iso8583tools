@@ -381,9 +381,50 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 		}
 	}
 
+	if(has_field(message, 23))
+		visamsg->set_cardsequencenumber(atoi(get_field(message, 23)));
 
+	switch(atoi((get_field(message, 25))))
+	{
+		case 1:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::CARDHOLDERNOTPRESENT | isomessage::CARDNOTPRESENT);
+			break;
 
+		case 2:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::TERMUNATTENDED);
+			break;
 
+		case 3:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::MERCHANTSUSPICIOUS);
+			break;
+
+		case 5:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::CARDNOTPRESENT);
+			break;
+
+		case 6:
+			visamsg->set_messageclass(isomessage::PREAUTHCOMPLETION);
+			break;
+
+		case 8:
+			if(get_field(message, 126,13)[0]=='R' || !strcmp(get_field(message, 60,8 ), "02"))
+				visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::RECURRING | isomessage::CARDNOTPRESENT | isomessage::CARDHOLDERNOTPRESENT | isomessage::TERMUNATTENDED);
+			else
+				visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::PHONEORDER | isomessage::CARDNOTPRESENT | isomessage::CARDHOLDERNOTPRESENT | isomessage::TERMUNATTENDED);
+			break;
+
+		case 51:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::NOTAUTHORIZED);
+			break;
+
+		case 59:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::ECOMMERCE | isomessage::CARDNOTPRESENT | isomessage::TERMUNATTENDED);
+			break;
+
+		case 71:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::FALLBACK);
+			visamsg->set_entrymode(isomessage::MANUAL);
+	}
 
 
 
@@ -440,7 +481,15 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	strcpy(add_field(header, 6), stationid);
 
 	add_field(message, 0)[0]='0';
-	message->fld[0]->data[1]='0'+visamsg->messageclass();
+	switch(visamsg->messageclass())
+	{
+		case isomessage::PREAUTHORIZATION:
+		case isomessage::PREAUTHCOMPLETION:
+			message->fld[0]->data[1]='1';
+			break;
+		default:
+			message->fld[0]->data[1]='0'+visamsg->messageclass();
+	}
 	message->fld[0]->data[2]='0'+visamsg->messagefunction();
 	message->fld[0]->data[3]='0'+visamsg->messageorigin();
 	
@@ -579,7 +628,7 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	if(visamsg->has_issuercountry())
 		strcpy(add_field(message, 20), visamsg->issuercountry().c_str());
 	
-	if(visamsg->has_entrymode() || visamsg->has_terminalpincapabilities())
+	if(isRequest(visamsg) && (visamsg->has_entrymode() || visamsg->has_terminalpincapabilities()))
 	{
 		switch(visamsg->entrymode())
 		{
@@ -631,7 +680,31 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		}
 	}
 
+	if(isRequest(visamsg) && visamsg->has_cardsequencenumber())
+		snprintf(add_field(message, 23), 4, "%03d", visamsg->cardsequencenumber());
 
+	if(visamsg->messageclass()==isomessage::PREAUTHORIZATION)
+		strcpy(add_field(message, 25 ), "00");
+	else if(visamsg->messageclass()==isomessage::PREAUTHCOMPLETION)
+		strcpy(add_field(message, 25 ), "06");
+	else if((visamsg->entrymodeflags() & isomessage::PHONEORDER) || (visamsg->entrymodeflags() & isomessage::RECURRING))
+		strcpy(add_field(message, 25 ), "08");
+	else if(visamsg->entrymodeflags() & isomessage::ECOMMERCE)
+		strcpy(add_field(message, 25 ), "59");
+	else if(visamsg->entrymodeflags() & isomessage::NOTAUTHORIZED)
+		strcpy(add_field(message, 25 ), "51");
+	else if(visamsg->entrymodeflags() & isomessage::MERCHANTSUSPICIOUS)
+		strcpy(add_field(message, 25 ), "03");
+	else if(visamsg->entrymodeflags() & isomessage::TERMUNATTENDED)
+		strcpy(add_field(message, 25 ), "02");
+	else if(visamsg->entrymodeflags() & isomessage::CARDHOLDERNOTPRESENT)
+		strcpy(add_field(message, 25 ), "01");
+	else if(visamsg->entrymodeflags() & isomessage::CARDNOTPRESENT)
+		strcpy(add_field(message, 25 ), "05");
+	else if((visamsg->entrymode() == isomessage::MANUAL) && (visamsg->entrymodeflags() & isomessage::FALLBACK))
+		strcpy(add_field(message, 25 ), "71");
+	else
+		strcpy(add_field(message, 25 ), "00");
 
 
 
