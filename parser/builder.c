@@ -8,7 +8,8 @@
 unsigned int build_field(char*, unsigned int, field*);
 unsigned int build_ebcdic(char*, char*, unsigned int);
 unsigned int build_hex(char*, char*, unsigned int);
-unsigned int build_bcd(char*, char*, unsigned int);
+unsigned int build_bcdl(char*, char*, unsigned int);
+unsigned int build_bcdr(char*, char*, unsigned int);
 unsigned int build_isobitmap(char*, unsigned int, field*, unsigned int);
 unsigned int build_bitmap(char*, unsigned int, field*, unsigned int);
 
@@ -43,8 +44,8 @@ unsigned int get_length(field *fld)
 
 	if(fld->data)
 		flength=strlen(fld->data);
-	else if(frm->lengthFormat==FRM_FIXED)
-		flength=frm->maxLength;
+//	else if(frm->lengthFormat==FRM_FIXED)
+//		flength=frm->maxLength;
 
 	if(frm->lengthFormat==FRM_EMVL)
 		if(frm->dataFormat==FRM_BCD || frm->dataFormat==FRM_HEX)
@@ -103,7 +104,7 @@ unsigned int get_length(field *fld)
 		case FRM_BCDSF:
 			tmpfrm.lengthFormat=FRM_FIXED;
 			tmpfrm.lengthLength=0;
-			tmpfrm.maxLength=fld->length;
+			tmpfrm.maxLength=frm->maxLength;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
 			tmpfrm.tagFormat=0;
 			tmpfrm.description=frm->description;
@@ -280,8 +281,6 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 			pos=lenlen;
 			for(i=0; i < fld->fields; i++)
 			{
-				printf("%s, %d\n", frm->description, frm->maxLength);
-
 				if(pos==frm->maxLength+lenlen)
 					break;
 
@@ -297,10 +296,8 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 				if(!frm->fld[i])
 					continue;
 
-				printf("i=%i\n", i);
 				if((fld->fld[i] || frm->fld[i]->dataFormat==FRM_ISOBITMAP || frm->fld[i]->dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
 				{
-				printf("i=%i\n", i);
 					if(pos>maxlength)
 						return 0;
 
@@ -335,8 +332,6 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 			blength=pos-lenlen;
 			mlength=blength;
 
-			printf("blength=%d, fields=%d\n", blength, fld->fields);
-			
 			break;
 
 		case FRM_BCDSF:
@@ -344,7 +339,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 			
 			tmpfrm.lengthFormat=FRM_FIXED;
 			tmpfrm.lengthLength=0;
-			tmpfrm.maxLength=frm->maxLength*2;
+			tmpfrm.maxLength=frm->maxLength;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
 			tmpfrm.tagFormat=0;
 			tmpfrm.description=frm->description;
@@ -362,12 +357,12 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 				return 0;
 
 			blength=(flength+1)/2;
-			mlength=blength;
+			mlength=flength;
 
 			if(lenlen+blength>maxlength)
 				return 0;
 			
-			if(!build_bcd(fld->data, buf+lenlen, flength))
+			if(!build_bcdl(fld->data, buf+lenlen, flength))
 			{
 				printf("Error: Not BCD subfield\n");
 				return 0;
@@ -438,7 +433,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 					case FRM_BCD:
 						if(sflen<taglength*2)
 							return 0;
-						build_bcd(fld->fld[i]->tag, buf+pos, sflen);
+						build_bcdl(fld->fld[i]->tag, buf+pos, sflen);
 						break;
 					case FRM_ASCII:
 					default:
@@ -529,7 +524,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 							return 0;
 						}
 
-						if(!build_bcd(lengthbuf, buf + pos + taglength - (strlen(lengthbuf)+1)/2, strlen(lengthbuf)))
+						if(!build_bcdr(lengthbuf, buf + pos + taglength - (strlen(lengthbuf)+1)/2, strlen(lengthbuf)))
 							return 0;
 
 						for(j=0; j < taglength - (strlen(lengthbuf)+1)/2; j++)
@@ -629,7 +624,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 			mlength=flength;
 			if(lenlen+blength>maxlength)
 				return 0;
-			if(!build_bcd(fld->data, buf+lenlen, flength))
+			if(!build_bcdr(fld->data, buf+lenlen, flength))
 				return 0;
 
 			break;
@@ -683,7 +678,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 				return 0;
 			}
 
-			if(!build_bcd(lengthbuf, buf + lenlen - (strlen(lengthbuf)+1)/2, strlen(lengthbuf)))
+			if(!build_bcdr(lengthbuf, buf + lenlen - (strlen(lengthbuf)+1)/2, strlen(lengthbuf)))
 				return 0;
 
 			for(i=0; i < lenlen - (strlen(lengthbuf)+1)/2; i++)
@@ -731,7 +726,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 			}
 	}
 
-	printf("build_field: %s , length %d\n", frm->description, lenlen +blength);
+	//printf("build_field: %s , length %d\n", frm->description, lenlen +blength);
 
 	return lenlen+blength;
 }
@@ -747,14 +742,12 @@ unsigned int build_ebcdic(char *from, char *to, unsigned int len)
 	return len;
 }
 
-unsigned int build_bcd(char *from, char *to, unsigned int len)
+unsigned int build_bcdr(char *from, char *to, unsigned int len)
 {
 	unsigned int i;
 	unsigned int u=len/2*2==len?0:1;
 	unsigned char t;
 	unsigned int separator_found=0;
-
-//printf("BCD: %s\n", from);
 
 	to[0]='\0';
 	for(i=0; i<(len+1)/2; i++)
@@ -771,7 +764,7 @@ unsigned int build_bcd(char *from, char *to, unsigned int len)
 				to[i]=(t-'0')<<4;
 			else
 			{
-				printf("Error: build_bcd: The string is not BCD\n");
+				printf("Error: build_bcdr: The string is not BCD\n");
 				return 0;
 			}
 		}
@@ -786,8 +779,52 @@ unsigned int build_bcd(char *from, char *to, unsigned int len)
 			to[i]|=t-'0';
 		else
 		{
-			printf("Error: build_bcd: The string is not BCD\n");
+			printf("Error: build_bcdr: The string is not BCD\n");
 			return 0;
+		}
+	}
+	return (len+1)/2;
+}
+
+unsigned int build_bcdl(char *from, char *to, unsigned int len)
+{
+	unsigned int i;
+	unsigned int u=len/2*2==len?0:1;
+	unsigned char t;
+	unsigned int separator_found=0;
+
+	to[0]='\0';
+	for(i=0; i<(len+1)/2; i++)
+	{
+		t=(unsigned char)from[i*2];
+		if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
+		{
+			separator_found=1;
+			to[i]=0xD0;
+		}
+		else if(t>='0' && t<='9')
+			to[i]=(t-'0')<<4;
+		else
+		{
+			printf("Error: build_bcdl: The string is not BCD ('%s')\n", from);
+			return 0;
+		}
+
+		if(u==0 || i!=(len+1)/2-1)
+		{
+			t=(unsigned char)from[i*2+1];
+			if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
+			{
+				separator_found=1;
+				to[i]|=0xD;
+			}
+			else if(t>='0' && t<='9')
+				to[i]|=t-'0';
+			else
+			{
+				printf("Error: build_bcdl: The string is not BCD ('%s')\n", from);
+				return 0;
+			}
 		}
 	}
 	return (len+1)/2;

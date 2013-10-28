@@ -7,7 +7,8 @@
 unsigned int parse_field(char*, unsigned int, field*);
 void parse_ebcdic(char*, char*, unsigned int);
 int parse_hex(char*, char*, unsigned int);
-int parse_bcd(char*, char*, unsigned int);
+int parse_bcdr(char*, char*, unsigned int);
+int parse_bcdl(char*, char*, unsigned int);
 
 field *parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 {
@@ -236,8 +237,9 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 				blength=(fld->length+7)/8;
 				break;
 			case FRM_HEX:
-			case FRM_BCDSF:
+//			case FRM_BCDSF:
 				fld->length=fld->length*2;
+			case FRM_BCDSF:
 			case FRM_BCD:
 				blength=(fld->length+1)/2;
 				break;
@@ -312,7 +314,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 
 		case FRM_BCDSF:
 			fld->data=(char*)malloc(fld->length+1);
-			if(!parse_bcd(buf+lenlen, fld->data, fld->length))
+			if(!parse_bcdl(buf+lenlen, fld->data, fld->length))
 			{
 				printf("Error: Not BCD field\n");
 				return 0;
@@ -328,6 +330,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 			tmpfrm.fields=frm->fields;
 			tmpfrm.fld=frm->fld;
 			fld->frm=&tmpfrm;
+printf("data: [%s], length: %d\n", fld->data, fld->length);
 			parse_field(fld->data, fld->length, fld);
 			
 			free(fld->data);
@@ -444,7 +447,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 						j=atoi(lengthbuf);
 						break;
 					case FRM_BCD:
-						parse_bcd(buf+pos, lengthbuf, taglength*2);
+						parse_bcdl(buf+pos, lengthbuf, taglength*2);
 						j=atoi(lengthbuf);
 					case FRM_HEX:
 						parse_hex(buf+pos, lengthbuf, taglength*2);
@@ -535,7 +538,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 
 		case FRM_BCD:
 			fld->data=(char*)malloc(frm->maxLength+1);
-			if(!parse_bcd(buf+lenlen, fld->data, fld->length))
+			if(!parse_bcdr(buf+lenlen, fld->data, fld->length))
 				return 0;
 			break;
 
@@ -567,7 +570,7 @@ void parse_ebcdic(char *from, char *to, unsigned int len)
 	to[len]='\0';
 }
 
-int parse_bcd(char *from, char *to, unsigned int len)
+int parse_bcdr(char *from, char *to, unsigned int len)
 {
 	unsigned int i;
 	unsigned char t;
@@ -586,7 +589,7 @@ int parse_bcd(char *from, char *to, unsigned int len)
 			}
 			else if (t > 9)
 			{
-				printf("Error: parse_bcd: The string is not BCD (%02x, %02x, %d, %d)\n", from[i], t, separator_found, len);
+				printf("Error: parse_bcdr: The string is not BCD (%02x, %02x, %d, %d)\n", from[i], t, separator_found, len);
 				return 0;
 			}
 			else
@@ -594,7 +597,7 @@ int parse_bcd(char *from, char *to, unsigned int len)
 		}
 		else if(((unsigned char)from[i])>>4!=0)
 		{
-			printf("Error: parse_bcd: First 4 bits not zero\n");
+			printf("Error: parse_bcdr: First 4 bits not zero\n");
 			return 0;
 		}
 
@@ -606,13 +609,63 @@ int parse_bcd(char *from, char *to, unsigned int len)
 		}
 		else if (t > 9)
 		{
-			printf("Error: parse_bcd: The string is not BCD\n");
+			printf("Error: parse_bcdr: The string is not BCD\n");
 			return 0;
 		}
 		else
 			to[i*2+1-u]='0' + t;
 	}
 	to[len]='\0';
+	return 1;
+}
+
+int parse_bcdl(char *from, char *to, unsigned int len)
+{
+	unsigned int i;
+	unsigned char t;
+	unsigned int u=len/2*2==len?0:1;
+	unsigned int separator_found=0;
+
+	for(i=0; i<(len+1)/2; i++)
+	{
+		t=((unsigned char)from[i]) >> 4;
+		if(17<len && len<38 && !separator_found && t==0xD)     //making one exception for track2
+		{
+			separator_found=1;
+			to[i*2]='^';
+		}
+		else if (t > 9)
+		{
+			printf("Error: parse_bcdl: The string is not BCD (%02x, %02x, %d, %d)\n", from[i], t, separator_found, len);
+			return 0;
+		}
+		else
+			to[i*2]='0' + t;
+
+		if(u==0 || i!=(len+1)/2-1)
+		{
+			t=((unsigned char)from[i]) & 0x0F;
+			if(17<len && len<38 && !separator_found && t==0xD)     //making one exception for track2
+			{
+				separator_found=1;
+				to[i*2]='^';
+			}
+			else if (t > 9)
+			{
+				printf("Error: parse_bcdl: The string is not BCD\n");
+				return 0;
+			}
+			else
+				to[i*2+1]='0' + t;
+		}
+		else if((((unsigned char)from[i]) & 0x0F)!=0)
+		{
+			printf("Error: parse_bcdl: Last 4 bits not zero\n");
+			return 0;
+		}
+	}
+	to[len]='\0';
+
 	return 1;
 }
 

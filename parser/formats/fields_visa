@@ -3,7 +3,6 @@
 # This is just an example, not a real Visa header
 #Number		Format		Description
 message 	BB800SF		Visa Message (with header)
-#0		F2HEX		filler
 0		BI22SF		Visa Header
 0.2		F2BCD		Header Format
 0.3		F2BCD		Text format
@@ -30,10 +29,10 @@ message 	BB800SF		Visa Message (with header)
 1.5		F12BCD		Amount, Settlement
 1.6		F12BCD		Amount, cardholder billing
 1.7		F10BCD		Transmission date and time
-1.9		F4BCDSF		Conversion Rate, Settlement
+1.9		F8BCDSF		Conversion Rate, Settlement
 1.9.0		F1ASC		exponent
 1.9.1		F7ASC		mantissa
-1.10		F4BCDSF		Converdion rate, cardholder billing
+1.10		F8BCDSF		Converdion rate, cardholder billing
 1.10.0		F1ASC		exponent
 1.10.1		F7ASC		mantissa
 1.11		F6BCD		System Trace Audit Number
@@ -45,10 +44,9 @@ message 	BB800SF		Visa Message (with header)
 1.18		F4BCD		Merchant type
 1.19		F3BCD		Acquiring institution country code
 1.20		F3BCD		PAN Extended, Country Code
-1.22		F2BCDSF		Point-of-Service Entry Mode Code
+1.22		F3BCDSF		Point-of-Service Entry Mode Code
 1.22.1		F2ASC		PAN/date entry mode
 1.22.2		F1ASC		PAN entry capability
-1.22.3		F1ASC		filler
 1.23		F3BCD		Card Sequence Number
 1.25		F2BCD		Point-of-Service Condition Code
 1.26		F2BCD		Point-of-Service PIN Capture Code
@@ -99,7 +97,7 @@ message 	BB800SF		Visa Message (with header)
 1.55.2		BB252TLVEMV	Chip Card TLV data elements
 1.55.2.*	M255HEX		Chip data tag
 1.59		B14EBCDIC	National Point-of-Service Geographic Data
-1.60		B6BCDSF		Additional POS Information
+1.60		B12BCDSF	Additional POS Information
 1.60.1		F1ASC		terminal type
 1.60.2		F1ASC		terminal entry capability
 1.60.3		F1ASC		chip condition code
@@ -151,7 +149,7 @@ message 	BB800SF		Visa Message (with header)
 1.68		F3BCD		Receiving Institution Country Code
 1.70		F3BCD		Network Management Informatioin Code
 1.73		F6BCD		Date, Action
-1.90		F21BCDSF	Original Data Elements
+1.90		F42BCDSF	Original Data Elements
 1.90.1		F4ASC		original message type
 1.90.2		F6ASC		original trace number
 1.90.3		F10ASC		original transmission date/time
@@ -205,7 +203,7 @@ message 	BB800SF		Visa Message (with header)
 1.126.9.4	F3BCD		CAVV Value
 1.126.9.5	F4BCD		CAVV Unpredictable Number
 1.126.9.6	F16BCD		Authentication Tracking Number
-1.126.9.7 	F1BCDSF		Version and Authentication Action
+1.126.9.7 	F2BCDSF		Version and Authentication Action
 1.126.9.7.0	F1ASC		Version
 1.126.9.7.1	F1ASC		Authentication Value
 1.126.9.8	F4HEX		IP Address in Hex Format

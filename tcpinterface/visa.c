@@ -629,8 +629,6 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 			default:
 				strcpy(add_field(message, 22,2 ), "0");
 		}
-
-		strcpy(add_field(message, 22,3 ), "0");
 	}
 
 

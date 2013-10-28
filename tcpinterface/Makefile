@@ -4,7 +4,7 @@ CFLAGS=-ggdb
 all: tcpif_visa #tcpif_mast
 
 clean:
-	rm -f *.o tcpif_visa tcpif_mast
+	rm -f *.o tcpif_visa tcpif_mast core.*
 
 tcpif_visa: tcpinterface.o ../lib/ipc.o tcp.o visa.o ../parser/libparser.a ../lib/isomessage.pb.o
 		g++ -L ../parser tcpinterface.o ../lib/ipc.o tcp.o visa.o ../lib/isomessage.pb.o -lparser -lprotobuf -o tcpif_visa
