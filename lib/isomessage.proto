@@ -105,37 +105,39 @@ message isomessage
 
 	optional AccntType AccountTypeTo = 16 [default = DEFAULT];
 
-	optional uint64 AmountTransaction = 17; //fixed-point amount excluding any transaction fees
+	optional uint64 AmountTransaction = 17;  //fixed-point amount excluding any transaction fees
 
 	optional uint64 AmountSettlement = 18;
 
 	optional uint64 AmountBilling = 19;
 
-	optional sint64 TransactionDateTime = 20; // time_t
+	optional sint64 AmountAcquirerFee = 20;  // Informational only. <0 is Credit to cardholder
 
-	optional string TerminalDate = 21;   // "YYYYMMDD"
+	optional sint64 TransactionDateTime = 21; // time_t
 
-	optional string TerminalTime = 22;   // "hhmmss"
+	optional string TerminalDate = 22;   // "YYYYMMDD"
 
-	optional string SettlementDate = 23;   // "YYYYMMDD"
+	optional string TerminalTime = 23;   // "hhmmss"
 
-	optional string ConversionDate = 24;   // "YYYYMMDD"
+	optional string SettlementDate = 24;   // "YYYYMMDD"
 
-	optional double ConversionRateSettlement = 25;
+	optional string ConversionDate = 25;   // "YYYYMMDD"
 
-	optional double ConversionRateBilling = 26;
+	optional double ConversionRateSettlement = 26;
 
-	optional string STAN = 27;
+	optional double ConversionRateBilling = 27;
 
-	optional string ExpiryDate = 28;   // "YYMM"
+	optional string STAN = 28;
 
-	optional string MCC = 29;
+	optional string ExpiryDate = 29;   // "YYMM"
 
-	optional string AcquirerCountry = 30;   // 3-digit code
+	optional string MCC = 30;
 
-	optional string IssuerCountry = 31;   // 3-digit code
+	optional string AcquirerCountry = 31;   // 3-digit code
 
-	enum POSEntryMode
+	optional string IssuerCountry = 32;   // 3-digit code
+
+	enum TermEntryMode
 	{
 		EM_UNKNOWN = 00;
 		MANUAL = 01;
@@ -146,7 +148,7 @@ message isomessage
 		STORED = 96;
 	}
 
-	optional POSEntryMode EntryMode = 32;
+	optional TermEntryMode EntryMode = 33;
 
 	enum EntryModeFlagPosition
 	{
@@ -164,7 +166,7 @@ message isomessage
 		RECURRING = 2048;
 	}
 
-	optional uint32 EntryModeFlags = 33;
+	optional uint32 EntryModeFlags = 34;
 
 	enum TermPINCap
 	{
@@ -174,12 +176,33 @@ message isomessage
 		PINPADDOWN = 8;
 	}
 
-	optional TermPINCap TerminalPINCapabilities = 34;
+	optional TermPINCap TerminalPINCapabilities = 35;
 
-	optional uint32	CardSequenceNumber = 35;
+	optional uint32 TermPINMaxDigits = 36 [default = 12];
+
+	optional uint32	CardSequenceNumber = 37;
+
+	optional uint64 AcquirerID = 38;
+
+	optional uint64 ForwardingID = 39;
+
+	optional string Track2 = 40;
+
+	optional string RRN = 41;
+
+	optional string AuthID = 42;
+
+	optional uint32 ResponseCode = 43 [default = 96];
+
+	optional string TerminalID = 44;
 
 
 
 
-	optional uint32 ResponseCode = 139;
+
+
+
+
+
+	optional string PIN = 152;
 }

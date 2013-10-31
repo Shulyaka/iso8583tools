@@ -226,13 +226,13 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	}
 
 	if(has_field(message,4))
-		visamsg->set_amounttransaction(atol(get_field(message, 4)));
+		visamsg->set_amounttransaction(atoll(get_field(message, 4)));
 
 	if(has_field(message, 5))
-		visamsg->set_amountsettlement(atol(get_field(message, 5)));
+		visamsg->set_amountsettlement(atoll(get_field(message, 5)));
 
 	if(has_field(message, 6))
-		visamsg->set_amountbilling(atol(get_field(message, 6)));
+		visamsg->set_amountbilling(atoll(get_field(message, 6)));
 
 	if(has_field(message, 7))
 	{
@@ -426,6 +426,36 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 			visamsg->set_entrymode(isomessage::MANUAL);
 	}
 
+	if(has_field(message, 26))
+		visamsg->set_termpinmaxdigits(atoi(get_field(message, 26)));
+
+	if(has_field(message, 28))
+	{
+		if(get_field(message, 28)[0]=='C')
+			visamsg->set_amountacquirerfee(-atoll(get_field(message, 28)+1));
+		else
+			visamsg->set_amountacquirerfee(atoll(get_field(message, 28)+1));
+	}
+
+	if(has_field(message, 32))
+		visamsg->set_acquirerid(atoll(get_field(message, 32)));
+	
+	if(has_field(message, 33))
+		visamsg->set_forwardingid(atoll(get_field(message, 33)));
+
+	if(has_field(message, 35))
+		visamsg->set_track2(get_field(message, 35));
+
+	if(has_field(message, 37))
+		visamsg->set_rrn(get_field(message, 37));
+
+	if(has_field(message, 38))
+		visamsg->set_authid(get_field(message, 38));
+
+	if(has_field(message, 39))
+		visamsg->set_responsecode(atoi(get_field(message, 39)));
+
+
 
 
 
@@ -495,9 +525,6 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	
 	if(visamsg->has_pan())
 		strcpy(add_field(message, 2), visamsg->pan().c_str());
-
-	if(visamsg->has_responsecode())
-		sprintf(add_field(message, 39), "%02d", visamsg->responsecode());
 
 	if(visamsg->has_transactiontype())
 	{
@@ -587,13 +614,13 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	}
 
 	if(visamsg->has_amounttransaction())
-		snprintf(add_field(message, 4), 13, "%012ld", visamsg->amounttransaction());
+		snprintf(add_field(message, 4), 13, "%012lld", visamsg->amounttransaction());
 
 	if(visamsg->has_amountsettlement())
-		snprintf(add_field(message, 5), 13, "%012ld", visamsg->amountsettlement());
+		snprintf(add_field(message, 5), 13, "%012lld", visamsg->amountsettlement());
 
 	if(visamsg->has_amountbilling())
-		snprintf(add_field(message, 6), 13, "%012ld", visamsg->amountbilling());
+		snprintf(add_field(message, 6), 13, "%012lld", visamsg->amountbilling());
 
 	if(visamsg->has_transactiondatetime())
 	{
@@ -705,6 +732,44 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		strcpy(add_field(message, 25 ), "71");
 	else
 		strcpy(add_field(message, 25 ), "00");
+
+	if(isRequest(visamsg) && visamsg->has_termpinmaxdigits() && visamsg->has_pin())
+		snprintf(add_field(message, 26), 3, "%02d", visamsg->termpinmaxdigits());
+
+	if(isRequest(visamsg) && visamsg->has_amountacquirerfee())
+	{
+		if(visamsg->amountacquirerfee()<0)
+			snprintf(add_field(message, 28), 10, "C%08lld", -visamsg->amountacquirerfee());
+		else
+			snprintf(add_field(message, 28), 10, "D%08lld", visamsg->amountacquirerfee());
+	}
+
+	if(visamsg->has_acquirerid())
+		snprintf(add_field(message, 32), 12, "%lld", visamsg->acquirerid());
+
+	if(visamsg->has_forwardingid())
+		snprintf(add_field(message, 33), 12, "%lld", visamsg->forwardingid());
+
+	if(isRequest(visamsg) && visamsg->has_track2() && (visamsg->entrymode()==isomessage::MAGSTRIPE || visamsg->entrymode()==isomessage::EM_UNKNOWN))
+		strcpy(add_field(message, 35), visamsg->track2().c_str());
+
+	if(visamsg->has_rrn());
+		strcpy(add_field(message, 37), visamsg->rrn().c_str());
+
+	if(visamsg->has_authid())
+		strcpy(add_field(message, 38), visamsg->authid().c_str());
+
+	if(visamsg->has_responsecode())
+		sprintf(add_field(message, 39), "%02d", visamsg->responsecode());
+
+	if(visamsg->has_terminalid())
+	{
+		strcpy(add_field(message, 41), "        ");
+		memcpy(add_field(message, 41), visamsg->terminalid().c_str(), strlen(visamsg->terminalid().c_str()) > 8 ? 8 : strlen(visamsg->terminalid().c_str()) );
+	}
+
+
+
 
 
 
