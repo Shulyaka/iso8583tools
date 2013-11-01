@@ -270,6 +270,8 @@ int main(void)
 
 				size=tcpsendmsg(sfd[1].fd, pmessage);
 
+				freeField(pmessage);
+
 				if(size==-1)
 				{
 					printf("Closing connection\n");
@@ -279,7 +281,6 @@ int main(void)
 						if(!declineMsg(&smessage))
 						{
 							printf("Error: Unable to decline the request. Message dropped.\n");
-							freeField(pmessage);
 							continue;
 						}
 
@@ -290,14 +291,12 @@ int main(void)
 						if(size<=0)
 						{
 							printf("Error: Unable to return the declined message to switch. Message dropped.\n");
-							freeField(pmessage);
 							continue;
 						}
 
 						printf("Decline message sent (%d bytes)\n", size);
 
 					}
-					freeField(pmessage);
 					break;
 				}
 				else if(size==0)
@@ -307,7 +306,6 @@ int main(void)
 						if(!declineMsg(&smessage))
 						{
 							printf("Error: Unable to decline the request. Message dropped.\n");
-							freeField(pmessage);
 							continue;
 						}
 
@@ -318,17 +316,13 @@ int main(void)
 						if(size<=0)
 						{
 							printf("Error: Unable to return the declined message to switch. Message dropped.\n");
-							freeField(pmessage);
 							continue;
 						}
 
 						printf("Decline message sent (%d bytes)\n", size);
 					}
-					freeField(pmessage);
 					continue;
 				}
-
-				freeField(pmessage);
 
 				printf("Message sent (%d bytes)\n", size);
 			}
@@ -376,6 +370,8 @@ int declineMsg(isomessage *message)
 	}
 
 	message->set_responsecode(96);
+
+	message->set_responsesource(isomessage::RSP_INTERNAL);
 
 	return 0;
 }

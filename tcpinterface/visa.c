@@ -85,8 +85,8 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	struct tm datetime, current;
 	time_t now;
 
-	char tmpstr[9];
-	unsigned int tmpint;
+	char tmpstr[26];
+	unsigned int tmpint, i;
 
 	time(&now);
 	gmtime_r(&now, &current);
@@ -455,6 +455,149 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	if(has_field(message, 39))
 		visamsg->set_responsecode(atoi(get_field(message, 39)));
 
+	if(has_field(message, 41))
+	{
+		strcpy(tmpstr, get_field(message, 41));
+
+		for(i=7; i!=0; i--)
+			if(tmpstr[i]!=' ')
+				break;
+
+		tmpstr[i+1]='\0';
+
+		visamsg->set_terminalid(tmpstr);
+	}
+			
+	if(has_field(message, 42))
+	{
+		strcpy(tmpstr, get_field(message, 42));
+
+		for(i=14; i!=0; i--)
+			if(tmpstr[i]!=' ')
+				break;
+
+		tmpstr[i+1]='\0';
+
+		visamsg->set_merchantid(tmpstr);
+	}
+
+	if(has_field(message, 43))
+	{
+		strcpy(tmpstr, get_field(message, 43,1));
+
+		for(i=24; i!=0; i--)
+			if(tmpstr[i]!=' ')
+				break;
+
+		tmpstr[i+1]='\0';
+
+		visamsg->set_merchantname(tmpstr);
+
+		strcpy(tmpstr, get_field(message, 43,2));
+
+		for(i=12; i!=0; i--)
+			if(tmpstr[i]!=' ')
+				break;
+
+		tmpstr[i+1]='\0';
+
+		visamsg->set_merchantcity(tmpstr);
+
+		visamsg->set_merchantcountry(get_field(message, 43,3));
+	}
+
+	if(has_field(message, 44,1))
+	{
+		if(get_field(message, 44,1)[0]=='5')
+			visamsg->set_responsesource(isomessage::RSP_ISSUER);
+		else
+			visamsg->set_responsesource(isomessage::RSP_NETWORK);
+	}
+
+	switch(get_field(message, 44,2)[0])
+	{
+		case '\0':
+		case ' ':
+			break;
+
+		case 'A':
+			visamsg->set_addressverification(isomessage::MATCH);
+			visamsg->set_postalcodeverification(isomessage::NOMATCH);
+			break;
+
+		case 'B':
+			visamsg->set_addressverification(isomessage::MATCH);
+			visamsg->set_postalcodeverification(isomessage::NOTPERFORMED);
+			break;
+
+		case 'C':
+			visamsg->set_addressverification(isomessage::NOTPERFORMED);
+			visamsg->set_postalcodeverification(isomessage::NOTPERFORMED);
+			break;
+
+		case 'D':
+		case 'F':
+		case 'M':
+		case 'X':
+		case 'Y':
+			visamsg->set_addressverification(isomessage::MATCH);
+			visamsg->set_postalcodeverification(isomessage::MATCH);
+			break;
+
+		case 'G':
+		case 'I':
+		case 'R':
+		case 'S':
+		case 'U':
+			visamsg->set_addressverification(isomessage::NOTPERFORMED);
+			visamsg->set_postalcodeverification(isomessage::NOTPERFORMED);
+			break;
+
+		case 'N':
+			visamsg->set_addressverification(isomessage::NOMATCH);
+			visamsg->set_postalcodeverification(isomessage::NOMATCH);
+			break;
+
+		case 'P':
+			visamsg->set_addressverification(isomessage::NOTPERFORMED);
+			visamsg->set_postalcodeverification(isomessage::MATCH);
+			break;
+
+		case 'W':
+		case 'Z':
+			visamsg->set_addressverification(isomessage::NOMATCH);
+			visamsg->set_postalcodeverification(isomessage::MATCH);
+			break;
+	}
+
+	switch(get_field(message, 44,5)[0])
+	{
+		case '\0':
+		case ' ':
+			break;
+
+		case '1':
+			visamsg->set_cvvverification(isomessage::MATCH);
+			break;
+
+		case '2':
+		case '3':
+			visamsg->set_cvvverification(isomessage::NOMATCH);
+			break;
+	}
+
+	switch(get_field(message, 44,8)[0])
+	{
+		case '\0':
+		case ' ':
+			break;
+
+		case '1':
+			visamsg->set_cardauthenticationresults(isomessage::NOMATCH);
+
+		case '2':
+			visamsg->set_cardauthenticationresults(isomessage::MATCH);
+	}
 
 
 
@@ -473,6 +616,8 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	fullmessage->frm=frm;
 
 	time_t datetime;
+
+	unsigned int i;
 
 	add_field(fullmessage, 0);
 	add_field(fullmessage, 1);
@@ -765,8 +910,33 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	if(visamsg->has_terminalid())
 	{
 		strcpy(add_field(message, 41), "        ");
-		memcpy(add_field(message, 41), visamsg->terminalid().c_str(), strlen(visamsg->terminalid().c_str()) > 8 ? 8 : strlen(visamsg->terminalid().c_str()) );
+		i=strlen(visamsg->terminalid().c_str());
+		memcpy(add_field(message, 41), visamsg->terminalid().c_str(), i > 8 ? 8 : i );
 	}
+
+	if(visamsg->has_merchantid())
+	{
+		strcpy(add_field(message, 42), "               ");
+		i=strlen(visamsg->merchantid().c_str());
+		memcpy(add_field(message, 42), visamsg->merchantid().c_str(), i > 15 ? 15 : i );
+	}
+
+	if(isRequest(visamsg) && (visamsg->has_merchantname() || visamsg->has_merchantcity() || visamsg->has_merchantcountry()))
+	{
+		strcpy(add_field(message, 43,1), "                         ");
+		i=strlen(visamsg->merchantname().c_str());
+		memcpy(add_field(message, 43,1), visamsg->merchantname().c_str(), i > 25 ? 25 : i );
+
+		strcpy(add_field(message, 43,2), "             ");
+		i=strlen(visamsg->merchantcity().c_str());
+		memcpy(add_field(message, 43,2), visamsg->merchantcity().c_str(), i > 13 ? 13 : i );
+
+		strcpy(add_field(message, 43,3), visamsg->merchantcountry().c_str());
+	}
+
+	
+
+
 
 
 

@@ -196,7 +196,37 @@ message isomessage
 
 	optional string TerminalID = 44;
 
+	optional string MerchantID = 45;
 
+	optional string MerchantName = 46;
+
+	optional string MerchantCity = 47;
+
+	optional string MerchantCountry = 48;  // AN2
+
+	enum RespSource
+	{
+		RSP_NETWORK = 1;  // Payment System
+		RSP_ISSUER = 5;
+		RSP_INTERNAL = 9;
+	}
+
+	optional RespSource ResponseSource = 49;
+
+	enum VerifResult
+	{
+		NOTPERFORMED = 0;
+		NOMATCH = 1;
+		MATCH = 2;
+	}
+
+	optional VerifResult AddressVerification = 50;  // Street address only
+
+	optional VerifResult PostalCodeVerification = 51;  // ZIP
+
+	optional VerifResult CVVVerification = 52;  // iCVV for EntryMode()==CHIP
+
+	optional VerifResult CardAuthenticationResults = 53;  // EMV only
 
 
 
