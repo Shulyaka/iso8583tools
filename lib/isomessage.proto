@@ -211,22 +211,31 @@ message isomessage
 		RSP_INTERNAL = 9;
 	}
 
-	optional RespSource ResponseSource = 49;
+	optional RespSource ResponseSource = 49 [default = RSP_ISSUER];
 
 	enum VerifResult
 	{
 		NOTPERFORMED = 0;
 		NOMATCH = 1;
 		MATCH = 2;
+		ERROR = 3;
 	}
 
 	optional VerifResult AddressVerification = 50;  // Street address only
 
 	optional VerifResult PostalCodeVerification = 51;  // ZIP
 
-	optional VerifResult CVVVerification = 52;  // iCVV for EntryMode()==CHIP
+	optional VerifResult CVVVerification = 52;  // or iCVV for EntryMode()==CHIP
 
-	optional VerifResult CardAuthenticationResults = 53;  // EMV only
+	optional VerifResult CVV2Verification = 53;
+
+	optional VerifResult CAVVVerification = 54;
+
+	optional RespSource CAVVResponseSource = 55 [default = RSP_ISSUER];
+
+	optional VerifResult CardAuthenticationResults = 56;  // EMV only
+
+	optional uint32 OriginalResponseCode = 57;
 
 
 

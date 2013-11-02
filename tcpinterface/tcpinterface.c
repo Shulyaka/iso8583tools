@@ -355,6 +355,14 @@ int isRequest(isomessage *message)
 	}
 }
 
+int isDomestic(isomessage *message)
+{
+	if(!strcmp(message->acquirercountry().c_str(), "643"))
+		return 1;
+	else
+		return 0;
+}
+
 int declineMsg(isomessage *message)
 {
 	switch(message->messagefunction())

@@ -2,6 +2,7 @@
 #include "../lib/isomessage.pb.h"
 
 int isRequest(isomessage*);
+int isDomestic(isomessage*);
 
 field* parseNetMsg(char*, unsigned int, fldformat*);
 unsigned int buildNetMsg(char*, unsigned int, field*);

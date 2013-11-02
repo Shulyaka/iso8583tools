@@ -527,12 +527,12 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 
 		case 'B':
 			visamsg->set_addressverification(isomessage::MATCH);
-			visamsg->set_postalcodeverification(isomessage::NOTPERFORMED);
+			visamsg->set_postalcodeverification(isomessage::ERROR);
 			break;
 
 		case 'C':
-			visamsg->set_addressverification(isomessage::NOTPERFORMED);
-			visamsg->set_postalcodeverification(isomessage::NOTPERFORMED);
+			visamsg->set_addressverification(isomessage::ERROR);
+			visamsg->set_postalcodeverification(isomessage::ERROR);
 			break;
 
 		case 'D':
@@ -559,7 +559,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 			break;
 
 		case 'P':
-			visamsg->set_addressverification(isomessage::NOTPERFORMED);
+			visamsg->set_addressverification(isomessage::ERROR);
 			visamsg->set_postalcodeverification(isomessage::MATCH);
 			break;
 
@@ -568,6 +568,10 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 			visamsg->set_addressverification(isomessage::NOMATCH);
 			visamsg->set_postalcodeverification(isomessage::MATCH);
 			break;
+
+		default:
+			visamsg->set_addressverification(isomessage::ERROR);
+			visamsg->set_postalcodeverification(isomessage::ERROR);
 	}
 
 	switch(get_field(message, 44,5)[0])
@@ -581,8 +585,11 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 			break;
 
 		case '2':
-		case '3':
 			visamsg->set_cvvverification(isomessage::NOMATCH);
+			break;
+
+		default:
+			visamsg->set_cvvverification(isomessage::ERROR);
 			break;
 	}
 
@@ -594,10 +601,101 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 
 		case '1':
 			visamsg->set_cardauthenticationresults(isomessage::NOMATCH);
+			break;
 
 		case '2':
 			visamsg->set_cardauthenticationresults(isomessage::MATCH);
+			break;
+
+		default:
+			visamsg->set_cardauthenticationresults(isomessage::ERROR);
 	}
+
+	switch(get_field(message, 44,10)[0])
+	{
+		case '\0':
+		case ' ':
+			break;
+
+		case 'M':
+			visamsg->set_cvv2verification(isomessage::MATCH);
+			break;
+
+		case 'N':
+			visamsg->set_cvv2verification(isomessage::NOMATCH);
+			break;
+
+		case 'P':
+			visamsg->set_cvv2verification(isomessage::NOTPERFORMED);
+			break;
+
+		default:
+			visamsg->set_cvv2verification(isomessage::ERROR);
+			break;
+	}
+
+	if(has_field(message, 44,11))
+		visamsg->set_originalresponsecode(atoi(get_field(message, 44,11)));
+
+	switch(get_field(message, 44,13)[0])
+	{
+		case '\0':
+		case ' ':
+			break;
+
+		case '0':
+			visamsg->set_cavvverification(isomessage::ERROR);
+			visamsg->set_cavvresponsesource(isomessage::RSP_ISSUER);
+			break;
+
+		case '1':
+			visamsg->set_cavvverification(isomessage::NOMATCH);
+			visamsg->set_cavvresponsesource(isomessage::RSP_ISSUER);
+			break;
+
+		case '2':
+			visamsg->set_cavvverification(isomessage::MATCH);
+			visamsg->set_cavvresponsesource(isomessage::RSP_ISSUER);
+			break;
+
+		case 'B':
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::MERCHANTSUSPICIOUS);
+			//no break
+		case '3':
+		case '8':
+		case 'A':
+			visamsg->set_cavvverification(isomessage::MATCH);
+			visamsg->set_cavvresponsesource(isomessage::RSP_NETWORK);
+			break;
+
+		case '4':
+		case '7':
+		case '9':
+			visamsg->set_cavvverification(isomessage::NOMATCH);
+			visamsg->set_cavvresponsesource(isomessage::RSP_NETWORK);
+			break;
+
+		case '6':
+			visamsg->set_cavvverification(isomessage::NOTPERFORMED);
+			visamsg->set_cavvresponsesource(isomessage::RSP_NETWORK);
+			break;
+
+		case 'C':
+			visamsg->set_cavvverification(isomessage::ERROR);
+			visamsg->set_cavvresponsesource(isomessage::RSP_NETWORK);
+			break;
+
+		case 'D':
+			visamsg->set_cavvverification(isomessage::ERROR);
+			visamsg->set_cavvresponsesource(isomessage::RSP_ISSUER);
+			break;
+
+		default:
+			visamsg->set_cavvverification(isomessage::ERROR);
+			visamsg->set_cavvresponsesource(isomessage::RSP_INTERNAL);
+	}
+
+
 
 
 
@@ -934,7 +1032,176 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		strcpy(add_field(message, 43,3), visamsg->merchantcountry().c_str());
 	}
 
-	
+	if(!isRequest(visamsg) && visamsg->has_cavvverification())
+	{
+		switch(visamsg->cavvverification())
+		{
+			case isomessage::MATCH:
+				strcpy(add_field(message, 44,13), "2");
+				break;
+
+			case isomessage::NOMATCH:
+				strcpy(add_field(message, 44,13), "1");
+				break;
+
+			default:
+				strcpy(add_field(message, 44,13), "0");
+				break;
+		}
+
+		strcpy(add_field(message, 44,12), " ");
+		strcpy(add_field(message, 44,11), "  ");
+		strcpy(add_field(message, 44,10), " ");
+		strcpy(add_field(message, 44,9), " ");
+		strcpy(add_field(message, 44,8), " ");
+		strcpy(add_field(message, 44,7), " ");
+		strcpy(add_field(message, 44,6), "  ");
+		strcpy(add_field(message, 44,5), " ");
+		strcpy(add_field(message, 44,4), " ");
+		strcpy(add_field(message, 44,3), " ");
+		strcpy(add_field(message, 44,2), " ");
+		strcpy(add_field(message, 44,1), " ");
+	}
+
+	if(!isRequest(visamsg) && visamsg->has_cvv2verification())
+	{
+		switch(visamsg->cavvverification())
+		{
+			case isomessage::MATCH:
+				strcpy(add_field(message, 44,10), "M");
+				break;
+
+			case isomessage::NOMATCH:
+				strcpy(add_field(message, 44,10), "N");
+				break;
+
+			default:
+				strcpy(add_field(message, 44,10), "P");
+				break;
+		}
+
+		strcpy(add_field(message, 44,9), " ");
+		strcpy(add_field(message, 44,8), " ");
+		strcpy(add_field(message, 44,7), " ");
+		strcpy(add_field(message, 44,6), "  ");
+		strcpy(add_field(message, 44,5), " ");
+		strcpy(add_field(message, 44,4), " ");
+		strcpy(add_field(message, 44,3), " ");
+		strcpy(add_field(message, 44,2), " ");
+		strcpy(add_field(message, 44,1), " ");
+	}
+
+	if(!isRequest(visamsg) && visamsg->has_cardauthenticationresults())
+		if(visamsg->cardauthenticationresults()==isomessage::MATCH || visamsg->cardauthenticationresults()==isomessage::NOMATCH)
+		{
+			if(visamsg->cardauthenticationresults()==isomessage::MATCH)
+				strcpy(add_field(message, 44,8), "2");
+			else
+				strcpy(add_field(message, 44,8), "1");
+
+			strcpy(add_field(message, 44,7), " ");
+			strcpy(add_field(message, 44,6), "  ");
+			strcpy(add_field(message, 44,5), " ");
+			strcpy(add_field(message, 44,4), " ");
+			strcpy(add_field(message, 44,3), " ");
+			strcpy(add_field(message, 44,2), " ");
+			strcpy(add_field(message, 44,1), " ");
+		}
+
+	if(!isRequest(visamsg) && visamsg->has_cvvverification())
+		if(visamsg->cvvverification()==isomessage::MATCH || visamsg->cvvverification()==isomessage::NOMATCH)
+		{
+			if(visamsg->cvvverification()==isomessage::MATCH)
+				strcpy(add_field(message, 44,5), "2");
+			else
+				strcpy(add_field(message, 44,5), "1");
+
+			strcpy(add_field(message, 44,4), " ");
+			strcpy(add_field(message, 44,3), " ");
+			strcpy(add_field(message, 44,2), " ");
+			strcpy(add_field(message, 44,1), " ");
+		}
+
+	if(!isRequest(visamsg) && (visamsg->has_addressverification() || visamsg->has_postalcodeverification()))
+	{
+		switch(visamsg->addressverification())
+		{
+			case isomessage::MATCH:
+				switch(visamsg->postalcodeverification())
+				{
+					case isomessage::MATCH:
+						if(isDomestic(visamsg))
+							strcpy(add_field(message, 44,2), "Y");
+						else
+							strcpy(add_field(message, 44,2), "M");
+						break;
+
+					case isomessage::NOMATCH:
+					case isomessage::NOTPERFORMED:
+						strcpy(add_field(message, 44,2), "A");
+						break;
+
+					default:
+						strcpy(add_field(message, 44,2), "B");
+						break;
+				}
+				break;
+
+			case isomessage::NOMATCH:
+				if(visamsg->postalcodeverification()==isomessage::MATCH)
+					strcpy(add_field(message, 44,2), "Z");
+				else
+					strcpy(add_field(message, 44,2), "N");
+				break;
+
+			case isomessage::NOTPERFORMED:
+				switch(visamsg->postalcodeverification())
+				{
+					case isomessage::MATCH:
+						strcpy(add_field(message, 44,2), "Z");
+						break;
+
+					case isomessage::NOMATCH:
+						strcpy(add_field(message, 44,2), "N");
+						break;
+
+					default:
+						if(isDomestic(visamsg))
+							strcpy(add_field(message, 44,2), "C");
+						else
+							strcpy(add_field(message, 44,2), "I");
+						break;
+				}
+
+			default:
+				switch(visamsg->postalcodeverification())
+				{
+					case isomessage::MATCH:
+						strcpy(add_field(message, 44,2), "P");
+						break;
+
+					case isomessage::NOMATCH:
+						strcpy(add_field(message, 44,2), "N");
+						break;
+
+					case isomessage::NOTPERFORMED:
+						if(isDomestic(visamsg))
+							strcpy(add_field(message, 44,2), "N");
+						else
+							strcpy(add_field(message, 44,2), "I");
+						break;
+
+					default:
+						strcpy(add_field(message, 44,2), "C");
+						break;
+				}
+		}
+
+		strcpy(add_field(message, 44,1), " ");
+	}
+
+
+
 
 
 
