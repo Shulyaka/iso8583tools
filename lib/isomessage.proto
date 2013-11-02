@@ -127,15 +127,15 @@ message isomessage
 
 	optional double ConversionRateBilling = 27;
 
-	optional string STAN = 28;
+	optional uint32 STAN = 28;
 
 	optional string ExpiryDate = 29;   // "YYMM"
 
-	optional string MCC = 30;
+	optional uint32 MCC = 30;
 
-	optional string AcquirerCountry = 31;   // 3-digit code
+	optional uint32 AcquirerCountry = 31;   // 3-digit code
 
-	optional string IssuerCountry = 32;   // 3-digit code
+	optional uint32 IssuerCountry = 32;   // 3-digit code
 
 	enum TermEntryMode
 	{
@@ -186,9 +186,9 @@ message isomessage
 
 	optional uint64 ForwardingID = 39;
 
-	optional string Track2 = 40;
+	optional string Track2 = 40;  // Separator must be a '^' character
 
-	optional string RRN = 41;
+	optional uint64 RRN = 41;
 
 	optional string AuthID = 42;
 
@@ -237,10 +237,13 @@ message isomessage
 
 	optional uint32 OriginalResponseCode = 57;
 
+	optional string Track1 = 58;
 
+	optional string AdditionalText = 59;
 
+	optional uint32 CurrencyTransaction = 60;
 
-
+	optional uint32 CurrencyBilling = 61;
 
 
 	optional string PIN = 152;

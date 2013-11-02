@@ -257,12 +257,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 		visamsg->set_conversionratebilling(atof(get_field(message, 10,1))*pow01(get_field(message, 10,0)[0]-'0'));
 	
 	if(has_field(message, 11))
-	{
-		printf("%d\n", get_field(message, 11));
-		printf("%s\n", get_field(message, 11));
-
-		visamsg->set_stan(get_field(message, 11));
-	}
+		visamsg->set_stan(atoi(get_field(message, 11)));
 
 	if(has_field(message, 12))
 		visamsg->set_terminaltime(get_field(message, 12));
@@ -313,13 +308,13 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	}
 
 	if(has_field(message, 18))
-		visamsg->set_mcc(get_field(message, 18));
+		visamsg->set_mcc(atoi(get_field(message, 18)));
 
 	if(has_field(message, 19))
-		visamsg->set_acquirercountry(get_field(message, 19));
+		visamsg->set_acquirercountry(atoi(get_field(message, 19)));
 
 	if(has_field(message, 20))
-		visamsg->set_issuercountry(get_field(message, 20));
+		visamsg->set_issuercountry(atoi(get_field(message, 20)));
 
 	if(has_field(message, 22))
 	{
@@ -447,7 +442,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 		visamsg->set_track2(get_field(message, 35));
 
 	if(has_field(message, 37))
-		visamsg->set_rrn(get_field(message, 37));
+		visamsg->set_rrn(atoll(get_field(message, 37)));
 
 	if(has_field(message, 38))
 		visamsg->set_authid(get_field(message, 38));
@@ -695,7 +690,17 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 			visamsg->set_cavvresponsesource(isomessage::RSP_INTERNAL);
 	}
 
+	if(has_field(message, 45))
+		visamsg->set_track1(get_field(message, 45));
 
+	if(has_field(message, 48))
+		visamsg->set_additionaltext(get_field(message, 48));
+
+	if(has_field(message, 49))
+		visamsg->set_currencytransaction(atoi(get_field(message, 49)));
+
+	if(has_field(message, 51))
+		visamsg->set_currencybilling(atoi(get_field(message, 51)));
 
 
 
@@ -873,7 +878,7 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	}
 
 	if(visamsg->has_stan())
-		strncpy(add_field(message, 11), visamsg->stan().c_str(), 6);
+		snprintf(add_field(message, 11), 7, "%06d", visamsg->stan());
 	else
 		printf("Warning: No STAN\n");
 
@@ -890,13 +895,13 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		strcpy(add_field(message, 15), visamsg->settlementdate().c_str()+4);
 
 	if(visamsg->has_mcc() && isRequest(visamsg))
-		strcpy(add_field(message, 18), visamsg->mcc().c_str());
+		snprintf(add_field(message, 18), 5, "%04d", visamsg->mcc());
 
 	if(visamsg->has_acquirercountry())
-		strcpy(add_field(message, 19), visamsg->acquirercountry().c_str());
+		snprintf(add_field(message, 19), 4, "%03d", visamsg->acquirercountry());
 
 	if(visamsg->has_issuercountry())
-		strcpy(add_field(message, 20), visamsg->issuercountry().c_str());
+		snprintf(add_field(message, 20), 4, "%03d", visamsg->issuercountry());
 	
 	if(isRequest(visamsg) && (visamsg->has_entrymode() || visamsg->has_terminalpincapabilities()))
 	{
@@ -997,7 +1002,7 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		strcpy(add_field(message, 35), visamsg->track2().c_str());
 
 	if(visamsg->has_rrn());
-		strcpy(add_field(message, 37), visamsg->rrn().c_str());
+		snprintf(add_field(message, 37), 13, "%012d", visamsg->rrn());
 
 	if(visamsg->has_authid())
 		strcpy(add_field(message, 38), visamsg->authid().c_str());
@@ -1200,9 +1205,17 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		strcpy(add_field(message, 44,1), " ");
 	}
 
+	if(isRequest(visamsg) && visamsg->has_track1() && (visamsg->entrymode()==isomessage::MAGSTRIPE || visamsg->entrymode()==isomessage::EM_UNKNOWN))
+		strcpy(add_field(message, 45), visamsg->track1().c_str());
 
+	if(visamsg->has_additionaltext())
+		strcpy(add_field(message, 48), visamsg->additionaltext().c_str());
 
+	if(visamsg->has_currencytransaction())
+		snprintf(add_field(message, 49), 4, "%03d", visamsg->currencytransaction());
 
+	if(!isRequest(visamsg) && visamsg->has_currencybilling())
+		snprintf(add_field(message, 51), 4, "%03d", visamsg->currencybilling());
 
 
 

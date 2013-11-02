@@ -357,7 +357,7 @@ int isRequest(isomessage *message)
 
 int isDomestic(isomessage *message)
 {
-	if(!strcmp(message->acquirercountry().c_str(), "643"))
+	if(message->acquirercountry()==643)
 		return 1;
 	else
 		return 0;
