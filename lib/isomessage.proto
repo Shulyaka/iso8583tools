@@ -241,10 +241,68 @@ message isomessage
 
 	optional string AdditionalText = 59;
 
-	optional uint32 CurrencyTransaction = 60;
+	optional uint32 CurrencyTransaction = 60 [default = 840];
 
-	optional uint32 CurrencyBilling = 61;
+	optional uint32 CurrencyBilling = 61 [default = 840];
 
+	optional string PIN = 62;
 
-	optional string PIN = 152;
+	enum SecFormat
+	{
+		ISSUERKEY = 02;
+		ZONE = 20;
+	}
+
+	optional SecFormat PINSecurityFormat = 63 [default = ZONE];
+
+	enum EncrAlg
+	{
+		CLEARTEXT = 00;
+		ANSIDES = 01;
+	}
+
+	optional EncrAlg PINEncryptionAlgorithm = 64 [default = ANSIDES];
+
+	enum PINFormat
+	{
+		ISO0 = 01;
+		DOCUTEL = 02;
+		DIEBOLD = 03;
+		PLUS = 04;
+	}
+
+	optional PINFormat PINBlockFormat = 65 [default = ISO0];
+
+	optional uint32 PINKeyIndex = 66 [default = 01];
+
+	optional bool PINisPassword = 67 [default = false];
+
+	message AddAmnt
+	{
+		optional AccntType AccountType = 1 [default = UNIVERSAL];
+
+		enum AmntType
+		{
+			PREPAID = 00;
+
+			OTB = 01;
+
+			LIMIT = 02;
+
+			FEE = 56;
+
+			ORIGINAL = 57;
+
+			P2PFEE = 95;
+		}
+
+		optional AmntType AmountType = 2 [default = OTB];
+
+		optional uint32 Currency = 3 [default = 840];
+
+		required sint64 Amount = 4;
+	}
+
+	repeated AddAmnt AdditionalAmount = 68;
+
 }

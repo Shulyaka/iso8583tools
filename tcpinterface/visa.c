@@ -702,6 +702,71 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	if(has_field(message, 51))
 		visamsg->set_currencybilling(atoi(get_field(message, 51)));
 
+	if(has_field(message, 52))
+		visamsg->set_pin(get_field(message, 52));
+
+	if(has_field(message, 53))
+	{
+		switch (atoi(get_field(message, 53,1)))
+		{
+			case 02:
+				visamsg->set_pinsecurityformat(isomessage::ISSUERKEY);
+				break;
+
+			case 20:
+				visamsg->set_pinsecurityformat(isomessage::ZONE);
+				break;
+		}
+
+		if(!strcmp(get_field(message, 53,2), "01"))
+			visamsg->set_pinencryptionalgorithm(isomessage::ANSIDES);
+
+		switch (atoi(get_field(message, 53,3)))
+		{
+			case 01:
+				visamsg->set_pinblockformat(isomessage::ISO0);
+				break;
+
+			case 02:
+				visamsg->set_pinblockformat(isomessage::DOCUTEL);
+				break;
+
+			case 03:
+				visamsg->set_pinblockformat(isomessage::DIEBOLD);
+				break;
+
+			case 04:
+				visamsg->set_pinblockformat(isomessage::PLUS);
+				break;
+		}
+
+		visamsg->set_pinkeyindex(atoi(get_field(message, 53,4)));
+
+		if(!strcmp(get_field(message, 53,5), "01"))
+			visamsg->set_pinispassword(true);
+	}
+
+	if(has_field(message, 54))
+	{
+		for(i=0; i<6; i++)
+			if(has_field(message, 54,i))
+			{
+				isomessage::AddAmnt *addamnt=visamsg->add_additionalamount();
+
+				addamnt->set_accounttype((isomessage_AccntType)atoi(get_field(message, 54,i,1)));
+
+				addamnt->set_amounttype((isomessage_AddAmnt_AmntType)atoi(get_field(message, 54,i,2)));
+
+				addamnt->set_currency(atoi(get_field(message, 54,i,3)));
+
+				if(get_field(message, 54,i,4)[0]=='C')
+					addamnt->set_amount(atoi(get_field(message, 54,i,5)));
+				else
+					addamnt->set_amount(-atoi(get_field(message, 54,i,5)));
+			}
+			else
+				break;
+	}
 
 
 
@@ -1217,7 +1282,50 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	if(!isRequest(visamsg) && visamsg->has_currencybilling())
 		snprintf(add_field(message, 51), 4, "%03d", visamsg->currencybilling());
 
+	if(isRequest(visamsg) && visamsg->has_pin())
+	{
+		strcpy(add_field(message, 52), visamsg->pin().c_str());
 
+		if(visamsg->pinsecurityformat()!=isomessage::ZONE)
+			printf("Warning: Unsupported PIN Security Format, must be Zone encryption.\n");
+		strcpy(add_field(message, 53,1), "20");
+
+		if(visamsg->pinencryptionalgorithm()!=isomessage::ANSIDES)
+			printf("Warning: Unsupported PIN Encryption Algorithm, must be ANSI DES.\n");
+		strcpy(add_field(message, 53,2), "01");
+
+		if(visamsg->pinblockformat()!=isomessage::ISO0)
+			printf("Warning: Unsupported PIN Block Format, must be ISO Format 0.\n");
+		strcpy(add_field(message, 53,3), "01");
+
+		snprintf(add_field(message, 53,4), 3, "%02d", visamsg->pinkeyindex());
+
+		strcpy(add_field(message, 53,5), "00");
+
+		strcpy(add_field(message, 53,6), "000000");
+	}
+
+	for(i=0; i<visamsg->additionalamount_size() && i<6; i++)
+	{
+		const isomessage::AddAmnt& addamnt=visamsg->additionalamount(i);
+
+		snprintf(add_field(message, 54,i,1), 3, "%02d", addamnt.accounttype());
+
+		snprintf(add_field(message, 54,i,2), 3, "%02d", addamnt.amounttype());
+
+		snprintf(add_field(message, 54,i,3), 4, "%03d", addamnt.currency());
+
+		if(addamnt.amount() < 0)
+		{
+			strcpy(add_field(message, 54,i,4), "D");
+			snprintf(add_field(message, 54,i,5), 13, "%012d", -addamnt.amount());
+		}
+		else
+		{
+			strcpy(add_field(message, 54,i,4), "C");
+			snprintf(add_field(message, 54,i,5), 13, "%012d", addamnt.amount());
+		}
+	}
 
 
 
