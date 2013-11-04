@@ -128,10 +128,11 @@ message 	BB800SF		Visa Message (with header)
 1.54.5.3	F3EBCDIC	currency code
 1.54.5.4	F1EBCDIC	amount, sign
 1.54.5.5	F12EBCDIC	amount
-1.55		B255SF		Integrated Circuit Card (ICC)-Related Data
-1.55.1		F1HEX		Dataset ID (01 for VSDC)
-1.55.2		BB252TLVEMV	Chip Card TLV data elements
-1.55.2.*	M255HEX		Chip data tag
+1.55		B255TLVDSBCD	Integrated Circuit Card (ICC)-Related Data
+1.55.00         BB252TLV2	Chip Card TLV data elements (Usage 2)
+1.55.00.*	B250HEX		Chip data tag
+1.55.01		BB252TLVEMV	Chip Card TLV data elements (VSDC)
+1.55.01.*	M250HEX		Chip data tag
 1.59		B14EBCDIC	National Point-of-Service Geographic Data
 1.60		B12BCDSF	Additional POS Information
 1.60.1		F1ASC		terminal type

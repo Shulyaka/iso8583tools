@@ -768,6 +768,91 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 				break;
 	}
 
+	for(i=0; i < has_field(message, 55,1); i++)
+	{
+		sscanf(get_tag(message, 55,1,i), "%x", &tmpint);
+		printf("Tag is %x\n", tmpint);
+		switch(tmpint)
+		{
+			case 0x71:
+				visamsg->set_issuerscript1(get_field(message, 55,1,i));
+				break;
+			case 0x72:
+				visamsg->set_issuerscript2(get_field(message, 55,1,i));
+				break;
+			case 0x82:
+				visamsg->set_applicationinterchangeprofile(get_field(message, 55,1,i));
+				break;
+			case 0x91:
+				visamsg->set_issuerauthenticationdata(get_field(message, 55,1,i));
+				break;
+			case 0x95:
+				visamsg->set_terminalverificationresults(get_field(message, 55,1,i));
+				break;
+			case 0x9A:
+				visamsg->set_terminaltransactiondate(get_field(message, 55,1,i));
+				break;
+			case 0x9C:
+				visamsg->set_cryptogramtransactiontype(get_field(message, 55,1,i));
+				break;
+			case 0xC0:
+				visamsg->set_secondarypinblock(get_field(message, 55,1,i));
+				break;
+			case 0x5F2A:
+				visamsg->set_cryptogramcurrencycode(get_field(message, 55,1,i));
+				break;
+			case 0x9F02:
+				visamsg->set_cryptogramtransactionamount(get_field(message, 55,1,i));
+				break;
+			case 0x9F03:
+				visamsg->set_cryptogramcashbackamount(get_field(message, 55,1,i));
+				break;
+			case 0x9F09:
+				visamsg->set_applicationversionnumber(get_field(message, 55,1,i));
+				break;
+			case 0x9F10:
+				visamsg->set_issuerapplicationdata(get_field(message, 55,1,i));
+				break;
+			case 0x9F1A:
+				visamsg->set_terminalcountry(get_field(message, 55,1,i));
+				break;
+			case 0x9F1E:
+				visamsg->set_terminalserialnumber(get_field(message, 55,1,i));
+				break;
+			case 0x9F26:
+				visamsg->set_cryptogram(get_field(message, 55,1,i));
+				break;
+			case 0x9F27:
+				visamsg->set_cryptograminformationdata(get_field(message, 55,1,i));
+				break;
+			case 0x9F33:
+				visamsg->set_terminalcapabilityprofile(get_field(message, 55,1,i));
+				break;
+			case 0x9F34:
+				visamsg->set_cvmresults(get_field(message, 55,1,i));
+				break;
+			case 0x9F35:
+				visamsg->set_terminaltype(get_field(message, 55,1,i));
+				break;
+			case 0x9F36:
+				visamsg->set_applicationtransactioncounter(get_field(message, 55,1,i));
+				break;
+			case 0x9F37:
+				visamsg->set_unpredictablenumber(get_field(message, 55,1,i));
+				break;
+			case 0x9F5B:
+				visamsg->set_issuerscriptresults(get_field(message, 55,1,i));
+				break;
+			case 0x9F6E:
+				visamsg->set_formfactorindicator(get_field(message, 55,1,i));
+				break;
+			case 0x9F7C:
+				visamsg->set_customerexclusivedata(get_field(message, 55,1,i));
+				break;
+			default:
+				printf("No map for tag %x\n", tmpint);
+		}
+	}
 
 
 
@@ -1327,7 +1412,80 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		}
 	}
 
+	if(visamsg->has_issuerscript1())
+		strcpy(add_tag("71", message, 55,1), visamsg->issuerscript1().c_str());
 
+	if(visamsg->has_issuerscript2())
+		strcpy(add_tag("72", message, 55,1), visamsg->issuerscript2().c_str());
+
+	if(visamsg->has_applicationinterchangeprofile())
+		strcpy(add_tag("82", message, 55,1), visamsg->applicationinterchangeprofile().c_str());
+
+	if(visamsg->has_issuerauthenticationdata())
+		strcpy(add_tag("91", message, 55,1), visamsg->issuerauthenticationdata().c_str());
+
+	if(visamsg->has_terminalverificationresults())
+		strcpy(add_tag("95", message, 55,1), visamsg->terminalverificationresults().c_str());
+
+	if(visamsg->has_terminaltransactiondate())
+		strcpy(add_tag("9A", message, 55,1), visamsg->terminaltransactiondate().c_str());
+
+	if(visamsg->has_cryptogramtransactiontype())
+		strcpy(add_tag("9C", message, 55,1), visamsg->cryptogramtransactiontype().c_str());
+
+	if(visamsg->has_secondarypinblock())
+		strcpy(add_tag("C0", message, 55,1), visamsg->secondarypinblock().c_str());
+
+	if(visamsg->has_cryptogramcurrencycode())
+		strcpy(add_tag("5F2A", message, 55,1), visamsg->cryptogramcurrencycode().c_str());
+
+	if(visamsg->has_cryptogramtransactionamount())
+		strcpy(add_tag("9F02", message, 55,1), visamsg->cryptogramtransactionamount().c_str());
+
+	if(visamsg->has_cryptogramcashbackamount())
+		strcpy(add_tag("9F03", message, 55,1), visamsg->cryptogramcashbackamount().c_str());
+
+	if(visamsg->has_applicationversionnumber())
+		strcpy(add_tag("9F09", message, 55,1), visamsg->applicationversionnumber().c_str());
+
+	if(visamsg->has_issuerapplicationdata())
+		strcpy(add_tag("9F10", message, 55,1), visamsg->issuerapplicationdata().c_str());
+
+	if(visamsg->has_terminalcountry())
+		strcpy(add_tag("9F1A", message, 55,1), visamsg->terminalcountry().c_str());
+
+	if(visamsg->has_terminalserialnumber())
+		strcpy(add_tag("9F1E", message, 55,1), visamsg->terminalserialnumber().c_str());
+
+	if(visamsg->has_cryptogram())
+		strcpy(add_tag("9F26", message, 55,1), visamsg->cryptogram().c_str());
+
+	if(visamsg->has_cryptograminformationdata())
+		strcpy(add_tag("9F27", message, 55,1), visamsg->cryptograminformationdata().c_str());
+
+	if(visamsg->has_terminalcapabilityprofile())
+		strcpy(add_tag("9F33", message, 55,1), visamsg->terminalcapabilityprofile().c_str());
+
+	if(visamsg->has_cvmresults())
+		strcpy(add_tag("9F34", message, 55,1), visamsg->cvmresults().c_str());
+
+	if(visamsg->has_terminaltype())
+		strcpy(add_tag("9F35", message, 55,1), visamsg->terminaltype().c_str());
+
+	if(visamsg->has_applicationtransactioncounter())
+		strcpy(add_tag("9F36", message, 55,1), visamsg->applicationtransactioncounter().c_str());
+
+	if(visamsg->has_unpredictablenumber())
+		strcpy(add_tag("9F37", message, 55,1), visamsg->unpredictablenumber().c_str());
+
+	if(visamsg->has_issuerscriptresults())
+		strcpy(add_tag("9F5B", message, 55,1), visamsg->issuerscriptresults().c_str());
+
+	if(visamsg->has_formfactorindicator())
+		strcpy(add_tag("9F6E", message, 55,1), visamsg->formfactorindicator().c_str());
+
+	if(visamsg->has_customerexclusivedata())
+		strcpy(add_tag("9F7C", message, 55,1), visamsg->customerexclusivedata().c_str());
 
 
 

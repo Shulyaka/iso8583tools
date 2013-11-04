@@ -305,4 +305,57 @@ message isomessage
 
 	repeated AddAmnt AdditionalAmount = 68;
 
+	optional string IssuerScript1 = 69;
+
+	optional string IssuerScript2 = 70;
+
+	optional string ApplicationInterchangeProfile = 71;
+
+	optional string IssuerAuthenticationData = 72;
+
+	optional string TerminalVerificationResults = 73;
+
+	optional string TerminalTransactionDate = 74;
+
+	optional string CryptogramTransactionType = 75;
+
+	optional string SecondaryPINBlock = 76;
+
+	optional string CryptogramCurrencyCode = 77;
+
+	optional string CryptogramTransactionAmount = 78;
+
+	optional string CryptogramCashbackAmount = 79;
+
+	optional string ApplicationVersionNumber = 80;
+
+	optional string IssuerApplicationData = 81;
+
+	optional string TerminalCountry = 82;
+
+	optional string TerminalSerialNumber = 83;
+
+	optional string Cryptogram = 84;
+
+	optional string CryptogramInformationData = 85;
+
+	optional string TerminalCapabilityProfile = 86;
+
+	optional string CVMResults = 87;
+
+	optional string TerminalType = 88;
+
+	optional string ApplicationTransactionCounter = 89;
+
+	optional string UnpredictableNumber = 90;
+
+	optional string IssuerScriptResults = 91;
+
+	optional string FormFactorIndicator = 92;
+
+	optional string CustomerExclusiveData = 93;
+
+
+
+
 }
