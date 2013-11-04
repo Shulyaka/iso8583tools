@@ -343,7 +343,7 @@ message isomessage
 
 	optional string CVMResults = 87;
 
-	optional string TerminalType = 88;
+	optional string CryptogramTerminalType = 88;
 
 	optional string ApplicationTransactionCounter = 89;
 
@@ -354,6 +354,11 @@ message isomessage
 	optional string FormFactorIndicator = 92;
 
 	optional string CustomerExclusiveData = 93;
+
+	optional string MerchantAddress = 94;
+
+
+
 
 
 

@@ -832,7 +832,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 				visamsg->set_cvmresults(get_field(message, 55,1,i));
 				break;
 			case 0x9F35:
-				visamsg->set_terminaltype(get_field(message, 55,1,i));
+				visamsg->set_cryptogramterminaltype(get_field(message, 55,1,i));
 				break;
 			case 0x9F36:
 				visamsg->set_applicationtransactioncounter(get_field(message, 55,1,i));
@@ -853,6 +853,12 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 				printf("No map for tag %x\n", tmpint);
 		}
 	}
+
+	if(has_field(message, 59))
+		visamsg->set_merchantaddress(get_field(message, 59));
+
+
+
 
 
 
@@ -1469,8 +1475,8 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	if(visamsg->has_cvmresults())
 		strcpy(add_tag("9F34", message, 55,1), visamsg->cvmresults().c_str());
 
-	if(visamsg->has_terminaltype())
-		strcpy(add_tag("9F35", message, 55,1), visamsg->terminaltype().c_str());
+	if(visamsg->has_cryptogramterminaltype())
+		strcpy(add_tag("9F35", message, 55,1), visamsg->cryptogramterminaltype().c_str());
 
 	if(visamsg->has_applicationtransactioncounter())
 		strcpy(add_tag("9F36", message, 55,1), visamsg->applicationtransactioncounter().c_str());
@@ -1486,6 +1492,9 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 
 	if(visamsg->has_customerexclusivedata())
 		strcpy(add_tag("9F7C", message, 55,1), visamsg->customerexclusivedata().c_str());
+
+	if(visamsg->has_merchantaddress())
+		strcpy(add_field(message, 59), visamsg->merchantaddress().c_str());
 
 
 
