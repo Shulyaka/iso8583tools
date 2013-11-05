@@ -163,7 +163,10 @@ unsigned int parse_field_length(char *buf, unsigned int maxlength, fldformat *fr
 				return 0;
 			}
 	}
-	
+
+	if(frm->dataFormat==FRM_BCDSF && frm->lengthFormat!=FRM_FIXED)
+		length*=2;
+
 	return length;
 }
 
@@ -330,7 +333,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 			tmpfrm.fields=frm->fields;
 			tmpfrm.fld=frm->fld;
 			fld->frm=&tmpfrm;
-printf("data: [%s], length: %d\n", fld->data, fld->length);
+
 			parse_field(fld->data, fld->length, fld);
 			
 			free(fld->data);

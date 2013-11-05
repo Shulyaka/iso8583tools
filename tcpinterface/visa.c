@@ -770,8 +770,8 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 
 	for(i=0; i < has_field(message, 55,1); i++)
 	{
-		sscanf(get_tag(message, 55,1,i), "%x", &tmpint);
-		printf("Tag is %x\n", tmpint);
+		sscanf(get_tag(message, 55,1,i), "%X", &tmpint);
+
 		switch(tmpint)
 		{
 			case 0x71:
@@ -850,7 +850,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 				visamsg->set_customerexclusivedata(get_field(message, 55,1,i));
 				break;
 			default:
-				printf("No map for tag %x\n", tmpint);
+				printf("No map for tag %X\n", tmpint);
 		}
 	}
 
@@ -1158,7 +1158,7 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		strcpy(add_field(message, 35), visamsg->track2().c_str());
 
 	if(visamsg->has_rrn());
-		snprintf(add_field(message, 37), 13, "%012d", visamsg->rrn());
+		snprintf(add_field(message, 37), 13, "%012lld", visamsg->rrn());
 
 	if(visamsg->has_authid())
 		strcpy(add_field(message, 38), visamsg->authid().c_str());

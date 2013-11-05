@@ -357,7 +357,11 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 				return 0;
 
 			blength=(flength+1)/2;
-			mlength=flength;
+			
+			if(frm->lengthFormat==FRM_FIXED)
+				mlength=flength;
+			else
+				mlength=blength;
 
 			if(lenlen+blength>maxlength)
 				return 0;

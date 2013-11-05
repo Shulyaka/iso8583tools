@@ -181,7 +181,7 @@ char* add_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int 
 
 char* add_tag(const char *tag, field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
-	static char def[10]={0};
+	static char def[255]={0};
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	int i;
 
@@ -256,6 +256,7 @@ char* add_tag(const char *tag, field *fld, int n0, int n1, int n2, int n3, int n
 		case FRM_TLV4:
 		case FRM_TLVEMV:
 			fld->fld[i]->frm=fld->frm->fld[0];
+			break;
 		default:
 			fld->fld[i]->frm=fld->frm->fld[i];
 	}
