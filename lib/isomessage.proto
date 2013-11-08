@@ -152,31 +152,51 @@ message isomessage
 
 	enum EntryModeFlagPosition
 	{
-		CVVUNRELIABLE = 1;
-		MAPPING = 2;
-		CONTACTLESS = 4;
-		FALLBACK = 8;
-		ECOMMERCE = 16;
-		PHONEORDER = 32;
-		CARDNOTPRESENT = 64;
-		CARDHOLDERNOTPRESENT = 128;
-		TERMUNATTENDED = 256;
-		MERCHANTSUSPICIOUS = 512;
-		NOTAUTHORIZED = 1024;
-		RECURRING = 2048;
+		CVVUNRELIABLE = 0x1;
+		MAPPING = 0x2;
+		CONTACTLESS = 0x4;
+		FALLBACK = 0x8;
+		ECOMMERCE = 0x10;
+		PHONEORDER = 0x20;
+		CARDNOTPRESENT = 0x40;
+		CARDHOLDERNOTPRESENT = 0x80;
+		TERMUNATTENDED = 0x100;
+		MERCHANTSUSPICIOUS = 0x200;
+		NOTAUTHORIZED = 0x400;
+		RECURRING = 0x800;
+		PINCAPABLE = 0x1000;
+		NOTPINCAPABLE = 0x2000;    //Both PINCAPABLE and NOTPINCAPABLE means that the terminal is usually able to accept PINs, but its pin pad is currently down.
+		NOREADCAPABLE = 0x4000;  //Can not read card data
+		TERMNOTPRESENT = 0x8000;
+		MAGSTRIPECAPABLE = 0x10000;
+		CHIPCAPABLE = 0x20000;
+		CONTACTLESSCAPABLE = 0x40000;
+		BARCODECAPABLE = 0x80000;
+		OCRCAPABLE = 0x100000;
+		LASTTERMCHIPREADFAILED = 0x200000;  //applies to fallback only
+		EXISTINGDEBT = 0x400000;
+		EXPANDEDTHIRDBM = 0x800000;
+		EM_INSTALLMENT = 0x1000000;
+		ECOMNOTAUTHENTICATED = 0x2000000;
+		ECOMNOTSECUREISSUER = 0x4000000;
+		ECOMNOTSECUREACQUIRER = 0x8000000;
+		PARTIALCAPABLE = 0x10000000;
 	}
 
 	optional uint32 EntryModeFlags = 34;
 
-	enum TermPINCap
+	enum TermType
 	{
-		PC_UNKNOWN = 0;
-		CANACCEPT = 1;
-		CANNOTACCEPT = 2;
-		PINPADDOWN = 8;
+		TT_UNKNOWN = 0;
+		LIMITEDAMOUNT = 1;
+		ATM = 2;
+		SELFSERVICE = 3;
+		CASHREGISTER = 4;
+		PERSONAL = 5;
+		PHONE = 7;
 	}
 
-	optional TermPINCap TerminalPINCapabilities = 35;
+	optional TermType TerminalType = 35;
 
 	optional uint32 TermPINMaxDigits = 36 [default = 12];
 
@@ -231,7 +251,7 @@ message isomessage
 
 	optional VerifResult CAVVVerification = 54;
 
-	optional RespSource CAVVResponseSource = 55 [default = RSP_ISSUER];
+//	optional RespSource CAVVResponseSource = 55 [default = RSP_ISSUER];
 
 	optional VerifResult CardAuthenticationResults = 56;  // EMV only
 
@@ -284,15 +304,10 @@ message isomessage
 		enum AmntType
 		{
 			PREPAID = 00;
-
 			OTB = 01;
-
 			LIMIT = 02;
-
 			FEE = 56;
-
 			ORIGINAL = 57;
-
 			P2PFEE = 95;
 		}
 
@@ -357,6 +372,15 @@ message isomessage
 
 	optional string MerchantAddress = 94;
 
+	enum CardAuthReliability
+	{
+		NOINFO = 0;
+		ACQUNRELIABLE = 1;
+		ACQINACTIVE = 2;
+		ISSINACTIVE = 3;
+	}
+
+	optional CardAuthReliability CardAuthenticationReliability = 95;
 
 
 

@@ -363,16 +363,13 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 		switch(atoi(get_field(message, 22,2 )))
 		{
 			case 1:
-				visamsg->set_terminalpincapabilities(isomessage::CANACCEPT);
+				visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::PINCAPABLE);
 				break;
 			case 2:
-				visamsg->set_terminalpincapabilities(isomessage::CANNOTACCEPT);
+				visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::NOTPINCAPABLE);
 				break;
 			case 8:
-				visamsg->set_terminalpincapabilities(isomessage::PINPADDOWN);
-				break;
-			default:
-				visamsg->set_terminalpincapabilities(isomessage::PC_UNKNOWN);
+				visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::PINCAPABLE | isomessage::NOTPINCAPABLE);
 		}
 	}
 
@@ -640,17 +637,14 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 
 		case '0':
 			visamsg->set_cavvverification(isomessage::ERROR);
-			visamsg->set_cavvresponsesource(isomessage::RSP_ISSUER);
 			break;
 
 		case '1':
 			visamsg->set_cavvverification(isomessage::NOMATCH);
-			visamsg->set_cavvresponsesource(isomessage::RSP_ISSUER);
 			break;
 
 		case '2':
 			visamsg->set_cavvverification(isomessage::MATCH);
-			visamsg->set_cavvresponsesource(isomessage::RSP_ISSUER);
 			break;
 
 		case 'B':
@@ -660,34 +654,29 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 		case '8':
 		case 'A':
 			visamsg->set_cavvverification(isomessage::MATCH);
-			visamsg->set_cavvresponsesource(isomessage::RSP_NETWORK);
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::ECOMNOTSECUREISSUER);
 			break;
 
 		case '4':
 		case '7':
 		case '9':
 			visamsg->set_cavvverification(isomessage::NOMATCH);
-			visamsg->set_cavvresponsesource(isomessage::RSP_NETWORK);
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::ECOMNOTSECUREISSUER);
 			break;
 
 		case '6':
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::ECOMNOTSECUREISSUER);
 			visamsg->set_cavvverification(isomessage::NOTPERFORMED);
-			visamsg->set_cavvresponsesource(isomessage::RSP_NETWORK);
 			break;
 
 		case 'C':
 			visamsg->set_cavvverification(isomessage::ERROR);
-			visamsg->set_cavvresponsesource(isomessage::RSP_NETWORK);
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::ECOMNOTSECUREISSUER);
 			break;
 
 		case 'D':
-			visamsg->set_cavvverification(isomessage::ERROR);
-			visamsg->set_cavvresponsesource(isomessage::RSP_ISSUER);
-			break;
-
 		default:
 			visamsg->set_cavvverification(isomessage::ERROR);
-			visamsg->set_cavvresponsesource(isomessage::RSP_INTERNAL);
 	}
 
 	if(has_field(message, 45))
@@ -857,8 +846,145 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	if(has_field(message, 59))
 		visamsg->set_merchantaddress(get_field(message, 59));
 
+	switch(get_field(message, 60,1)[0])
+	{
+		case '\0':
+			break;
 
+		case '1':
+			visamsg->set_terminaltype(isomessage::LIMITEDAMOUNT);
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::NOTAUTHORIZED | isomessage::TERMUNATTENDED);
+			break;
 
+		case '2':
+			visamsg->set_terminaltype(isomessage::ATM);
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::TERMUNATTENDED);
+			break;
+
+		case '3':
+			visamsg->set_terminaltype(isomessage::SELFSERVICE);
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::TERMUNATTENDED);
+			break;
+
+		case '4':
+			visamsg->set_terminaltype(isomessage::CASHREGISTER);
+			break;
+
+		case '5':
+			visamsg->set_terminaltype(isomessage::PERSONAL);
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::CARDNOTPRESENT);
+			break;
+
+		case '7':
+			visamsg->set_terminaltype(isomessage::PHONE);
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::CARDNOTPRESENT);
+			break;
+
+		default:
+			visamsg->set_terminaltype(isomessage::TT_UNKNOWN);
+	}
+
+	switch(get_field(message, 60,2)[0])
+	{
+		case '\0':
+		case '0':
+			break;
+
+		case '1':
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::TERMNOTPRESENT);
+			break;
+
+		case '2':
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::MAGSTRIPECAPABLE);
+			break;
+
+		case '3':
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::BARCODECAPABLE);
+			break;
+
+		case '4':
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::OCRCAPABLE);
+			break;
+
+		case '5':
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::CHIPCAPABLE | isomessage::MAGSTRIPECAPABLE);
+			break;
+
+		case '8':
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::CONTACTLESSCAPABLE);
+			break;
+
+		case '9':
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::NOREADCAPABLE);
+			break;
+	}
+
+	if(get_field(message, 60,3)[0]=='2')
+		visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::LASTTERMCHIPREADFAILED);
+
+	if(get_field(message, 60,4)[0]=='9')
+		visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::EXISTINGDEBT);
+
+	if(get_field(message, 60,6)[0]=='2')
+		visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::EXPANDEDTHIRDBM);
+
+	switch(get_field(message, 60,7)[0])
+	{
+		case '\0':
+		case '0':
+			break;
+
+		case '1':
+			visamsg->set_cardauthenticationreliability(isomessage::ACQUNRELIABLE);
+			break;
+
+		case '2':
+			visamsg->set_cardauthenticationreliability(isomessage::ACQINACTIVE);
+			break;
+
+		case '3':
+			visamsg->set_cardauthenticationreliability(isomessage::ISSINACTIVE);
+			break;
+	}
+
+	switch(atoi(get_field(message, 60,8)))
+	{
+		case 0:
+			break;
+
+		case 1:
+		case 4:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::PHONEORDER | isomessage::CARDNOTPRESENT | isomessage::CARDHOLDERNOTPRESENT | isomessage::TERMUNATTENDED);
+			break;
+
+		case 2:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::RECURRING | isomessage::CARDNOTPRESENT | isomessage::CARDHOLDERNOTPRESENT | isomessage::TERMUNATTENDED);
+			break;
+
+		case 3:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::EM_INSTALLMENT);
+			break;
+
+		case 5:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::ECOMMERCE | isomessage::CARDNOTPRESENT | isomessage::TERMUNATTENDED);
+			break;
+
+		case 6:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::ECOMMERCE | isomessage::CARDNOTPRESENT | isomessage::TERMUNATTENDED | isomessage::ECOMNOTAUTHENTICATED | isomessage::ECOMNOTSECUREISSUER);
+			break;
+
+		case 7:
+		case 9:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::ECOMMERCE | isomessage::CARDNOTPRESENT | isomessage::TERMUNATTENDED | isomessage::ECOMNOTAUTHENTICATED);
+			break;
+
+		case 8:
+			visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::ECOMMERCE | isomessage::CARDNOTPRESENT | isomessage::TERMUNATTENDED | isomessage::ECOMNOTAUTHENTICATED | isomessage::ECOMNOTSECUREACQUIRER);
+			break;
+	}
+
+	if(get_field(message, 60,10)[0]=='1')
+		visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::PARTIALCAPABLE);
 
 
 
@@ -1059,7 +1185,7 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	if(visamsg->has_issuercountry())
 		snprintf(add_field(message, 20), 4, "%03d", visamsg->issuercountry());
 	
-	if(isRequest(visamsg) && (visamsg->has_entrymode() || visamsg->has_terminalpincapabilities()))
+	if(isRequest(visamsg) && visamsg->has_entrymode())
 	{
 		switch(visamsg->entrymode())
 		{
@@ -1095,15 +1221,15 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 				strcpy(add_field(message, 22,1 ), "00");
 		}
 
-		switch(visamsg->terminalpincapabilities())
+		switch(visamsg->entrymodeflags() & (isomessage::PINCAPABLE | isomessage::NOTPINCAPABLE))
 		{
-			case isomessage::CANACCEPT:
+			case isomessage::PINCAPABLE:
 				strcpy(add_field(message, 22,2 ), "1");
 				break;
-			case isomessage::CANNOTACCEPT:
+			case isomessage::NOTPINCAPABLE:
 				strcpy(add_field(message, 22,2 ), "2");
 				break;
-			case isomessage::PINPADDOWN:
+			case isomessage::PINCAPABLE | isomessage::NOTPINCAPABLE:
 				strcpy(add_field(message, 22,2 ), "8");
 				break;
 			default:
@@ -1126,7 +1252,7 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		strcpy(add_field(message, 25 ), "51");
 	else if(visamsg->entrymodeflags() & isomessage::MERCHANTSUSPICIOUS)
 		strcpy(add_field(message, 25 ), "03");
-	else if(visamsg->entrymodeflags() & isomessage::TERMUNATTENDED)
+	else if((visamsg->entrymodeflags() & isomessage::TERMUNATTENDED) && !(visamsg->entrymodeflags() & isomessage::CARDNOTPRESENT))
 		strcpy(add_field(message, 25 ), "02");
 	else if(visamsg->entrymodeflags() & isomessage::CARDHOLDERNOTPRESENT)
 		strcpy(add_field(message, 25 ), "01");
@@ -1195,20 +1321,36 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 
 	if(!isRequest(visamsg) && visamsg->has_cavvverification())
 	{
-		switch(visamsg->cavvverification())
-		{
-			case isomessage::MATCH:
-				strcpy(add_field(message, 44,13), "2");
-				break;
+		if(visamsg->entrymodeflags() & isomessage::ECOMNOTSECUREISSUER)
+			switch(visamsg->cavvverification())
+			{
+				case isomessage::MATCH:
+					strcpy(add_field(message, 44,13), "3");
+					break;
 
-			case isomessage::NOMATCH:
-				strcpy(add_field(message, 44,13), "1");
-				break;
+				case isomessage::NOMATCH:
+					strcpy(add_field(message, 44,13), "4");
+					break;
 
-			default:
-				strcpy(add_field(message, 44,13), "0");
-				break;
-		}
+				default:
+					strcpy(add_field(message, 44,13), "0");
+					break;
+			}
+		else
+			switch(visamsg->cavvverification())
+			{
+				case isomessage::MATCH:
+					strcpy(add_field(message, 44,13), "2");
+					break;
+
+				case isomessage::NOMATCH:
+					strcpy(add_field(message, 44,13), "1");
+					break;
+
+				default:
+					strcpy(add_field(message, 44,13), "0");
+					break;
+			}
 
 		strcpy(add_field(message, 44,12), " ");
 		strcpy(add_field(message, 44,11), "  ");
@@ -1226,7 +1368,7 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 
 	if(!isRequest(visamsg) && visamsg->has_cvv2verification())
 	{
-		switch(visamsg->cavvverification())
+		switch(visamsg->cvv2verification())
 		{
 			case isomessage::MATCH:
 				strcpy(add_field(message, 44,10), "M");
@@ -1495,6 +1637,135 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 
 	if(visamsg->has_merchantaddress())
 		strcpy(add_field(message, 59), visamsg->merchantaddress().c_str());
+
+	if(isRequest(visamsg) && visamsg->entrymodeflags() & isomessage::PARTIALCAPABLE)
+	{
+		strcpy(add_field(message, 60,10), "1");
+
+		strcpy(add_field(message, 60,9), "0");
+		strcpy(add_field(message, 60,8), "00");
+		strcpy(add_field(message, 60,7), "0");
+		strcpy(add_field(message, 60,6), "0");
+		strcpy(add_field(message, 60,5), "00");
+		strcpy(add_field(message, 60,4), "0");
+		strcpy(add_field(message, 60,3), "0");
+		strcpy(add_field(message, 60,2), "0");
+		strcpy(add_field(message, 60,1), "0");
+	}
+
+	if(isRequest(visamsg) && visamsg->entrymodeflags() & (isomessage::PHONEORDER | isomessage::RECURRING | isomessage::EM_INSTALLMENT | isomessage::ECOMMERCE))
+	{
+		if(visamsg->entrymodeflags() & isomessage::RECURRING)
+			strcpy(add_field(message, 60,8), "02");
+		else if(visamsg->entrymodeflags() & isomessage::EM_INSTALLMENT)
+			strcpy(add_field(message, 60,8), "03");
+		else if(visamsg->entrymodeflags() & isomessage::PHONEORDER)
+			strcpy(add_field(message, 60,8), "01");
+		else if(visamsg->entrymodeflags() & isomessage::ECOMMERCE)
+		{
+			if(visamsg->entrymodeflags() & isomessage::ECOMNOTSECUREACQUIRER)
+				strcpy(add_field(message, 60,8), "08");
+			else if(visamsg->entrymodeflags() & isomessage::ECOMNOTSECUREISSUER)
+				strcpy(add_field(message, 60,8), "06");
+			else if(visamsg->entrymodeflags() & isomessage::ECOMNOTAUTHENTICATED)
+				strcpy(add_field(message, 60,8), "07");
+			else
+				strcpy(add_field(message, 60,8), "05");
+		}
+		else
+			strcpy(add_field(message, 60,8), "00");
+
+		strcpy(add_field(message, 60,7), "0");
+		strcpy(add_field(message, 60,6), "0");
+		strcpy(add_field(message, 60,5), "00");
+		strcpy(add_field(message, 60,4), "0");
+		strcpy(add_field(message, 60,3), "0");
+		strcpy(add_field(message, 60,2), "0");
+		strcpy(add_field(message, 60,1), "0");
+	}
+
+	if(isRequest(visamsg) && visamsg->cardauthenticationreliability()==isomessage::ACQUNRELIABLE)
+	{
+		strcpy(add_field(message, 60,7), "1");
+
+		strcpy(add_field(message, 60,6), "0");
+		strcpy(add_field(message, 60,5), "00");
+		strcpy(add_field(message, 60,4), "0");
+		strcpy(add_field(message, 60,3), "0");
+		strcpy(add_field(message, 60,2), "0");
+		strcpy(add_field(message, 60,1), "0");
+	}
+
+	if(isRequest(visamsg) && visamsg->entrymodeflags() & isomessage::EXISTINGDEBT)
+	{
+		strcpy(add_field(message, 60,4), "9");
+
+		strcpy(add_field(message, 60,3), "0");
+		strcpy(add_field(message, 60,2), "0");
+		strcpy(add_field(message, 60,1), "0");
+	}
+
+	if(isRequest(visamsg) && visamsg->entrymodeflags() & isomessage::FALLBACK)
+	{
+		if(visamsg->entrymodeflags() | isomessage::LASTTERMCHIPREADFAILED)
+			strcpy(add_field(message, 60,3), "2");
+		else
+			strcpy(add_field(message, 60,3), "1");
+
+		strcpy(add_field(message, 60,2), "0");
+		strcpy(add_field(message, 60,1), "0");
+	}
+
+	if(isRequest(visamsg) && visamsg->entrymodeflags() & (isomessage::NOREADCAPABLE | isomessage::TERMNOTPRESENT | isomessage::MAGSTRIPECAPABLE | isomessage::CHIPCAPABLE | isomessage::CONTACTLESSCAPABLE))
+	{
+		if(visamsg->entrymodeflags() & isomessage::NOREADCAPABLE)
+			strcpy(add_field(message, 60,2), "9");
+		else if(visamsg->entrymodeflags() & isomessage::TERMNOTPRESENT)
+			strcpy(add_field(message, 60,2), "1");
+		else if(visamsg->entrymodeflags() & isomessage::CHIPCAPABLE)
+			strcpy(add_field(message, 60,2), "5");
+		else if(visamsg->entrymodeflags() & isomessage::CONTACTLESSCAPABLE)
+			strcpy(add_field(message, 60,2), "8");
+		else if(visamsg->entrymodeflags() & isomessage::MAGSTRIPECAPABLE)
+			strcpy(add_field(message, 60,2), "2");
+		else
+			strcpy(add_field(message, 60,2), "0");
+
+		strcpy(add_field(message, 60,1), "0");
+	}
+
+	if(isRequest(visamsg) && visamsg->has_terminaltype())
+		switch(visamsg->terminaltype())
+		{
+			case isomessage::LIMITEDAMOUNT:
+				strcpy(add_field(message, 60,1), "1");
+				break;
+
+			case isomessage::ATM:
+				strcpy(add_field(message, 60,1), "2");
+				break;
+
+			case isomessage::SELFSERVICE:
+				strcpy(add_field(message, 60,1), "3");
+				break;
+
+			case isomessage::CASHREGISTER:
+				strcpy(add_field(message, 60,1), "4");
+				break;
+
+			case isomessage::PERSONAL:
+				strcpy(add_field(message, 60,1), "5");
+				break;
+
+			case isomessage::PHONE:
+				strcpy(add_field(message, 60,1), "7");
+				break;
+
+			default:
+				strcpy(add_field(message, 60,1), "0");
+				break;
+		}
+
 
 
 
