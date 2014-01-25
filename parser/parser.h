@@ -36,6 +36,7 @@ typedef struct fldformat
 	unsigned int maxFields;
 	unsigned int fields;
 	struct fldformat **fld;
+	struct fldformat *altformat;
 } fldformat;
 
 typedef struct field
@@ -46,6 +47,7 @@ typedef struct field
 	unsigned int fields;
 	fldformat *frm;
 	struct field **fld;
+	unsigned int altformat;
 } field;
 
 fldformat *load_format(char*);
@@ -58,8 +60,10 @@ unsigned int parse_field_length(char*, unsigned int, fldformat*);
 int is_empty(field*);
 void print_message(field*);
 
+int change_format(field*, fldformat*);
 const char* get_field(field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 char* add_field(field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+int field_format(field *fld, int altformat, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 void remove_field(field *fld,  int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 int has_field(field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 char* add_tag(const char *tag, field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);

@@ -788,7 +788,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 				visamsg->set_secondarypinblock(get_field(message, 55,1,i));
 				break;
 			case 0x5F2A:
-				visamsg->set_cryptogramcurrencycode(get_field(message, 55,1,i));
+				visamsg->set_cryptogramcurrency(get_field(message, 55,1,i));
 				break;
 			case 0x9F02:
 				visamsg->set_cryptogramtransactionamount(get_field(message, 55,1,i));
@@ -985,6 +985,19 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 
 	if(get_field(message, 60,10)[0]=='1')
 		visamsg->set_entrymodeflags(visamsg->entrymodeflags() | isomessage::PARTIALCAPABLE);
+
+	if(has_field(message, 61,1))
+		visamsg->set_cashbackamount(atoll(get_field(message, 61,1)));
+
+	if(has_field(message, 61,2))
+		visamsg->set_cashbackbillingamount(atoll(get_field(message, 61,2)));
+
+	if(has_field(message, 61,3))
+		visamsg->set_replacementbillingamount(atoll(get_field(message, 61,3)));
+
+
+
+
 
 
 
@@ -1584,8 +1597,8 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	if(visamsg->has_secondarypinblock())
 		strcpy(add_tag("C0", message, 55,1), visamsg->secondarypinblock().c_str());
 
-	if(visamsg->has_cryptogramcurrencycode())
-		strcpy(add_tag("5F2A", message, 55,1), visamsg->cryptogramcurrencycode().c_str());
+	if(visamsg->has_cryptogramcurrency())
+		strcpy(add_tag("5F2A", message, 55,1), visamsg->cryptogramcurrency().c_str());
 
 	if(visamsg->has_cryptogramtransactionamount())
 		strcpy(add_tag("9F02", message, 55,1), visamsg->cryptogramtransactionamount().c_str());
@@ -1765,6 +1778,25 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 				strcpy(add_field(message, 60,1), "0");
 				break;
 		}
+
+	if(isRequest(visamsg) && visamsg->replacementbillingamount())
+	{
+		snprintf(add_field(message, 61,3), 13, "%012lld", visamsg->replacementbillingamount());
+		strcpy(add_field(message, 61,2), "000000000000");
+		strcpy(add_field(message, 61,1), "000000000000");
+	}
+
+	if(isRequest(visamsg) && visamsg->has_cashbackbillingamount())
+	{
+		snprintf(add_field(message, 61,2), 13, "%012lld", visamsg->cashbackbillingamount());
+		strcpy(add_field(message, 61,1), "000000000000");
+	}
+
+	if(isRequest(visamsg) && visamsg->has_cashbackamount())
+		snprintf(add_field(message, 61,1), 13, "%012lld", visamsg->cashbackamount());
+
+
+
 
 
 

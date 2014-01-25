@@ -336,7 +336,7 @@ message isomessage
 
 	optional string SecondaryPINBlock = 76;
 
-	optional string CryptogramCurrencyCode = 77;
+	optional string CryptogramCurrency = 77;
 
 	optional string CryptogramTransactionAmount = 78;
 
@@ -382,9 +382,11 @@ message isomessage
 
 	optional CardAuthReliability CardAuthenticationReliability = 95;
 
+	optional uint64 CashbackAmount = 96;
 
+	optional uint64 CashbackBillingAmount = 97;
 
-
+	optional uint64 ReplacementBillingAmount = 98;
 
 
 }

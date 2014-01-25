@@ -5,9 +5,10 @@
 #include "parser.h"
 
 fldformat *findFrmParent(fldformat*, char*, int*);
-fldformat *newFrmChild(fldformat*, unsigned int);
-void removeFrmChild(fldformat*, unsigned int);
+//fldformat *newFrmChild(fldformat*, unsigned int);
+//void removeFrmChild(fldformat*, unsigned int);
 int parseFormat(fldformat*, char*);
+int linkFrmChild(fldformat*, unsigned int, fldformat*);
 
 fldformat* load_format(char *filename)
 {
@@ -93,7 +94,7 @@ fldformat* load_format(char *filename)
 			continue;
 		}
 
-		frmtmp=newFrmChild(frmpar, j);
+/*		frmtmp=newFrmChild(frmpar, j);
 		if(!frmtmp)
 		{
 			printf("Error: Unable to add format, skipping:\n%s\n", line);
@@ -109,6 +110,28 @@ fldformat* load_format(char *filename)
 		{
 			printf("Error: Unable to parse format, skipping:\n%s\n", line);
 			removeFrmChild(frmpar, j);
+			continue;
+		}
+*/
+
+		frmtmp=(fldformat*)calloc(1, sizeof(fldformat));
+
+		frmtmp->description=(char*)malloc(strlen(number)+2+strlen(descr)+1);
+		strcpy(frmtmp->description, number);
+		strcpy(frmtmp->description+strlen(frmtmp->description), ". ");
+		strcpy(frmtmp->description+strlen(frmtmp->description), descr);
+
+		if (!parseFormat(frmtmp, format))
+		{
+			printf("Error: Unable to parse format, skipping:\n%s\n", line);
+			freeFormat(frmtmp);
+			continue;
+		}
+
+		if(!linkFrmChild(frmpar, j, frmtmp))
+		{
+			printf("Error: Unable to add format, skipping:\n%s\n", line);
+			freeFormat(frmtmp);
 			continue;
 		}
 
@@ -132,6 +155,7 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 {
 	unsigned int i;
 	unsigned int l=strlen(number);
+	fldformat *altformat;
 	
 	if(!frm)
 	{
@@ -165,8 +189,16 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 			*position=0;
 		else	
 			*position=atoi(number);
-		
-		return frm;
+
+		if(frm->altformat==NULL)
+			return frm;
+
+		printf("Info: Using alternate format(%s)\n", number);
+
+		for(altformat=frm; altformat->altformat!=NULL; )
+			 altformat=altformat->altformat;
+
+		return altformat;
 	}
 
 	if(number[i]!='.')
@@ -190,9 +222,17 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 		return NULL;
 	}
 
-	return findFrmParent(frm->fld[*position], number+i+1, position);
-}
+	if(frm->fld[*position]->altformat==NULL)
+		return findFrmParent(frm->fld[*position], number+i+1, position);
 
+	printf("Info: Using alternate format(%s)\n", number);
+
+	for(altformat=frm->fld[*position]; altformat->altformat!=NULL; )
+		 altformat=altformat->altformat;
+
+	return findFrmParent(altformat, number+i+1, position);
+}
+/*
 fldformat *newFrmChild(fldformat *frm, unsigned int n)
 {
 	if(!frm)
@@ -257,6 +297,49 @@ void removeFrmChild(fldformat *frm, unsigned int n)
 		else
 			frm->fields=i+1;
 	}
+}
+*/
+int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld)
+{
+	fldformat *altformat;
+
+	if(!frm)
+	{
+		printf("Error: Null pointer to first arg\n");
+		return 0;
+	}
+
+	if(!cld)
+	{
+		printf("Error: Null pointer to third arg\n");
+		return 0;
+	}
+
+	if(n+1 > frm->maxFields)
+	{
+		printf("Error: Exceeded max number of fields (required %d, max %d)\n", n, frm->maxFields);
+		return NULL;
+	}
+
+	if(frm->fields==0)
+		frm->fld=(fldformat**)calloc(frm->maxFields, sizeof(fldformat*));
+	
+	if(frm->fields < n+1)
+		frm->fields=n+1;
+
+	if(frm->fld[n]==NULL)
+		frm->fld[n]=cld;
+	else
+	{
+		printf("Info: Adding as an alternate format\n");
+
+		for(altformat=frm->fld[n]; altformat->altformat!=NULL; )
+			 altformat=altformat->altformat;
+
+		altformat->altformat=cld;
+	}
+
+	return 1;
 }
 
 int parseFormat(fldformat *frm, char *format)

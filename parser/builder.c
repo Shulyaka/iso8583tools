@@ -6,6 +6,7 @@
 
 //unsigned int build_message(char*, unsigned int, field*, fldformat*);
 unsigned int build_field(char*, unsigned int, field*);
+unsigned int build_field_alt(char*, unsigned int, field*);
 unsigned int build_ebcdic(char*, char*, unsigned int);
 unsigned int build_hex(char*, char*, unsigned int);
 unsigned int build_bcdl(char*, char*, unsigned int);
@@ -229,6 +230,53 @@ unsigned int get_length(field *fld)
 }
 
 unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
+{
+	fldformat *frm;
+	unsigned int length;
+
+	if(!buf)
+	{
+		printf("Error: No buf\n");
+		return 0;
+	}
+
+	if(!fld)
+	{
+		printf("Error: No fld\n");
+		return 0;
+	}
+
+	frm=fld->frm;
+
+	if(!frm)
+	{
+		printf("Error: No frm\n");
+		return 0;
+	}
+
+	if(fld->altformat)   //if altformat is forced by field_format()
+		return build_field_alt(buf, maxlength, fld);  //then trying to build the field with it
+
+	fld->altformat=1;            //if not,
+	length=build_field_alt(buf, maxlength, fld);   //then try the first format
+	if(length)
+		return length;
+
+	for(; frm->altformat; frm=frm->altformat)   //if that failed,
+	{
+		fld->altformat++;            //then iterate through remaining altformats
+		if(change_format(fld, frm->altformat))  //that we are able to change to
+		{
+			length=build_field_alt(buf, maxlength, fld);
+			if(length)
+				return length;
+		}
+	}
+
+	return 0;
+}
+
+unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 {
 	unsigned int lenlen=0;
 	unsigned int blength=0;

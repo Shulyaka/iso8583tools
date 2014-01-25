@@ -5,6 +5,7 @@
 #include "parser.h"
 
 unsigned int parse_field(char*, unsigned int, field*);
+unsigned int parse_field_alt(char*, unsigned int, field*);
 void parse_ebcdic(char*, char*, unsigned int);
 int parse_hex(char*, char*, unsigned int);
 int parse_bcdr(char*, char*, unsigned int);
@@ -171,6 +172,55 @@ unsigned int parse_field_length(char *buf, unsigned int maxlength, fldformat *fr
 }
 
 unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
+{
+	fldformat *frm;
+	unsigned int length;
+	unsigned int i;
+
+	if(!buf)
+	{
+		printf("Error: No buf\n");
+		return 0;
+	}
+
+	if(!fld)
+	{
+		printf("Error: No fld\n");
+		return 0;
+	}
+
+	frm=fld->frm;
+
+	if(!frm)
+	{
+		printf("Error: No frm\n");
+		return 0;
+	}
+
+	fld->altformat=0;
+
+	length=parse_field_alt(buf, maxlength, fld);
+	if(length)
+		return length;
+
+	if(frm->altformat)
+		printf("Info: parse_field: Retrying with alternate format\n");
+
+	for(i=0; frm->altformat!=NULL; i++)
+	{
+		frm=frm->altformat;
+		fld->frm=frm;
+		fld->altformat=i;
+
+		length=parse_field_alt(buf, maxlength, fld);
+		if(length)
+			return length;
+	}
+
+	return 0;
+}
+
+unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 {
 	unsigned int lenlen=0;
 	unsigned int blength=0;

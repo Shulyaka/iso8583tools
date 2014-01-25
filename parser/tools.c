@@ -74,6 +74,9 @@ void freeFormat(fldformat *frm)
 	if(frm->description!=NULL)
 		free(frm->description);
 
+	if(frm->altformat!=NULL)
+		freeFormat(frm->altformat);
+
 	free(frm);
 }
 
@@ -104,12 +107,51 @@ void freeField(field *fld)
 	free(fld);
 }
 
+int change_format(field *fld, fldformat *frmnew)
+{
+	unsigned int i;
+	fldformat *frmold;
+
+	if(!fld || !frmnew)
+		return 0;
+
+	if(fld->frm == frmnew)
+		return 1;
+
+	frmold=fld->frm;
+
+	fld->frm=frmnew;
+
+	for(i=0; i<fld->fields; i++)
+		if(fld->fld[i]!=NULL)
+			if(frmnew->fields<=i || !frmnew->fld[i] || !change_format(fld->fld[i], frmnew->fld[i]))
+				break;
+
+	if(i!=fld->fields)
+	{
+		printf("Error: Unable to change field format (%d). Reverting.\n", i);
+
+		for(fld->frm=frmold; i!=0; i--)
+			if(fld->fld[i]!=NULL)
+				if(frmold->fields<=i || !frmold->fld[i] || !change_format(fld->fld[i], frmold->fld[i]))
+					printf("Error: Unable to revert\n");
+
+		if(fld->fld[0]!=NULL)
+			if(frmold->fields==0 || !frmold->fld[0] || !change_format(fld->fld[0], frmold->fld[0]))
+				printf("Error: Unable to revert\n");
+
+		return 0;
+	}
+
+	return 1;
+}
+
 //a segfault-save accessor function. Returns a pointer to the field contents. If the field does not exist, it would be created. If it cannot be created, a valid pointer to a dummy array is returned.
 char* add_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	static char def[255]={0};
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	int i;
+	unsigned int i;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
 	{
@@ -177,13 +219,123 @@ char* add_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int 
 	}
 
 	return fld->data;
+}
+
+int field_format(field *fld, int altformat, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+{
+	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
+	unsigned int i;
+	fldformat *tmpfrm;
+
+	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
+	{
+		if(n[i]==-1)
+			break;
+
+		if(!fld || !fld->frm)
+			return 2;
+
+		if(!fld->fld)
+		{
+			if(fld->frm->maxFields)
+				fld->fld=(field**)calloc(fld->frm->maxFields, sizeof(field*));
+			else
+				return 2;
+		}
+
+		if(n[i] >= fld->frm->maxFields)
+			return 2;
+
+		if(!fld->fld[n[i]])
+		{
+			fld->fld[n[i]]=(field*)calloc(1, sizeof(field));
+			switch(fld->frm->dataFormat)
+			{
+				case FRM_TLV1:
+				case FRM_TLV2:
+				case FRM_TLV3:
+				case FRM_TLV4:
+				case FRM_TLVEMV:
+					fld->fld[n[i]]->frm=fld->frm->fld[0];
+				default:
+					fld->fld[n[i]]->frm=fld->frm->fld[n[i]];
+			}
+		}
+
+		if(fld->fields <= n[i])
+			fld->fields=n[i]+1;
+
+		tmpfrm=fld->frm;
+
+		fld=fld->fld[n[i]];
+	}
+
+	if(!fld || !fld->frm)
+		return 2;
+
+	if(i==0)
+	{
+		if(fld->altformat>=altformat || altformat==0) //no need or unable to go back in the list
+		{
+			if(altformat==0 && fld->altformat==1)
+				fld->altformat=0;
+
+			return 3;
+		}
+
+		if(altformat==1 && fld->altformat==0)
+		{
+			fld->altformat=1;
+			return 0;
+		}
+
+		tmpfrm=fld->frm;
+
+		for(i=fld->altformat==0?1:fld->altformat; i<altformat; i++)
+			if(!tmpfrm->altformat)
+				return 4;
+			else
+				tmpfrm=tmpfrm->altformat;
+
+		if(change_format(fld, tmpfrm))
+			fld->altformat=altformat;
+		else
+			return 1;
+
+		return 0;
+	}
+
+	switch(tmpfrm->dataFormat)
+	{
+		case FRM_TLV1:
+		case FRM_TLV2:
+		case FRM_TLV3:
+		case FRM_TLV4:
+		case FRM_TLVEMV:
+			tmpfrm=tmpfrm->fld[0];
+		default:
+			tmpfrm=tmpfrm->fld[n[i-1]];
+	}
+
+	for(i=1; i<altformat; i++)
+		if(!tmpfrm->altformat)
+			return 4;
+		else
+			tmpfrm=tmpfrm->altformat;
+
+	if(change_format(fld, tmpfrm))
+		fld->altformat=altformat;
+	else
+		return 1;
+
+	return 0;
 } 
 
 char* add_tag(const char *tag, field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	static char def[255]={0};
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	int i;
+	unsigned int i;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
 	{
@@ -294,7 +446,7 @@ const char* get_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5
 {
 	static const char def[255]={0};
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	int i;
+	unsigned int i;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
 	{
@@ -317,7 +469,7 @@ const char* get_tag(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, 
 {
 	static const char def[10]={0};
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	int i;
+	unsigned int i;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
 	{
@@ -339,7 +491,7 @@ const char* get_tag(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, 
 void remove_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	int i;
+	unsigned int i;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0])-1; i++)
 	{
@@ -365,7 +517,7 @@ void remove_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, in
 int has_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	int i;
+	unsigned int i;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
 	{
