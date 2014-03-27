@@ -1,19 +1,19 @@
 CFLAGS=-ggdb
 
 
-all: libparser.a
+all: libparser.a testparse
 
 clean:
-	rm -f *.o libparser.a test message_out
+	rm -f *.o libparser.a testparse message_out
 
-test: libparser.a test.o
-		g++ test.o -L . -l parser -o test
+testparse: libparser.a testparse.o
+		g++ testparse.o -L . -l parser -o testparse
 
 libparser.a: parser.o frmload.o tools.o builder.o
 		ar rcs libparser.a parser.o frmload.o tools.o builder.o
 
-test.o: test.c parser.h
-		g++ -c test.c ${CFLAGS}
+testparse.o: testparse.c parser.h
+		g++ -c testparse.c ${CFLAGS}
 
 parser.o: parser.c parser.h
 		g++ -c parser.c ${CFLAGS}

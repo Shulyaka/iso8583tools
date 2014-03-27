@@ -146,7 +146,7 @@ message 	BB800SF		Visa Message (with header)
 1.60.9		F1ASC		not applicable (SMS only)
 1.60.10		F1ASC		partial authorization indicator
 1.61		B36BCD		Other Amounts
-1.62		B255SF		Custom Payment Service Fields
+1.62		B255SF		Custom Payment Service Fields (bitmap format)
 1.62.0		F64BITMAP	Field 62 Bitmap
 1.62.1		F1EBCDIC	Authorization Characteristics Indicator
 1.62.2		F15BCD		Transaction Identifier
@@ -160,6 +160,10 @@ message 	BB800SF		Visa Message (with header)
 1.62.22		F6EBCDIC	Online Risk Assessment Condition Codes
 1.62.23		F2EBCDIC	Card-Level Results
 1.62.24		F6EBCDIC	Program Identifier
+1.62		B13SF		Custom Payment Service Fields (fixed format)
+1.62.1		F1EBCDIC	Authorization Characteristics Indicator
+1.62.2		F15BCD		Transaction Identifier
+1.62.3		F4EBCDIC	Validation Code
 1.63		B255SF		V.I.P. Private-Use Field
 1.63.0		F24BITMAP	Bitmap
 1.63.1		F4BCD		Network ID

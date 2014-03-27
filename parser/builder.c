@@ -103,7 +103,7 @@ unsigned int get_length(field *fld)
 			break;
 
 		case FRM_BCDSF:
-			tmpfrm.lengthFormat=FRM_FIXED;
+			tmpfrm.lengthFormat=FRM_UNKNOWN;
 			tmpfrm.lengthLength=0;
 			tmpfrm.maxLength=frm->maxLength;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
@@ -262,6 +262,8 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 	if(length)
 		return length;
 
+	printf("Info: Retrying with an alternate format\n");
+
 	for(; frm->altformat; frm=frm->altformat)   //if that failed,
 	{
 		fld->altformat++;            //then iterate through remaining altformats
@@ -385,7 +387,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 		case FRM_BCDSF:
 			fld->data=(char*)malloc(maxlength*2+1);
 			
-			tmpfrm.lengthFormat=FRM_FIXED;
+			tmpfrm.lengthFormat=FRM_UNKNOWN;
 			tmpfrm.lengthLength=0;
 			tmpfrm.maxLength=frm->maxLength;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
@@ -552,7 +554,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 							return 0;
 
 						for(j=0; j < taglength - strlen(lengthbuf); j++)
-							buf[j]=0xF0;
+							buf[pos+j]=0xF0;
 						break;
 
 					case FRM_HEX:
@@ -566,7 +568,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 							return 0;
 
 						for(j=0; j < taglength - (strlen(lengthbuf)+1)/2; j++)
-							buf[j]='\0';
+							buf[pos+j]='\0';
 						break;
 					case FRM_BCD:
 						
@@ -580,7 +582,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 							return 0;
 
 						for(j=0; j < taglength - (strlen(lengthbuf)+1)/2; j++)
-							buf[j]='\0';
+							buf[pos+j]='\0';
 						break;
 					case FRM_ASCII:
 					default:			
@@ -593,7 +595,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 						memcpy(buf + pos + taglength - strlen(lengthbuf), lengthbuf, strlen(lengthbuf));
 
 						for(j=0; j < taglength - strlen(lengthbuf); j++)
-							buf[j]='0';
+							buf[pos+j]='0';
 				}
 
 				pos+=taglength;

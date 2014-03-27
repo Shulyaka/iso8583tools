@@ -1,6 +1,7 @@
 #ifndef _PARSE_H_
 #define _PARSE_H_
 
+//TODO: switch to enum
 #define FRM_UNKNOWN 0    //unknown format    U
 #define FRM_ISOBITMAP 1  //primary and secondary bitmaps
 #define FRM_BITMAP 2     //fixed length bitmap
@@ -50,7 +51,7 @@ typedef struct field
 	unsigned int altformat;
 } field;
 
-fldformat *load_format(char*);
+fldformat *load_format(char*, fldformat *frmroot=NULL);
 void freeFormat(fldformat*);
 void freeField(field*);
 field *parse_message(char*, unsigned int, fldformat*);

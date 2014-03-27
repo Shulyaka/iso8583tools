@@ -10,7 +10,7 @@ fldformat *findFrmParent(fldformat*, char*, int*);
 int parseFormat(fldformat*, char*);
 int linkFrmChild(fldformat*, unsigned int, fldformat*);
 
-fldformat* load_format(char *filename)
+fldformat* load_format(char *filename, fldformat *frmroot)
 {
 	char line[256];
 	char number[sizeof(line)];
@@ -20,15 +20,27 @@ fldformat* load_format(char *filename)
 	int i=0;
 	int j=0;
 	int k=0;
-	fldformat *frmroot, *frmtmp, *frmpar;
+	fldformat *frmtmp, *frmpar, **altfrmpar=NULL;
 	FILE *file;
 
-	frmroot=(fldformat*)calloc(1, sizeof(fldformat));
+	if(!frmroot)
+		frmroot=(fldformat*)calloc(1, sizeof(fldformat));
+	else
+	{
+		for(; frmroot->altformat!=NULL; )
+			frmroot=frmroot->altformat;
+
+		frmroot->altformat=(fldformat*)calloc(1, sizeof(fldformat));
+		altfrmpar=&(frmroot->altformat);
+		frmroot=frmroot->altformat;
+	}
 	
 	if((file=fopen(filename, "r"))==NULL)
 	{
 		printf("Error: Unable to open file\n");
 		freeFormat(frmroot);
+		if(altfrmpar)
+			*altfrmpar=NULL;
 		return NULL;
 	}
 
@@ -145,6 +157,8 @@ fldformat* load_format(char *filename)
 	{
 		printf("Error: No fields loaded\n");
 		freeFormat(frmroot);
+		if(altfrmpar)
+			*altfrmpar=NULL;
 		return NULL;
 	}
 
@@ -193,7 +207,7 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 		if(frm->altformat==NULL)
 			return frm;
 
-		printf("Info: Using alternate format(%s)\n", number);
+		//printf("Info: Using alternate format(%s)\n", number);
 
 		for(altformat=frm; altformat->altformat!=NULL; )
 			 altformat=altformat->altformat;
@@ -225,7 +239,7 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 	if(frm->fld[*position]->altformat==NULL)
 		return findFrmParent(frm->fld[*position], number+i+1, position);
 
-	printf("Info: Using alternate format(%s)\n", number);
+	//printf("Info: Using alternate format(%s)\n", number);
 
 	for(altformat=frm->fld[*position]; altformat->altformat!=NULL; )
 		 altformat=altformat->altformat;
@@ -331,7 +345,7 @@ int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld)
 		frm->fld[n]=cld;
 	else
 	{
-		printf("Info: Adding as an alternate format\n");
+		//printf("Info: Adding as an alternate format\n");
 
 		for(altformat=frm->fld[n]; altformat->altformat!=NULL; )
 			 altformat=altformat->altformat;
