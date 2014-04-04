@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 	freeFormat(frm);
 
 	if(msglen2!=msglen)
-		printf("Warning: Total length don't match (%d != %d)\n", msglen, msglen2);
+		printf("Warning: Total length mismatch (%d != %d)\n", msglen, msglen2);
 	else
 		for(msglen=0; msglen<msglen2; msglen++)
 			if(msgbuf[msglen]!=msgbuf2[msglen])
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 			}
 
 	if(msglen2==msglen)
-		printf("Rebuilt message match original\n");
+		printf("Rebuilt message matches original\n");
 	else
 	{
 		outfile=fopen("message_out", "w");
