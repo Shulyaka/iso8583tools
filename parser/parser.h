@@ -24,6 +24,8 @@
 
 #include <stdlib.h>
 
+extern int debug;
+
 typedef struct fldformat
 {
 	//unsigned int number;

@@ -6,6 +6,8 @@
 
 #include "parser.h"
 
+int debug=0;
+
 int main(int argc, char **argv)
 {
 	fldformat *frmtmp, *frm=NULL;
@@ -47,7 +49,8 @@ int main(int argc, char **argv)
 
 		sprintf(filename, "%s/%s", format_dir, de->d_name);
 
-		printf("Loading %s\n", filename);
+		if(debug)
+			printf("Loading %s\n", filename);
 
 		frmtmp=load_format(filename, frm);
 
@@ -76,7 +79,8 @@ int main(int argc, char **argv)
 		return 3;
 	}
 
-	printf("Info: Loaded %d formats\n", frmcounter);
+	if(debug)
+		printf("Info: Loaded %d formats\n", frmcounter);
 
 	if(argc>1)
 	{
@@ -87,10 +91,12 @@ int main(int argc, char **argv)
 			return 4;
 		}
 
-		printf("Reading from %s\n", argv[1]);
+		if(debug)
+			printf("Reading from %s\n", argv[1]);
 	}
 	else
-		printf("Reading from stdin\n");
+		if(debug)
+			printf("Reading from stdin\n");
 
 	while ((msgbuf[msglen++]=fgetc(infile))!=EOF)
 		if(msglen>sizeof(msgbuf))
@@ -115,45 +121,57 @@ int main(int argc, char **argv)
 		return 6;
 	}
 
-	printf("%s parsed\n", message->frm->description);
+	if(debug)
+		printf("%s parsed\n", message->frm->description);
 
 	print_message(message);
 
-	printf("Building %s, estimated length: %d\n", message->frm->description, get_length(message));
+	if(debug)
+		printf("Building %s, estimated length: %d\n", message->frm->description, get_length(message));
 
 	msglen2=build_message(msgbuf2, sizeof(msgbuf2), message);
 
 	if(!msglen2)
 	{
-		printf("Error: Unable to build %s\n", message->frm->description);
+		if(debug)
+			printf("Error: Unable to build %s\n", message->frm->description);
 		freeField(message);
 		freeFormat(frm);
 		return 7;
 	}
 
-	printf("%s built. Length: %d\n", message->frm->description, msglen2);
+	if(debug)
+		printf("%s built. Length: %d\n", message->frm->description, msglen2);
 
 	freeField(message);
 	freeFormat(frm);
 
 	if(msglen2!=msglen)
-		printf("Warning: Total length mismatch (%d != %d)\n", msglen, msglen2);
+	{
+		if(debug)
+			printf("Warning: Total length mismatch (%d != %d)\n", msglen, msglen2);
+	}
 	else
 		for(msglen=0; msglen<msglen2; msglen++)
 			if(msgbuf[msglen]!=msgbuf2[msglen])
 			{
-				printf("Warning: Messages don't match (starting from byte %d)\n", msglen);
+				if(debug)
+					printf("Warning: Messages don't match (starting from byte %d)\n", msglen);
 				break;
 			}
 
 	if(msglen2==msglen)
-		printf("Rebuilt message matches original\n");
+	{
+		if(debug)
+			printf("Rebuilt message matches original\n");
+	}
 	else
 	{
 		outfile=fopen("message_out", "w");
 		for(msglen=0; msglen<msglen2; fputc(msgbuf2[msglen++], outfile));
 		fclose(outfile);
-		printf("message_out file is written\n");
+		if(debug)
+			printf("message_out file is written\n");
 
 		return 8;
 	}

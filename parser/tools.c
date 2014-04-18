@@ -12,7 +12,8 @@ void print_message(field *fld)
 
 	if(!fld)
 	{
-		printf("Error: First arg is null\n");
+		if(debug)
+			printf("Error: First arg is null\n");
 		return;
 	}
 
@@ -20,7 +21,8 @@ void print_message(field *fld)
 
 	if(!frm)
 	{
-		printf("Error: Second arg is null\n");
+		if(debug)
+			printf("Error: Second arg is null\n");
 		return;
 	}
 
@@ -58,8 +60,9 @@ void freeFormat(fldformat *frm)
 	unsigned int i; 
 
 	if(!frm)
-	{      
-		printf("Warning: already freed\n");
+	{
+		if(debug)
+			printf("Warning: already freed\n");
 		return;       
 	}      
 
@@ -86,7 +89,8 @@ void freeField(field *fld)
 
 	if(!fld)
 	{
-		printf("Warning: already freed\n");
+		if(debug)
+			printf("Warning: already freed\n");
 		return;
 	}
 
@@ -129,16 +133,19 @@ int change_format(field *fld, fldformat *frmnew)
 
 	if(i!=fld->fields)
 	{
-		printf("Error: Unable to change field format (%d). Reverting.\n", i);
+		if(debug)
+			printf("Error: Unable to change field format (%d). Reverting.\n", i);
 
 		for(fld->frm=frmold; i!=0; i--)
 			if(fld->fld[i]!=NULL)
 				if(frmold->fields<=i || !frmold->fld[i] || !change_format(fld->fld[i], frmold->fld[i]))
-					printf("Error: Unable to revert\n");
+					if(debug)
+						printf("Error: Unable to revert\n");
 
 		if(fld->fld[0]!=NULL)
 			if(frmold->fields==0 || !frmold->fld[0] || !change_format(fld->fld[0], frmold->fld[0]))
-				printf("Error: Unable to revert\n");
+				if(debug)
+					printf("Error: Unable to revert\n");
 
 		return 0;
 	}

@@ -37,7 +37,8 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 	
 	if((file=fopen(filename, "r"))==NULL)
 	{
-		printf("Error: Unable to open file\n");
+		if(debug)
+			perror("Error: Unable to open file\n");
 		freeFormat(frmroot);
 		if(altfrmpar)
 			*altfrmpar=NULL;
@@ -71,7 +72,8 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 			strcpy(descr, "No description");
 		else if (j!=3)
 		{
-			printf("Warning: Wrong format in line, skipping:\n%s\n", line);
+			if(debug)
+				printf("Warning: Wrong format in line, skipping:\n%s\n", line);
 			continue;
 		}
 
@@ -90,7 +92,8 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 
 		if(k==0)
 		{
-			printf("Warning: No 'message' format, implying default\n");
+			if(debug)
+				printf("Warning: No 'message' format, implying default\n");
 			frmroot->description=(char*)malloc(strlen("ISO8583 Message")+1);
 			strcpy(frmroot->description, "ISO8583 Message");
 			
@@ -102,29 +105,10 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 		frmpar=findFrmParent(frmroot, number, &j);
 		if(!frmpar)
 		{
-			printf("Error: Unable to parse field number, skipping:\n%s\n", line);
+			if(debug)
+				printf("Error: Unable to parse field number, skipping:\n%s\n", line);
 			continue;
 		}
-
-/*		frmtmp=newFrmChild(frmpar, j);
-		if(!frmtmp)
-		{
-			printf("Error: Unable to add format, skipping:\n%s\n", line);
-			continue;
-		}
-
-		frmtmp->description=(char*)malloc(strlen(number)+2+strlen(descr)+1);
-		strcpy(frmtmp->description, number);
-		strcpy(frmtmp->description+strlen(frmtmp->description), ". ");
-		strcpy(frmtmp->description+strlen(frmtmp->description), descr);
-
-		if (!parseFormat(frmtmp, format))
-		{
-			printf("Error: Unable to parse format, skipping:\n%s\n", line);
-			removeFrmChild(frmpar, j);
-			continue;
-		}
-*/
 
 		frmtmp=(fldformat*)calloc(1, sizeof(fldformat));
 
@@ -135,14 +119,16 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 
 		if (!parseFormat(frmtmp, format))
 		{
-			printf("Error: Unable to parse format, skipping:\n%s\n", line);
+			if(debug)
+				printf("Error: Unable to parse format, skipping:\n%s\n", line);
 			freeFormat(frmtmp);
 			continue;
 		}
 
 		if(!linkFrmChild(frmpar, j, frmtmp))
 		{
-			printf("Error: Unable to add format, skipping:\n%s\n", line);
+			if(debug)
+				printf("Error: Unable to add format, skipping:\n%s\n", line);
 			freeFormat(frmtmp);
 			continue;
 		}
@@ -151,11 +137,13 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 	}
 	fclose(file);
 
-	printf("Info: Loaded %d fields\n", k);
+	if(debug)
+		printf("Info: Loaded %d fields\n", k);
 
 	if(k==1)
 	{
-		printf("Error: No fields loaded\n");
+		if(debug)
+			printf("Error: No fields loaded\n");
 		freeFormat(frmroot);
 		if(altfrmpar)
 			*altfrmpar=NULL;
@@ -173,19 +161,22 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 	
 	if(!frm)
 	{
-		printf("Error: Null pointer to 1st arg\n");
+		if(debug)
+			printf("Error: Null pointer to 1st arg\n");
 		return NULL;
 	}
 
 	if(!number)
 	{
-		printf("Error: Null pointer to 2nd arg\n");
+		if(debug)
+			printf("Error: Null pointer to 2nd arg\n");
 		return NULL;
 	}
 
 	if(!position)
         {
-                printf("Error: Null pointer to 3rd arg\n");
+		if(debug)
+                	printf("Error: Null pointer to 3rd arg\n");
                 return NULL;
         }
 
@@ -194,7 +185,8 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 			break;
 	if(i==0)
 	{
-		printf("Error: Empty field number (%s)\n", number);
+		if(debug)
+			printf("Error: Empty field number (%s)\n", number);
 		return NULL;
 	}
 	if(i==l)
@@ -217,7 +209,8 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 
 	if(number[i]!='.')
 	{
-		printf("Error: Unrecognized field number (%s)\n", number);
+		if(debug)
+			printf("Error: Unrecognized field number (%s)\n", number);
 		return NULL;
 	}
 
@@ -232,7 +225,8 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 
 	if(frm->fields < *position + 1)
 	{
-		printf("Error: Parent format not loaded yet [%s][%d]\n", number, *position);
+		if(debug)
+			printf("Error: Parent format not loaded yet [%s][%d]\n", number, *position);
 		return NULL;
 	}
 
@@ -246,92 +240,29 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 
 	return findFrmParent(altformat, number+i+1, position);
 }
-/*
-fldformat *newFrmChild(fldformat *frm, unsigned int n)
-{
-	if(!frm)
-	{
-		printf("Error: Null pointer to first arg\n");
-		return NULL;
-	}
 
-	if(frm->fields > n)
-	{
-		printf("Error: Format already exists\n");
-		return NULL;
-	}
-
-	if(n+1 > frm->maxFields)
-	{
-		printf("Error: Exceeded max number of fields (required %d, max %d)\n", n, frm->maxFields);
-		return NULL;
-	}
-
-	if(frm->fields==0)
-		frm->fld=(fldformat**)calloc(frm->maxFields, sizeof(fldformat*));
-	
-	frm->fields=n+1;
-
-	frm->fld[n]=(fldformat*)calloc(1, sizeof(fldformat));
-
-	return frm->fld[n];
-}
-
-void removeFrmChild(fldformat *frm, unsigned int n)
-{
-	unsigned int i;
-
-	if(!frm)
-	{
-		printf("Error: Null pointer to first arg\n");
-		return;
-	}
-
-	if(frm->fields < n + 1)
-	{
-		printf("Warning: No such field in parent format\n");
-		return;
-	}
-
-	freeFormat(frm->fld[n]);
-	
-	frm->fld[n]=NULL;
-
-	if(frm->fields == n + 1)
-	{
-		for(i=frm->fields-1; i!=0; i--)
-			if(frm->fld[i]!=NULL)
-				break;
-	
-		if(i==0 && frm->fld[0]==0)
-		{
-			frm->fields=0;
-			free(frm->fld);
-		}
-		else
-			frm->fields=i+1;
-	}
-}
-*/
 int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld)
 {
 	fldformat *altformat;
 
 	if(!frm)
 	{
-		printf("Error: Null pointer to first arg\n");
+		if(debug)
+			printf("Error: Null pointer to first arg\n");
 		return 0;
 	}
 
 	if(!cld)
 	{
-		printf("Error: Null pointer to third arg\n");
+		if(debug)
+			printf("Error: Null pointer to third arg\n");
 		return 0;
 	}
 
 	if(n+1 > frm->maxFields)
 	{
-		printf("Error: Exceeded max number of fields (required %d, max %d)\n", n, frm->maxFields);
+		if(debug)
+			printf("Error: Exceeded max number of fields (required %d, max %d)\n", n, frm->maxFields);
 		return NULL;
 	}
 
@@ -363,13 +294,15 @@ int parseFormat(fldformat *frm, char *format)
 
 	if(!frm)
 	{
-		printf("Error: Null pointer to first arg\n");
+		if(debug)
+			printf("Error: Null pointer to first arg\n");
 		return 0;
 	}
 
 	if(!format)
 	{
-		printf("Error: Null pointer to second arg\n");
+		if(debug)
+			printf("Error: Null pointer to second arg\n");
 		return 0;
 	}
 
@@ -448,7 +381,8 @@ int parseFormat(fldformat *frm, char *format)
 			break;
 
 		default:
-			printf("Error: Unrecognized length format (%s)\n", format);
+			if(debug)
+				printf("Error: Unrecognized length format (%s)\n", format);
 	}
 
 	if(format[j]=='I')
@@ -464,7 +398,8 @@ int parseFormat(fldformat *frm, char *format)
 			break;
 	if(i==j)
 	{
-		printf("Error: Unrecognized max length (%s)\n", format);
+		if(debug)
+			printf("Error: Unrecognized max length (%s)\n", format);
 		return 0;
 	}
 
@@ -535,7 +470,8 @@ int parseFormat(fldformat *frm, char *format)
 		frm->dataFormat=FRM_ASCII;
 	else
 	{
-		printf("Error: Unrecognized data format (%s)\n", format+i);
+		if(debug)
+			printf("Error: Unrecognized data format (%s)\n", format+i);
 		return 0;
 	}
 
@@ -551,7 +487,8 @@ int parseFormat(fldformat *frm, char *format)
 			frm->tagFormat=FRM_ASCII;
 		else
 		{
-			printf("Error: Unrecognized TLV tag format (%s)\n", format+i+4);
+			if(debug)
+				printf("Error: Unrecognized TLV tag format (%s)\n", format+i+4);
 			return 0;
 		}
 	}

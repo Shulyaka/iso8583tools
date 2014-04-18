@@ -31,7 +31,8 @@ unsigned int get_length(field *fld)
 
 	if(!fld)
 	{
-		printf("Error: No fld\n");
+		if(debug)
+			printf("Error: No fld\n");
 		return 0;
 	}
 
@@ -39,7 +40,8 @@ unsigned int get_length(field *fld)
 
 	if(!frm)
 	{
-		printf("Error: No frm\n");
+		if(debug)
+			printf("Error: No frm\n");
 		return 0;
 	}
 
@@ -220,7 +222,8 @@ unsigned int get_length(field *fld)
 			break;
 
 		default:
-			printf("Error: Unknown data format\n");
+			if(debug)
+				printf("Error: Unknown data format\n");
 			return 0;
 	}
 
@@ -236,13 +239,15 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 
 	if(!buf)
 	{
-		printf("Error: No buf\n");
+		if(debug)
+			printf("Error: No buf\n");
 		return 0;
 	}
 
 	if(!fld)
 	{
-		printf("Error: No fld\n");
+		if(debug)
+			printf("Error: No fld\n");
 		return 0;
 	}
 
@@ -250,7 +255,8 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 
 	if(!frm)
 	{
-		printf("Error: No frm\n");
+		if(debug)
+			printf("Error: No frm\n");
 		return 0;
 	}
 
@@ -262,7 +268,8 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 	if(length)
 		return length;
 
-	printf("Info: Retrying with an alternate format\n");
+	if(debug)
+		printf("Info: Retrying with an alternate format\n");
 
 	for(; frm->altformat; frm=frm->altformat)   //if that failed,
 	{
@@ -292,13 +299,15 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 	if(!buf)
 	{
-		printf("Error: No buf\n");
+		if(debug)
+			printf("Error: No buf\n");
 		return 0;
 	}
 
 	if(!fld)
 	{
-		printf("Error: No fld\n");
+		if(debug)
+			printf("Error: No fld\n");
 		return 0;
 	}
 
@@ -306,7 +315,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 	if(!frm)
 	{
-		printf("Error: No frm\n");
+		if(debug)
+			printf("Error: No frm\n");
 		return 0;
 	}
 
@@ -339,7 +349,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				if(fld->fld[i] && !frm->fld[i])
 				{
-					printf("Error: No format for subfield %d\n", i);
+					if(debug)
+						printf("Error: No format for subfield %d\n", i);
 					return 0;
 				}
 
@@ -363,7 +374,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 					}
 					else if(is_empty(fld->fld[i]))
 					{
-						printf("Warning: No subfields for subfield %d\n", i);
+						if(debug)
+							printf("Warning: No subfields for subfield %d\n", i);
 						continue;
 					}
 					else
@@ -371,7 +383,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 					
 					if(!sflen)
 					{
-						printf("Error: unable to build subfield %d: %s\n", i, frm->fld[i]->description);
+						if(debug)
+							printf("Error: unable to build subfield %d: %s\n", i, frm->fld[i]->description);
 						return 0;
 					}
 					pos+=sflen;
@@ -418,7 +431,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 			
 			if(!build_bcdl(fld->data, buf+lenlen, flength))
 			{
-				printf("Error: Not BCD subfield\n");
+				if(debug)
+					printf("Error: Not BCD subfield\n");
 				return 0;
 			}
 
@@ -435,7 +449,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 			if(!frm->fld[0])
 			{
-				printf("Error: No tlv subfield format\n");
+				if(debug)
+					printf("Error: No tlv subfield format\n");
 				return 0;
 			}
 
@@ -449,7 +464,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				if(!fld->fld[i]->tag)
 				{
-					printf("Error: Tag length is too small\n");
+					if(debug)
+						printf("Error: Tag length is too small\n");
 					return 0;
 				}
 
@@ -468,7 +484,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				if(pos+taglength>maxlength)
 				{
-					printf("Error: Not enough length for TLV tag\n");
+					if(debug)
+						printf("Error: Not enough length for TLV tag\n");
 					return 0;
 				}
 
@@ -501,7 +518,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 				sflen=build_field(buf+pos, maxlength-pos, fld->fld[i]);
 				if(!sflen)
 				{
-					printf("Error: unable to build TLV subfield\n");
+					if(debug)
+						printf("Error: unable to build TLV subfield\n");
 					return 0;
 				}
 				pos+=sflen;
@@ -527,13 +545,15 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				if(!frm->fld[i])
 				{
-					printf("Error: No format for tag %d.\n", i);
+					if(debug)
+						printf("Error: No format for tag %d.\n", i);
 					return 0;
 				}
 
 				if(pos+taglength>maxlength)
 				{
-					printf("Error: Not enough length for TLV tag\n");
+					if(debug)
+						printf("Error: Not enough length for TLV tag\n");
 					return 0;
 				}
 
@@ -545,7 +565,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 					case FRM_EBCDIC:
 						if(taglength+1<=snprintf(lengthbuf, taglength+1, "%u", i) || taglength<strlen(lengthbuf))
 						{
-							printf("Error: TLV tag number is too big (%d)\n", i);
+							if(debug)
+								printf("Error: TLV tag number is too big (%d)\n", i);
 							return 0;
 						}
 
@@ -560,7 +581,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 					case FRM_HEX:
 						if(taglength*2+1<=snprintf(lengthbuf, taglength*2+1, "%X", i) || taglength*2<strlen(lengthbuf))
 						{
-							printf("Error: TLV tag number is too big (%d)\n", i);
+							if(debug)
+								printf("Error: TLV tag number is too big (%d)\n", i);
 							return 0;
 						}
 
@@ -574,7 +596,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 						
 						if(taglength*2+1<=snprintf(lengthbuf, taglength*2+1, "%u", i) || taglength*2<strlen(lengthbuf))
 						{
-							printf("Error: TLV tag number is too big (%d)\n", i);
+							if(debug)
+								printf("Error: TLV tag number is too big (%d)\n", i);
 							return 0;
 						}
 
@@ -588,7 +611,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 					default:			
 						if(taglength+1<=snprintf(lengthbuf, taglength+1, "%u", i) || taglength<strlen(lengthbuf))
 						{
-							printf("Error: TLV tag number is too big (%d)\n", i);
+							if(debug)
+								printf("Error: TLV tag number is too big (%d)\n", i);
 							return 0;
 						}
 
@@ -603,7 +627,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 				sflen=build_field(buf+pos, maxlength-pos, fld->fld[i]);
 				if(!sflen)
 				{
-					printf("Error: unable to build TLV subfield\n");
+					if(debug)
+						printf("Error: unable to build TLV subfield\n");
 					return 0;
 				}
 				pos+=sflen;
@@ -692,7 +717,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 			break;
 
 		default:
-			printf("Error: Unknown data format\n");
+			if(debug)
+				printf("Error: Unknown data format\n");
 			return 0;
 	}
 
@@ -704,7 +730,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 		case FRM_FIXED:
 			if(frm->maxLength != mlength)
 			{
-				printf("Error: Bad length for fixed-length field! %d (field) != %d (format) for %s\n", mlength, frm->maxLength, frm->description);
+				if(debug)
+					printf("Error: Bad length for fixed-length field! %d (field) != %d (format) for %s\n", mlength, frm->maxLength, frm->description);
 				return 0;
 			}
 			break;
@@ -728,7 +755,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 		case FRM_BCD:
 			if(lenlen*2>=sizeof(lengthbuf) || lenlen*2+1<=snprintf(lengthbuf, lenlen*2+1, "%u", mlength) || lenlen*2<strlen(lengthbuf))
 			{
-				printf("Error: Length of length is too small (%d)\n", lenlen);
+				if(debug)
+					printf("Error: Length of length is too small (%d)\n", lenlen);
 				return 0;
 			}
 
@@ -743,7 +771,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 		case FRM_ASCII:
 			if(lenlen>=sizeof(lengthbuf) || lenlen+1<=snprintf(lengthbuf, lenlen+1, "%u", mlength) || lenlen<strlen(lengthbuf))
 			{
-				printf("Error: Length of length is too small\n");
+				if(debug)
+					printf("Error: Length of length is too small\n");
 				return 0;
 			}
 
@@ -757,7 +786,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 		case FRM_EBCDIC:
 			if(lenlen>=sizeof(lengthbuf) || lenlen+1<=snprintf(lengthbuf, lenlen+1, "%u", mlength) || lenlen<strlen(lengthbuf))
 			{
-				printf("Error: Length of length is too small (%d)\n", lenlen);
+				if(debug)
+					printf("Error: Length of length is too small (%d)\n", lenlen);
 				return 0;
 			}
 
@@ -775,7 +805,8 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 		default:
 			if(frm->dataFormat!=FRM_ISOBITMAP)
 			{
-				printf("Error: Unknown length format\n");
+				if(debug)
+					printf("Error: Unknown length format\n");
 				return 0;
 			}
 	}
@@ -818,7 +849,8 @@ unsigned int build_bcdr(char *from, char *to, unsigned int len)
 				to[i]=(t-'0')<<4;
 			else
 			{
-				printf("Error: build_bcdr: The string is not BCD\n");
+				if(debug)
+					printf("Error: build_bcdr: The string is not BCD\n");
 				return 0;
 			}
 		}
@@ -833,7 +865,8 @@ unsigned int build_bcdr(char *from, char *to, unsigned int len)
 			to[i]|=t-'0';
 		else
 		{
-			printf("Error: build_bcdr: The string is not BCD\n");
+			if(debug)
+				printf("Error: build_bcdr: The string is not BCD\n");
 			return 0;
 		}
 	}
@@ -860,7 +893,8 @@ unsigned int build_bcdl(char *from, char *to, unsigned int len)
 			to[i]=(t-'0')<<4;
 		else
 		{
-			printf("Error: build_bcdl: The string is not BCD ('%s')\n", from);
+			if(debug)
+				printf("Error: build_bcdl: The string is not BCD ('%s')\n", from);
 			return 0;
 		}
 
@@ -876,7 +910,8 @@ unsigned int build_bcdl(char *from, char *to, unsigned int len)
 				to[i]|=t-'0';
 			else
 			{
-				printf("Error: build_bcdl: The string is not BCD ('%s')\n", from);
+				if(debug)
+					printf("Error: build_bcdl: The string is not BCD ('%s')\n", from);
 				return 0;
 			}
 		}
@@ -904,7 +939,8 @@ unsigned int build_hex(char *from, char *to, unsigned int len)
 				to[i]=(t-'a'+0xA)<<4;
 			else
 			{
-				printf("Error: build_hex: The string is not HEX\n");
+				if(debug)
+					printf("Error: build_hex: The string is not HEX\n");
 				return 0;
 			}
 		}
@@ -918,7 +954,8 @@ unsigned int build_hex(char *from, char *to, unsigned int len)
 			to[i]|=t-'a'+0xA;
 		else
 		{
-			printf("Error: build_hex: The string is not BCD\n");
+			if(debug)
+				printf("Error: build_hex: The string is not BCD\n");
 			return 0;
 		}
 	}

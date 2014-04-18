@@ -17,13 +17,15 @@ field *parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 
 	if(!msgbuf)
 	{
-		printf("Error: No buffer\n");
+		if(debug)
+			printf("Error: No buffer\n");
 		return NULL;
 	}
 
 	if(!frm)
 	{
-		printf("Error: No frm\n");
+		if(debug)
+			printf("Error: No frm\n");
 		return NULL;
 	}
 	
@@ -33,7 +35,8 @@ field *parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 
 	if(!parse_field(msgbuf, length, message))
 	{
-		printf("Error: Can't parse\n");
+		if(debug)
+			printf("Error: Can't parse\n");
 		freeField(message);
 		return NULL;
 	}
@@ -51,13 +54,15 @@ unsigned int parse_field_length(char *buf, unsigned int maxlength, fldformat *fr
 
 	if(!buf)
 	{
-		printf("Error: No buf\n");
+		if(debug)
+			printf("Error: No buf\n");
 		return 0;
 	}
 
 	if(!frm)
 	{
-		printf("Error: No frm\n");
+		if(debug)
+			printf("Error: No frm\n");
 		return 0;
 	}
 
@@ -65,7 +70,8 @@ unsigned int parse_field_length(char *buf, unsigned int maxlength, fldformat *fr
 
 	if(lenlen > maxlength)
 	{
-		printf("Error: Buffer less than length size\n");
+		if(debug)
+			printf("Error: Buffer less than length size\n");
 		return 0;
 	}
 
@@ -76,7 +82,8 @@ unsigned int parse_field_length(char *buf, unsigned int maxlength, fldformat *fr
 				for(i=0; i < lenlen-4; i++)
 					if(buf[i]!='\0')
 					{
-						printf("Error: Length is too big\n");
+						if(debug)
+							printf("Error: Length is too big\n");
 						return 0;
 					}
 			for(i=0; i<(lenlen>4?4:lenlen); i++)
@@ -89,7 +96,8 @@ unsigned int parse_field_length(char *buf, unsigned int maxlength, fldformat *fr
 				lenlen=2;
 				if(lenlen > maxlength)
 				{
-					printf("Error: Buffer less than length size\n");
+					if(debug)
+						printf("Error: Buffer less than length size\n");
 					return 0;
 				}
 			}
@@ -105,7 +113,8 @@ unsigned int parse_field_length(char *buf, unsigned int maxlength, fldformat *fr
 				for(i=0; i < lenlen-3; i++)
 					if(buf[i]!='\0')
 					{
-						printf("Error: Length is too big\n");
+						if(debug)
+							printf("Error: Length is too big\n");
 						return 0;
 					}
 
@@ -122,7 +131,8 @@ unsigned int parse_field_length(char *buf, unsigned int maxlength, fldformat *fr
 				for(i=0; i < lenlen-6; i++)
 					if(buf[i]!='0')
 					{
-						printf("Error: Length is too big\n");
+						if(debug)
+							printf("Error: Length is too big\n");
 						return 0;
 					}
 
@@ -137,7 +147,8 @@ unsigned int parse_field_length(char *buf, unsigned int maxlength, fldformat *fr
 				for(i=0; i < lenlen-6; i++)
 					if(buf[i]!=(char)0xF0)
 					{
-						printf("Error: Length is too big\n");
+						if(debug)
+							printf("Error: Length is too big\n");
 						return 0;
 					}
 				
@@ -160,7 +171,8 @@ unsigned int parse_field_length(char *buf, unsigned int maxlength, fldformat *fr
 		default:
 			if(frm->dataFormat!=FRM_ISOBITMAP)
 			{
-				printf("Error: Unknown length format\n");
+				if(debug)
+					printf("Error: Unknown length format\n");
 				return 0;
 			}
 	}
@@ -179,13 +191,15 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 
 	if(!buf)
 	{
-		printf("Error: No buf\n");
+		if(debug)
+			printf("Error: No buf\n");
 		return 0;
 	}
 
 	if(!fld)
 	{
-		printf("Error: No fld\n");
+		if(debug)
+			printf("Error: No fld\n");
 		return 0;
 	}
 
@@ -193,7 +207,8 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 
 	if(!frm)
 	{
-		printf("Error: No frm\n");
+		if(debug)
+			printf("Error: No frm\n");
 		return 0;
 	}
 
@@ -204,7 +219,8 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 		return length;
 
 	if(frm->altformat)
-		printf("Info: parse_field: Retrying with alternate format\n");
+		if(debug)
+			printf("Info: parse_field: Retrying with alternate format\n");
 
 	for(i=0; frm->altformat!=NULL; i++)
 	{
@@ -235,13 +251,15 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 	if(!buf)
 	{
-		printf("Error: No buf\n");
+		if(debug)
+			printf("Error: No buf\n");
 		return 0;
 	}
 
 	if(!fld)
 	{
-		printf("Error: No fld\n");
+		if(debug)
+			printf("Error: No fld\n");
 		return 0;
 	}
 
@@ -249,7 +267,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 	if(!frm)
 	{
-		printf("Error: No frm\n");
+		if(debug)
+			printf("Error: No frm\n");
 		return 0;
 	}
 
@@ -270,13 +289,15 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 		if(frm->maxLength < fld->length)
 		{
 			if(frm->lengthFormat!=FRM_UNKNOWN)
-				printf("Warning: field length exceeds max, reducing\n");
+				if(debug)
+					printf("Warning: field length exceeds max, reducing\n");
 			fld->length=frm->maxLength;
 		}
 
 		if((!frm->lengthInclusive && fld->length==0) || (frm->lengthInclusive && fld->length<=lenlen))
 		{
-			printf("Error: Wrong length (%s)\n", frm->description);
+			if(debug)
+				printf("Error: Wrong length (%s)\n", frm->description);
 			return 0;
 		}
 
@@ -302,7 +323,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 		if(lenlen + blength > maxlength)
 		{
-			printf("Error: Field '%s'(%d) is too long %d+%d>%d\n", frm->description, fld->length, lenlen, blength, maxlength);
+			if(debug)
+				printf("Error: Field '%s'(%d) is too long %d+%d>%d\n", frm->description, fld->length, lenlen, blength, maxlength);
 			return 0;
 		}
 	}
@@ -328,7 +350,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				if(!frm->fld[i] && bitmap_found!=-1 && fld->fld[bitmap_found]->length >= i-bitmap_found && fld->fld[bitmap_found]->data[i-bitmap_found-1]=='1')
 				{
-					printf("Error: No format for subfield %d which is present in bitmap\n", i);
+					if(debug)
+						printf("Error: No format for subfield %d which is present in bitmap\n", i);
 					return 0;
 				}	
 
@@ -342,7 +365,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 					sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i]);
 					if(!sflen)
 					{
-						printf("Error: unable to parse subfield\n");
+						if(debug)
+							printf("Error: unable to parse subfield\n");
 						return 0;
 					}
 
@@ -357,9 +381,11 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 				if(bitmap_found!=-1)
 					for(i=frm->fields; i<=bitmap_found + fld->fld[bitmap_found]->length; i++)
 						if(fld->fld[bitmap_found]->data[i-bitmap_found-1]=='1')
-							printf("Error: No format for field %i which is present in bitmap\n", i);
+							if(debug)
+								printf("Error: No format for field %i which is present in bitmap\n", i);
 
-				printf("Error: Not enough subfield formats (%d, %d)\n", pos, fld->length);
+				if(debug)
+					printf("Error: Not enough subfield formats (%d, %d)\n", pos, fld->length);
 				return 0;
 			}
 			
@@ -369,7 +395,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 			fld->data=(char*)malloc(fld->length+1);
 			if(!parse_bcdl(buf+lenlen, fld->data, fld->length))
 			{
-				printf("Error: Not BCD field\n");
+				if(debug)
+					printf("Error: Not BCD field\n");
 				return 0;
 			}
 			
@@ -400,7 +427,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 			if(!frm->fld[0])
 			{
-				printf("Error: No tlv subfield format\n");
+				if(debug)
+					printf("Error: No tlv subfield format\n");
 				return 0;
 			}
 
@@ -423,7 +451,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				if(pos+taglength>maxlength)
 				{
-					printf("Error: Not enough length for TLV tag\n");
+					if(debug)
+						printf("Error: Not enough length for TLV tag\n");
 					return 0;
 				}
 
@@ -457,7 +486,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				if(!sflen)
 				{
-					printf("Error: unable to parse TLV subfield\n");
+					if(debug)
+						printf("Error: unable to parse TLV subfield\n");
 					return 0;
 				}
 				pos+=sflen;
@@ -465,7 +495,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 			if(pos!=fld->length+lenlen)
 			{
-				printf("Error: Too much TLV subfields (%d, %d)\n", pos, fld->length);
+				if(debug)
+					printf("Error: Too much TLV subfields (%d, %d)\n", pos, fld->length);
 				return 0;
 			}
 
@@ -489,7 +520,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				if(pos+taglength>maxlength)
 				{
-					printf("Error: Not enough length for TLV tag\n");
+					if(debug)
+						printf("Error: Not enough length for TLV tag\n");
 					return 0;
 				}
 
@@ -515,7 +547,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				if(!frm->fld[j])
 				{
-					printf("Error: No format for TLV tag %d.\n", j);
+					if(debug)
+						printf("Error: No format for TLV tag %d.\n", j);
 					return 0;
 				}
 
@@ -532,7 +565,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				if(!sflen)
 				{
-					printf("Error: unable to parse TLV subfield %d\n", j);
+					if(debug)
+						printf("Error: unable to parse TLV subfield %d\n", j);
 					return 0;
 				}
 				pos+=sflen;
@@ -540,7 +574,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 			if(pos!=fld->length+lenlen)
 			{
-				printf("Error: Too much TLV subfields (%d, %d)\n", pos, fld->length);
+				if(debug)
+					printf("Error: Too much TLV subfields (%d, %d)\n", pos, fld->length);
 				return 0;
 			}
 
@@ -554,7 +589,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 				blength=i*8+8;
 				if((i+1)*8>maxlength)
 				{
-					printf("Error: Field is too long\n");
+					if(debug)
+						printf("Error: Field is too long\n");
 					return 0;
 				}
 
@@ -601,7 +637,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 			break;
 
 		default:
-			printf("Error: Unknown data format\n");
+			if(debug)
+				printf("Error: Unknown data format\n");
 			return 0;
 	}
 
@@ -642,7 +679,8 @@ int parse_bcdr(char *from, char *to, unsigned int len)
 			}
 			else if (t > 9)
 			{
-				printf("Error: parse_bcdr: The string is not BCD (%02x, %02x, %d, %d)\n", from[i], t, separator_found, len);
+				if(debug)
+					printf("Error: parse_bcdr: The string is not BCD (%02x, %02x, %d, %d)\n", from[i], t, separator_found, len);
 				return 0;
 			}
 			else
@@ -650,7 +688,8 @@ int parse_bcdr(char *from, char *to, unsigned int len)
 		}
 		else if(((unsigned char)from[i])>>4!=0)
 		{
-			printf("Error: parse_bcdr: First 4 bits not zero\n");
+			if(debug)
+				printf("Error: parse_bcdr: First 4 bits not zero\n");
 			return 0;
 		}
 
@@ -662,7 +701,8 @@ int parse_bcdr(char *from, char *to, unsigned int len)
 		}
 		else if (t > 9)
 		{
-			printf("Error: parse_bcdr: The string is not BCD\n");
+			if(debug)
+				printf("Error: parse_bcdr: The string is not BCD\n");
 			return 0;
 		}
 		else
@@ -689,7 +729,8 @@ int parse_bcdl(char *from, char *to, unsigned int len)
 		}
 		else if (t > 9)
 		{
-			printf("Error: parse_bcdl: The string is not BCD (%02x, %02x, %d, %d)\n", from[i], t, separator_found, len);
+			if(debug)
+				printf("Error: parse_bcdl: The string is not BCD (%02x, %02x, %d, %d)\n", from[i], t, separator_found, len);
 			return 0;
 		}
 		else
@@ -705,7 +746,8 @@ int parse_bcdl(char *from, char *to, unsigned int len)
 			}
 			else if (t > 9)
 			{
-				printf("Error: parse_bcdl: The string is not BCD\n");
+				if(debug)
+					printf("Error: parse_bcdl: The string is not BCD\n");
 				return 0;
 			}
 			else
@@ -713,7 +755,8 @@ int parse_bcdl(char *from, char *to, unsigned int len)
 		}
 		else if((((unsigned char)from[i]) & 0x0F)!=0)
 		{
-			printf("Error: parse_bcdl: Last 4 bits not zero\n");
+			if(debug)
+				printf("Error: parse_bcdl: Last 4 bits not zero\n");
 			return 0;
 		}
 	}
@@ -740,7 +783,8 @@ int parse_hex(char *from, char *to, unsigned int len)
 		}
 		else if(((unsigned char)from[i])>>4!=0)
 		{
-			printf("Warning: parse_hex: First 4 bits not zero\n");
+			if(debug)
+				printf("Warning: parse_hex: First 4 bits not zero\n");
 			return 0;
 		}
 
