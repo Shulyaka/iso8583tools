@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 #include "parser.h"
 
@@ -20,6 +21,7 @@ int main(int argc, char **argv)
 	char msgbuf[1000];
 	char msgbuf2[1000];
 	unsigned int msglen=0;
+	unsigned int msglen1=0;
 	unsigned int msglen2=0;
 	FILE *infile=stdin, *outfile;
 
@@ -113,11 +115,22 @@ int main(int argc, char **argv)
 
 	msglen--;
 
+	msglen1=msglen;
+
 	message=parse_message(msgbuf, msglen, frm);
+
 	if(!message)
 	{
 		printf("Error: Unable to parse message\n");
 		freeFormat(frm);
+
+		sprintf(filename, "imessage%ld", time(NULL));
+		outfile=fopen(filename, "w");
+		for(msglen=0; msglen<msglen1; fputc(msgbuf[msglen++], outfile));
+		fclose(outfile);
+		if(debug)
+			printf("%s file is written\n", filename);
+
 		return 6;
 	}
 
@@ -137,6 +150,14 @@ int main(int argc, char **argv)
 			printf("Error: Unable to build %s\n", message->frm->description);
 		freeField(message);
 		freeFormat(frm);
+
+		sprintf(filename, "imessage%ld", time(NULL));
+		outfile=fopen(filename, "w");
+		for(msglen=0; msglen<msglen1; fputc(msgbuf[msglen++], outfile));
+		fclose(outfile);
+		if(debug)
+			printf("%s file is written\n", filename);
+
 		return 7;
 	}
 
@@ -167,11 +188,17 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		outfile=fopen("message_out", "w");
+		sprintf(filename, "imessage%ld", time(NULL));
+		outfile=fopen(filename, "w");
+		for(msglen=0; msglen<msglen1; fputc(msgbuf[msglen++], outfile));
+		fclose(outfile);
+
+		filename[0]='o';
+		outfile=fopen(filename, "w");
 		for(msglen=0; msglen<msglen2; fputc(msgbuf2[msglen++], outfile));
 		fclose(outfile);
 		if(debug)
-			printf("message_out file is written\n");
+			printf("i%s and o%s files are written\n", filename+1, filename+1);
 
 		return 8;
 	}
