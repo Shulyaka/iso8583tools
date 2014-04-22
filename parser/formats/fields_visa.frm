@@ -27,7 +27,7 @@ message 	BB800SF		Visa Message (with header)
 1.3.3		F2BCD		account type to
 1.4		F12BCD		Amount, Transaction
 1.5		F12BCD		Amount, Settlement
-1.6		F12BCD		Amount, cardholder billing
+1.6		F12BCD		Amount, Cardholder Billing
 1.7		F10BCD		Transmission date and time
 1.9		F8BCDSF		Conversion Rate, Settlement
 1.9.0		F1ASC		exponent
@@ -79,7 +79,61 @@ message 	BB800SF		Visa Message (with header)
 1.44.13		F1EBCDIC        CAVV results code
 1.44.14		F4EBCDIC        response reason code
 1.45		B76EBCDIC	Track 1 Data
-1.48		B255EBCDIC	Additional Data—Private
+1.46		B252SF		Amounts, Fees
+1.46.1		F36SF		Fee Amount 1
+1.46.1.1	F2EBCDIC	fee type
+1.46.1.2	F3EBCDIC	currency code
+1.46.1.3	F1EBCDIC	minor unit
+1.46.1.4	F2EBCDIC	sign
+1.46.1.5	F8EBCDIC	value
+1.46.1.6	F22EBCDIC	unused
+1.46.2		F36SF		Fee Amount 2
+1.46.2.1	F2EBCDIC	fee type
+1.46.2.2	F3EBCDIC	currency code
+1.46.2.3	F1EBCDIC	minor unit
+1.46.2.4	F2EBCDIC	sign
+1.46.2.5	F8EBCDIC	value
+1.46.2.6	F22EBCDIC	unused
+1.46.3		F36SF		Fee Amount 3
+1.46.3.1	F2EBCDIC	fee type
+1.46.3.2	F3EBCDIC	currency code
+1.46.3.3	F1EBCDIC	minor unit
+1.46.3.4	F2EBCDIC	sign
+1.46.3.5	F8EBCDIC	value
+1.46.3.6	F22EBCDIC	unused
+1.46.4		F36SF		Fee Amount 4
+1.46.4.1	F2EBCDIC	fee type
+1.46.4.2	F3EBCDIC	currency code
+1.46.4.3	F1EBCDIC	minor unit
+1.46.4.4	F2EBCDIC	sign
+1.46.4.5	F8EBCDIC	value
+1.46.4.6	F22EBCDIC	unused
+1.46.5		F36SF		Fee Amount 5
+1.46.5.1	F2EBCDIC	fee type
+1.46.5.2	F3EBCDIC	currency code
+1.46.5.3	F1EBCDIC	minor unit
+1.46.5.4	F2EBCDIC	sign
+1.46.5.5	F8EBCDIC	value
+1.46.5.6	F22EBCDIC	unused
+1.46.6		F36SF		Fee Amount 6
+1.46.6.1	F2EBCDIC	fee type
+1.46.6.2	F3EBCDIC	currency code
+1.46.6.3	F1EBCDIC	minor unit
+1.46.6.4	F2EBCDIC	sign
+1.46.6.5	F8EBCDIC	value
+1.46.6.6	F22EBCDIC	unused
+1.46.7		F36SF		Fee Amount 7
+1.46.7.1	F2EBCDIC	fee type
+1.46.7.2	F3EBCDIC	currency code
+1.46.7.3	F1EBCDIC	minor unit
+1.46.7.4	F2EBCDIC	sign
+1.46.7.5	F8EBCDIC	value
+1.46.7.6	F22EBCDIC	unused
+1.48		B4BCD		Usage 1b-Error Codes in 0312 Responses
+1.48		B2EBCDIC	Usage 1c-Cardholder Maintenance File Reject Codes
+1.48		B255SF		Additional Data—Private
+1.48.0		F1EBCDIC	application identifier
+1.48.1		U254EBCDIC	data
 1.49		F3BCD		Currency Code, Transaction
 1.50		F3BCD		Currency Code, Settlement
 1.51		F3BCD		Currency Code, Cardholder Billing
@@ -145,7 +199,10 @@ message 	BB800SF		Visa Message (with header)
 1.60.8		F2ASC		mail/phone/electronic commerce and payment indicator
 1.60.9		F1ASC		not applicable (SMS only)
 1.60.10		F1ASC		partial authorization indicator
-1.61		B36BCD		Other Amounts
+1.61		B36SF		Other Amounts
+1.61.1		F12BCD		amount due
+1.61.2		F12BCD		cardholder billing
+1.61.3		F12BCD		replacement billing
 1.62		B255SF		Custom Payment Service Fields (bitmap format)
 1.62.0		F64BITMAP	Field 62 Bitmap
 1.62.1		F1EBCDIC	Authorization Characteristics Indicator
@@ -154,12 +211,16 @@ message 	BB800SF		Visa Message (with header)
 1.62.4		F1EBCDIC	Market-Specific Data Identifier
 1.62.5		F2BCD		Duration
 1.62.6		F1EBCDIC	Prestigious Property Indicator
+1.62.11		F2BCD		Multiple Clearing Sequence Number
+1.62.12		F2BCD		Multiple Clearing Sequence Count
+1.62.16		F2EBCDIC	Chargeback Rights Indicator
 1.62.17		F15EBCDIC	MC Interchange Compliance
 1.62.20		F10BCD		Merchant Verification Value
 1.62.21		F4EBCDIC	Online Risk Assessment Risk Score and Reason Codes
 1.62.22		F6EBCDIC	Online Risk Assessment Condition Codes
 1.62.23		F2EBCDIC	Card-Level Results
 1.62.24		F6EBCDIC	Program Identifier
+1.62.25		F1EBCDIC	Spend Qualified Indicator
 1.62		B13SF		Custom Payment Service Fields (fixed format)
 1.62.1		F1EBCDIC	Authorization Characteristics Indicator
 1.62.2		F15BCD		Transaction Identifier
@@ -171,15 +232,36 @@ message 	BB800SF		Visa Message (with header)
 1.63.3		F4BCD		Message Reason Code
 1.63.4		F4BCD		STIP/Switch Reason Code
 1.63.5		F6BCD		n/a
-1.63.6		F7EBCDIC	Chargeback Reduction/BASE II Flags
+1.63.6		F7SF		Chargeback Reduction/BASE II Flags
+1.63.6.1	F1EBCDIC	floor limit indicator
+1.63.6.2	F1EBCDIC	CRB indicator
+1.63.6.3	F1EBCDIC	STIP indicator
+1.63.6.4	F1EBCDIC	MOTO/ECI indicator
+1.63.6.5	F1EBCDIC	special chargeback indicator
+1.63.6.6	F2SF		special condition indicator
+1.63.6.6.0	F1EBCDIC	risk indication
+1.63.6.6.1	F1EBCDIC	merchant indication
 1.63.7		F16HEX		n/a
 1.63.8		F8BCD		n/a
-1.63.9		F28HEX		Fraud Data
+1.63.9		F14SF		Fraud Data
+1.63.9.0	F1EBCDIC	fraud type
+1.63.9.1	F1EBCDIC	fraud notification code
+1.63.9.2	F1EBCDIC	check fraud indicator (POS only)
+1.63.9.3	F11EBCDIC	reserved
 1.63.10		F26HEX		n/a
 1.63.11		F1EBCDIC	Reimbursement Attribute
 1.63.12		F30EBCDIC	Sharing Group Code
-1.63.13		F6BCD		Decimal Positions Indicator
-1.63.14		F36EBCDIC	Issuer Currency Conversion Data
+1.63.13		F3SF		Decimal Positions Indicator
+1.63.13.1	F2BCD		transaction amounts decimal positions
+1.63.13.2	F2BCD		settlement amounts decimal positions
+1.63.13.3	F2BCD		cardholder amounts decimal positions
+1.63.14		F36SF		Issuer Currency Conversion Data
+1.63.14.0	F9EBCDIC	reserved
+1.63.14.1	F9EBCDIC	reserved
+1.63.14.2	F9EBCDIC	reserved
+1.63.14.3	F9SF		Cardholder Billing Amount, Optional Issuer Fee
+1.63.14.3.0	F1EBCDIC	prefix
+1.63.14.3.1	F8EBCDIC	amount
 1.63.15		F9EBCDIC	n/a, reserved for future use
 1.63.16		F6BCD		n/a
 1.63.18		F2BCD		n/a
@@ -188,8 +270,17 @@ message 	BB800SF		Visa Message (with header)
 1.63.21		F1EBCDIC	Charge Indicator
 1.66		F1BCD		Settlement Code
 1.68		F3BCD		Receiving Institution Country Code
+1.69		F3BCD		Settlement Institution Country Code
 1.70		F3BCD		Network Management Informatioin Code
 1.73		F6BCD		Date, Action
+1.74		F10BCD		Credits, Number
+1.75		F10BCD		Credits, Reversal Number
+1.76		F10BCD		Debits, Number
+1.77		F10BCD		Debits, Reversal Number
+1.86		F16BCD		Credits, Amount
+1.87		F16BCD		Credits, Reversal Amount
+1.88		F16BCD		Debits, Amount
+1.89		F16BCD		Debits, Reversal Amount
 1.90		F42BCDSF	Original Data Elements
 1.90.1		F4ASC		original message type
 1.90.2		F6ASC		original trace number
@@ -203,13 +294,21 @@ message 	BB800SF		Visa Message (with header)
 1.95.2		F12EBCDIC	unused
 1.95.3		F9EBCDIC	unused
 1.95.4		F9EBCDIC	unused
+1.96		F8HEX		Message Security Code
+1.97		F17EBCDIC	Amount, Net Settlement
+1.99		B11BCD		Settlement Institution Identification Code
 1.100		B11BCD		Receiving Institution Identification Code
 1.101		B17EBCDIC	File Name
 1.102		B28EBCDIC	Account Identification 1
 1.103		B28EBCDIC	Account Identification 2
-1.104		B255TLV1HEX	Transaction-Specific Data
+1.104		B255TLV1HEX	Transaction-Specific Data (Usage 2)
 1.104.*		BB252TLV1HEX	dataset ID
 1.104.*.*	B250EBCDIC	data
+1.104		B100SF		Transaction Description (Usage 1)
+1.104.0		F1EBCDIC	billing descriptor
+1.104.1		U99EBCDIC	transaction description data
+1.105		F16HEX		Double-Length DES Key (Triple DES)
+1.115		B24EBCDIC	Additional Trace Data
 1.116		B255TLV1HEX	Card Issuer Reference Data
 1.116.*		BB252TLV1HEX	dataset ID
 1.116.*.*	B250EBCDIC	data
@@ -219,12 +318,15 @@ message 	BB800SF		Visa Message (with header)
 1.118		B255SF		Intra-Country Data
 1.118.1		F3EBCDIC	country code
 1.118.2		U252EBCDIC	data
+1.119		B255SF		Settlement Service Data
+1.119.1		F3EBCDIC	country code
+1.119.2		U252EBCDIC	data
 1.120		B4HEX		Original Message Type ID
 1.121		B11EBCDIC	Issuing Institution Identification Code
-#1.123		B255TLV1HEX	Verification Data
-#1.123.*		BB252TLV1HEX	dataset ID
-#1.123.*.*	B250EBCDIC	Verification Data TLV element
-1.123		B30SF		Verification Data
+1.123		B255TLV1HEX	Verification Data (TLV format)
+1.123.*		BB252TLV1HEX	dataset ID
+1.123.*.*	B250EBCDIC	Verification Data TLV element
+1.123		B30SF		Verification Data (fixed format)
 1.123.0		F9EBCDIC	postal code
 1.123.1		U20EBCDIC	cardholder street address
 1.125		B255EBCDIC	Supporting Information
@@ -257,10 +359,10 @@ message 	BB800SF		Visa Message (with header)
 1.126.14	F1EBCDIC	Payment Guarantee Option
 1.126.15	F1EBCDIC	MC UCAF Collection Indicator
 1.126.16	B32EBCDIC	MC UCAF Field
-1.126.18	F12SF		Agent Unique Account Result
-1.126.18.0	F1HEX		dataset ID
+1.126.18	B11SF		Agent Unique Account Result
 1.126.18.1	F5EBCDIC
 1.126.18.2	F48BITSTR
+1.126.19	F1EBCDIC	Dynamic Currency Conversion Indicator
 1.127		B255EBCDIC	File Record(s): Action and Data
 1.130		F24BITSTR	Terminal Capability Profile
 1.131		F40BITSTR	Terminal Verification Results (TVR)
