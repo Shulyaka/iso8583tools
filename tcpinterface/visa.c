@@ -1573,8 +1573,6 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		}
 	}
 
-	field_format(message, 2, 55);
-
 	if(visamsg->has_issuerscript1())
 		strcpy(add_tag("71", message, 55,1), visamsg->issuerscript1().c_str());
 
