@@ -1,3 +1,6 @@
+#ifndef __NET_H__
+#define __NET_H__
+
 #include "../parser/parser.h"
 #include "../lib/isomessage.pb.h"
 
@@ -14,3 +17,5 @@ int isNetMgmt(field*);
 int isNetRequest(field*);
 int processNetMgmt(field*);
 int declineNetMsg(field*);
+
+#endif

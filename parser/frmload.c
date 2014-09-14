@@ -263,7 +263,7 @@ int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld)
 	{
 		if(debug)
 			printf("Error: Exceeded max number of fields (required %d, max %d)\n", n, frm->maxFields);
-		return NULL;
+		return 0;
 	}
 
 	if(frm->fields==0)

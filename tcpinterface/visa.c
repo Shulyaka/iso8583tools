@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <time.h>
 
+int debug=1;
+
 int ipcconnect(int);
 
 char stationid[7]="456789";
