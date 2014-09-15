@@ -8,6 +8,7 @@
 #include "../lib/ipc.h"
 
 #include "request.h"
+#include "response.h"
 
 int main(void)
 {
@@ -51,8 +52,19 @@ int main(void)
 		printf("\nIncommingMessage:\n");
 		inmsg.PrintDebugString();
 
-		handleRequest(&inmsg, sfd[0].fd);
-		
+		switch(inmsg.messagefunction())
+		{
+			case isomessage::REQUEST:
+			case isomessage::ADVICE:
+				handleRequest(&inmsg, sfd[0].fd);
+				break;
+			case isomessage::REQUESTRESP:
+			case isomessage::ADVICERESP:
+				handleResponse(&inmsg, sfd[0].fd);
+				break;
+			default:
+				printf("Error: Unhandled message function %d\n", inmsg.messagefunction());
+		}		
 	}
 
 	ipcclose(sfd[0].fd);
