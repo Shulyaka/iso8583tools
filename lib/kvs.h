@@ -1,3 +1,4 @@
+#include <hiredis/hiredis.h>
 #include "isomessage.pb.h"
 
 redisContext *kvsconnect(const char *hostname, int port);

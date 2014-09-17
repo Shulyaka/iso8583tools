@@ -1,6 +1,6 @@
 #include "response.h"
 
-int handleResponse(isomessage *message, int sfd)
+int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 {
 	message->set_messagefunction(isomessage::REQUESTRESP);
 

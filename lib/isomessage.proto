@@ -23,10 +23,12 @@ message isomessage
 	{
 		required string Name = 1;
 
-		optional uint32 Flags = 2;
+		optional uint32 Flags = 2 [default = 0];
 	}
 
 	repeated Destination DestinationInterface = 3;
+
+	optional uint32 Timeout = 4 [default = 30];
 
 
 

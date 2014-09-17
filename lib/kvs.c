@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <hiredis/hiredis.h>
 #include "kvs.h"
 
 redisContext *kvsconnect(const char *hostname, int port)
