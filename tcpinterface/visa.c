@@ -10,7 +10,7 @@ int debug=1;
 int ipcconnect(int);
 
 int processIncoming(isomessage *visamsg, field *fullmessage, VisaContext *context);
-field *processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context);
+field* processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context);
 
 char stationid[7]="456789";
 
@@ -117,7 +117,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 		return 1;
 	}
 
-	visamsg->set_sourceindex(visamsg->sourceinterface_size());
+	visamsg->set_sourceindex(1);
 
 	return 0;
 }

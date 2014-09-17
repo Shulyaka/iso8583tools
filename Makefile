@@ -1,4 +1,4 @@
-SUBDIRS = lib parser switch tcpinterface
+SUBDIRS = lib parser switch tcpinterface issuer
 
 .PHONY: subdirs $(SUBDIRS)
 
@@ -12,3 +12,4 @@ $(SUBDIRS):
 
 tcpinterface: lib parser
 switch: lib
+issuer: lib
