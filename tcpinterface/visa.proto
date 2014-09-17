@@ -1,0 +1,12 @@
+// Interface-related context
+
+message VisaContext
+{
+	optional string SourceStationID = 1;
+	optional string VisaRoundTripInf = 2;
+	optional string VisaBaseIFlags = 3;
+	optional string VisaMsgStatusFlags = 4;
+	optional string BatchNumber = 5;
+	optional string VisaReserved = 6;
+	optional string VisaUserInfo = 7;
+}

@@ -3,10 +3,14 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include <time.h>
+#include "visa.pb.h"
 
 int debug=1;
 
 int ipcconnect(int);
+
+int processIncoming(isomessage *visamsg, field *fullmessage, VisaContext *context);
+field *processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context);
 
 char stationid[7]="456789";
 
@@ -81,6 +85,72 @@ unsigned int buildNetMsg(char *buf, unsigned int maxlength, field *message)
 
 int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 {
+	VisaContext context;
+	int i;
+
+	if(!fullmessage)
+	{
+		printf("Error: No message\n");
+		return 1;
+	}
+
+	if(!visamsg)
+	{
+		printf("Error: No visamsg\n");
+		return 1;
+	}
+
+	visamsg->Clear();
+
+	i=processIncoming(visamsg, fullmessage, &context);
+
+	if(i!=0)
+		return i;
+
+	isomessage::Source *source=visamsg->add_sourceinterface();
+
+	source->set_name("visa");
+
+	if(!context.SerializeToString(source->mutable_context()))
+	{
+		printf("Warning: Unable to serialize the context\n");
+		return 1;
+	}
+
+	visamsg->set_sourceindex(visamsg->sourceinterface_size());
+
+	return 0;
+}
+
+field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
+{
+	VisaContext context;
+
+	if(!frm)
+	{
+		printf("Error: No frm\n");
+		return NULL;
+	}
+
+	if(!visamsg)
+	{
+		printf("Error: No visamsg\n");
+		return NULL;
+	}
+
+	if(visamsg->sourceindex()==0 || visamsg->sourceindex() < visamsg->sourceinterface_size())
+	{
+		printf("Error: Unable to locate context\n");
+		return NULL;
+	}
+
+	context.ParseFromString((visamsg->sourceinterface(visamsg->sourceindex())).context());
+
+	return processOutgoing(visamsg, frm, &context);
+}
+
+int processIncoming(isomessage *visamsg, field *fullmessage, VisaContext *context)
+{
 	field *header;
 	field *message;
 
@@ -92,18 +162,6 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 
 	time(&now);
 	gmtime_r(&now, &current);
-
-	if(!fullmessage)
-	{
-		printf("Error: No message\n");
-		return 1;
-	}
-
-	if(!visamsg)
-	{
-		printf("Error: no visamsg\n");
-		return 1;
-	}
 
 	if(!fullmessage->fld[0])
 	{
@@ -120,16 +178,13 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	header=fullmessage->fld[0];
 	message=fullmessage->fld[1];
 
-	visamsg->Clear();
-
-	visamsg->set_sourceinterface("visa");
-	visamsg->set_sourcestationid(get_field(header, 6));
-	visamsg->set_visaroundtripinf(get_field(header, 7));
-	visamsg->set_visabaseiflags(get_field(header, 8));
-	visamsg->set_visamsgstatusflags(get_field(header, 9));
-	visamsg->set_batchnumber(get_field(header, 10));
-	visamsg->set_visareserved(get_field(header, 11));
-	visamsg->set_visauserinfo(get_field(header, 12));
+	context->set_sourcestationid(get_field(header, 6));
+	context->set_visaroundtripinf(get_field(header, 7));
+	context->set_visabaseiflags(get_field(header, 8));
+	context->set_visamsgstatusflags(get_field(header, 9));
+	context->set_batchnumber(get_field(header, 10));
+	context->set_visareserved(get_field(header, 11));
+	context->set_visauserinfo(get_field(header, 12));
 
 	if(!has_field(message, 0))
 	{
@@ -137,7 +192,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 		return 1;
 	}
 
-	visamsg->set_isoversion(isomessage::ISO1987);
+//	visamsg->set_isoversion(isomessage::ISO1987);
 	visamsg->set_messageclass((isomessage_MsgClass)(get_field(message, 0)[1]-'0'));
 	visamsg->set_messagefunction((isomessage_MsgFunction)(get_field(message, 0)[2]-'0'));
 	visamsg->set_messageorigin((isomessage_MsgOrigin)(get_field(message, 0)[3]-'0'));
@@ -1007,7 +1062,7 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	return 0;
 }
 
-field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
+field* processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context)
 {
 	field *header;
 	field *message;
@@ -1044,13 +1099,13 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	}
 	else
 	{
-		strncpy(add_field(header, 5), visamsg->sourcestationid().c_str(), 6);
-		strncpy(add_field(header, 7), visamsg->visaroundtripinf().c_str(), 8);
-		strncpy(add_field(header, 8), visamsg->visabaseiflags().c_str(), 16);
-		strncpy(add_field(header, 9), visamsg->visamsgstatusflags().c_str(), 24);
-		strncpy(add_field(header, 10), visamsg->visamsgstatusflags().c_str(), 2);
-		strncpy(add_field(header, 11), visamsg->visareserved().c_str(), 6);
-		strncpy(add_field(header, 12), visamsg->visauserinfo().c_str(), 2);
+		strncpy(add_field(header, 5), context->sourcestationid().c_str(), 6);
+		strncpy(add_field(header, 7), context->visaroundtripinf().c_str(), 8);
+		strncpy(add_field(header, 8), context->visabaseiflags().c_str(), 16);
+		strncpy(add_field(header, 9), context->visamsgstatusflags().c_str(), 24);
+		strncpy(add_field(header, 10), context->visamsgstatusflags().c_str(), 2);
+		strncpy(add_field(header, 11), context->visareserved().c_str(), 6);
+		strncpy(add_field(header, 12), context->visauserinfo().c_str(), 2);
 	}
 	
 	strcpy(add_field(header, 6), stationid);

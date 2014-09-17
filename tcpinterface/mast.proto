@@ -1,0 +1,6 @@
+// Interface-related context
+
+message MastContext
+{
+	optional string SourceStationID = 1;
+}

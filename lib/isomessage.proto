@@ -2,31 +2,34 @@
 
 message isomessage
 {
-	required string SourceInterface = 1;
-
-	optional string SourceStationID = 2;
-
-	optional string VisaRoundTripInf = 3;
-
-	optional string VisaBaseIFlags = 4;
-
-	optional string VisaMsgStatusFlags = 5;
-
-	optional string BatchNumber = 6;
-
-	optional string VisaReserved = 7;
-
-	optional string VisaUserInfo = 8;
-
-	enum ISOver
+	message Source
 	{
-		ISO1987 = 0;
-		ISO1993 = 1;
-		ISO2003 = 2;
-		ISOCUSTOM = 9;
+		required string Name = 1;
+
+		optional bytes Context = 2;
 	}
 
-	optional ISOver ISOVersion = 9 [default = ISO1987];
+	repeated Source SourceInterface = 1;
+
+	optional uint32 SourceIndex = 2 [default = 0];
+
+	enum DestinationFlagPosition
+	{
+		DSTF_ADVICE = 0x1;
+		DSTF_P2PCREDIT = 0x2;
+	}
+
+	message Destination
+	{
+		required string Name = 1;
+
+		optional uint32 Flags = 2;
+	}
+
+	repeated Destination DestinationInterface = 3;
+
+
+
 
 	enum MsgClass
 	{
