@@ -83,6 +83,11 @@ unsigned int buildNetMsg(char *buf, unsigned int maxlength, field *message)
 	
 }
 
+int fillDefaultContext(VisaContext *context)
+{
+	return 0;
+}
+
 int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 {
 	VisaContext context;
@@ -107,17 +112,13 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	if(i!=0)
 		return i;
 
-	isomessage::Source *source=visamsg->add_sourceinterface();
+	visamsg->set_currentinterface("visa");
 
-	source->set_name("visa");
-
-	if(!context.SerializeToString(source->mutable_context()))
+	if(!context.SerializeToString(visamsg->mutable_currentcontext()))
 	{
 		printf("Warning: Unable to serialize the context\n");
 		return 1;
 	}
-
-	visamsg->set_sourceindex(1);
 
 	return 0;
 }
@@ -138,13 +139,10 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 		return NULL;
 	}
 
-	if(visamsg->sourceindex()==0 || visamsg->sourceindex() < visamsg->sourceinterface_size())
-	{
-		printf("Error: Unable to locate context\n");
-		return NULL;
-	}
-
-	context.ParseFromString((visamsg->sourceinterface(visamsg->sourceindex())).context());
+	if(visamsg->has_currentcontext())
+		context.ParseFromString((visamsg->currentcontext());
+	else
+		fillDefaultContext(&context);
 
 	return processOutgoing(visamsg, frm, &context);
 }

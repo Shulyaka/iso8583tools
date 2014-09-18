@@ -12,7 +12,11 @@ const char* routeMessage(isomessage *message)
 	else
 	{
 		destination=message->add_destinationinterface();
-		destination->set_name("issuer"); //no real logic yet. Will be changed to something more clever later.
+
+		if(message->messageorigin==isomessage::ISSUER || message->messageorigin==isomessage::ISSREPEAT) //no real logic yet. Will be changed to something more clever later.
+			destination->set_name("visa");
+		else
+			destination->set_name("issuer");
 	}
 
 	return destination->name().c_str();
@@ -45,6 +49,8 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 
 	printf("Destination=\"%s\"\n", dest);
 
+	message->set_currentinterface(dest);
+
 	if(!makeKey(message, key, sizeof(key)))
 	{
 		printf("Error: Unable to create unique key\n");
@@ -58,6 +64,9 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 		return 2;
 	else if(i<0)
 		return 1;
+
+	message->clear_destinationinterface();
+	message->clear_sourceinterface();
 
 	if(!ipcsendmsg(sfd, message, dest))
 	{

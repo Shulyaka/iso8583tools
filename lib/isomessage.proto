@@ -11,12 +11,14 @@ message isomessage
 
 	repeated Source SourceInterface = 1;
 
-	optional uint32 SourceIndex = 2 [default = 0];
+	required string CurrentInterface = 2;
+
+	optional bytes CurrentContext = 3;
 
 	enum DestinationFlagPosition
 	{
-		DSTF_ADVICE = 0x1;
-		DSTF_P2PCREDIT = 0x2;
+		SAFADVICE = 0x1;
+		P2PCREDIT = 0x2;
 	}
 
 	message Destination
@@ -26,9 +28,9 @@ message isomessage
 		optional uint32 Flags = 2 [default = 0];
 	}
 
-	repeated Destination DestinationInterface = 3;
+	repeated Destination DestinationInterface = 4;
 
-	optional uint32 Timeout = 4 [default = 30];
+	optional uint32 Timeout = 5 [default = 30];
 
 
 
