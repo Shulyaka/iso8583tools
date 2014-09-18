@@ -11,11 +11,6 @@ int removeLastDestination(isomessage *message)
 int mergeResponse(isomessage *message, isomessage *newmessage)
 {
 	isomessage::Destination *destination;
-	isomessage::Source *source;
-
-	source=message->add_sourceinterface();
-	source->set_name(newmessage->currentinterface());
-	source->set_context(newmessage->currentcontext());
 
 	removeLastDestination(message);
 
@@ -48,7 +43,7 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 
 	newmessage.CopyFrom(message);
 
-	i=kvsget(rcontext, key, message, message->timeout());
+	i=kvsget(rcontext, key, message);
 
 	if(i==0)
 		return 2;
@@ -57,24 +52,31 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 
 	mergeResponse(message, &newmessage);
 
-	for(i=message->destinationinterface_size(); i>=0; i--)
+	for(i=message->destinationinterface_size(); i>=0; i--) //send pending advices
 	{
 		destination=message->destinationinterface(i);
 		if(!destination->flags()&isomessage::SAFADVICE)
 			break;
 
-		//process advice
+		newmessage.CopyFrom(message);
+		newmessage.set_messagefunction(isomessage::ADVICE);
+		newmessage.set_currentinterface("saf");
+
+		handleRequest(&newmessage, sfd, rcontext); //error handler needed
 
 		removeLastDestination(message);
 	}
 
-	if(i>=0)
+	if(i>=0) //send to next remaining destination
 	{
-		//process normal request
+		message->set_messagefunction(isomessage::REQUEST);
+		return handleRequest(message, sfd, rcontext);
 	}
-	else
+
+	if(!ipcsendmsg(sfd, message, dest))
 	{
-		//process final response
+		printf("Error: Unable to send the response\n");
+		return 1;
 	}
 
 	return 0;

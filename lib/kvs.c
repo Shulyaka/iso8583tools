@@ -56,7 +56,7 @@ redisContext *kvsconnect(const char *hostname, int port)
 // 0: connection failure. Must call kvsfree and reconnect.
 // <0: other error without connection failure
 // >0: Success
-int kvsset(redisContext *c, const char *key, isomessage *message, int timeout)
+int kvsset(redisContext *c, const char *key, isomessage *message)
 {
 	static char buf[1000];
 	size_t size;
@@ -85,9 +85,9 @@ int kvsset(redisContext *c, const char *key, isomessage *message, int timeout)
 
 	freeReplyObject(reply);
 
-	if(timeout>0)
+	if(message->timeout()>0)
 	{
-		reply = (redisReply*)redisCommand(c,"EXPIRE %b %d", key, (size_t)strlen(key), timeout);
+		reply = (redisReply*)redisCommand(c,"EXPIRE %b %d", key, (size_t)strlen(key), message->timeout());
 
 		if(!reply)
 		{
@@ -98,7 +98,7 @@ int kvsset(redisContext *c, const char *key, isomessage *message, int timeout)
 		freeReplyObject(reply);
 	}
 
-	return size;
+	return 1;
 }
 
 // return values:
@@ -147,7 +147,24 @@ int kvsget(redisContext *c, const char *key, isomessage *message)
 
 	freeReplyObject(reply);
 
-	return reply->len;
+	reply = (redisReply*)redisCommand(c,"DEL %b", key, (size_t)strlen(key));
+
+	if(!reply)
+	{
+		printf("Error: Unable to delete the message from kvs: %s\n", c->errstr);
+		return 0;
+	}
+
+	if(reply->type==REDIS_REPLY_ERROR)
+	{
+		printf("Error: Unable to delete the message from kvs: %s\n", reply->str);
+		freeReplyObject(reply);
+		return -1;
+	}
+
+	freeReplyObject(reply);
+
+	return 1;
 
 }
 
