@@ -24,7 +24,7 @@ const char* routeMessage(isomessage *message)
 
 int makeKey(isomessage *message, char *key, int size)
 {
-	snprintf(key, size, "%d", message->rrn());
+	snprintf(key, size, "switch%s%s%d", message->currentinterface(), (message->messagefunction()==isomessage::ADVICE || message->messagefunction()==isomessage::ADVICERESP)?"A":"R", message->rrn());
 
 	return 0;
 }
@@ -35,11 +35,9 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 	char key[100];
 	int i;
 
-	if(message->sourceindex()!=1 || message->sourceinterface_size()!=1)
-	{
-		printf("Error: Wrong number of sources of the request\n");
-		return 1;
-	}
+	isomessage::Source *source=message->add_sourceinterface();
+	source->set_name(message->currentinterface());
+	source->set_context(message->currentcontext());
 
 	if((dest=routeMessage(message))==NULL)
 	{
@@ -59,7 +57,7 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 
 	printf("Key=\"%s\"\n", key);
 
-	i=kvsset(rcontext, key, message, message->timeout());
+	i=kvsset(rcontext, key, message);
 	if(i==0)
 		return 2;
 	else if(i<0)
