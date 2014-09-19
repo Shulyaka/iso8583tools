@@ -173,7 +173,6 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 	}
 
 	message->set_currentcontext(message->sourceinterface(0).context());
-	message->set_currentinterface(message->sourceinterface(0).name());
 
 	if(!ipcsendmsg(sfd, message, message->currentinterface().c_str()))
 	{
