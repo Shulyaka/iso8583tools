@@ -6,10 +6,8 @@
 #include <poll.h>
 #include "../lib/isomessage.pb.h"
 #include "../lib/ipc.h"
-#include "../lib/kvs.h"
 
-#include "request.h"
-#include "response.h"
+#include "reqresp.h"
 
 int main(void)
 {

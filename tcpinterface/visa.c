@@ -140,7 +140,7 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	}
 
 	if(visamsg->has_currentcontext())
-		context.ParseFromString((visamsg->currentcontext());
+		context.ParseFromString(visamsg->currentcontext());
 	else
 		fillDefaultContext(&context);
 
