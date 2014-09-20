@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <time.h>
 #include "kvs.h"
 
 redisContext *kvsconnect(const char *hostname, int port)
@@ -61,6 +62,7 @@ int kvsset(redisContext *c, const char *key, isomessage *message)
 	static char buf[1000];
 	size_t size;
 	redisReply *reply;
+	time_t timeout;
 
 	size=message->ByteSize();
 	if(size>sizeof(buf))
@@ -85,18 +87,36 @@ int kvsset(redisContext *c, const char *key, isomessage *message)
 
 	freeReplyObject(reply);
 
-	if(message->timeout()>0)
+	if(message->timeout()<500000000)
+		timeout=time(NULL)+message->timeout();
+	else
+		timeout=message->timeout();
+
+	reply = (redisReply*)redisCommand(c,"EXPIREAT %b %ld", key, (size_t)strlen(key), timeout+2592000);
+
+	if(!reply)
 	{
-		reply = (redisReply*)redisCommand(c,"EXPIRE %b %d", key, (size_t)strlen(key), message->timeout());
-
-		if(!reply)
-		{
-			printf("Error: Unable to set timeout: %s\n", c->errstr);
-			return 0;
-		}
-
-		freeReplyObject(reply);
+		printf("Error: Unable to set timeout: %s\n", c->errstr);
+		return 0;
 	}
+
+	if(reply->type==REDIS_REPLY_ERROR)
+		printf("Warning: %s\n", reply->str);
+
+	freeReplyObject(reply);
+
+	reply = (redisReply*)redisCommand(c,"ZADD kvskeys %ld %b", timeout, key, (size_t)strlen(key));
+
+	if(!reply)
+	{
+		printf("Error: Unable to add key to set: %s\n", c->errstr);
+		return 0;
+	}
+
+	if(reply->type==REDIS_REPLY_ERROR)
+		printf("Warning: %s\n", reply->str);
+
+	freeReplyObject(reply);
 
 	return 1;
 }
@@ -147,6 +167,19 @@ int kvsget(redisContext *c, const char *key, isomessage *message)
 
 	freeReplyObject(reply);
 
+	reply = (redisReply*)redisCommand(c,"ZREM kvskeys %b", key, (size_t)strlen(key));
+
+	if(!reply)
+	{
+		printf("Error: Unable to remove key from set: %s\n", c->errstr);
+		return 0;
+	}
+
+	if(reply->type==REDIS_REPLY_ERROR)
+		printf("Warning: %s\n", reply->str);
+
+	freeReplyObject(reply);
+
 	reply = (redisReply*)redisCommand(c,"DEL %b", key, (size_t)strlen(key));
 
 	if(!reply)
@@ -165,7 +198,6 @@ int kvsget(redisContext *c, const char *key, isomessage *message)
 	freeReplyObject(reply);
 
 	return 1;
-
 }
 
 void kvsfree(redisContext *c)

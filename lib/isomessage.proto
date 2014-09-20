@@ -30,7 +30,7 @@ message isomessage
 
 	repeated Destination DestinationInterface = 4;
 
-	optional uint32 Timeout = 5 [default = 30];
+	optional sint64 Timeout = 5 [default = 30];  //if less than 500000000 then a number of seconds in the future, otherwise a unix timestamp of expiration time
 
 
 

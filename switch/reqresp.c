@@ -1,3 +1,4 @@
+#include <time.h>
 #include "reqresp.h"
 
 const char* routeMessage(isomessage *message)
@@ -56,6 +57,9 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 	isomessage::Source *source=message->add_sourceinterface();
 	source->set_name(message->currentinterface());
 	source->set_context(message->currentcontext());
+
+	if(message->timeout()<500000000)
+		message->set_timeout(time(NULL)+message->timeout());
 
 	if((dest=routeMessage(message))==NULL)
 	{
