@@ -1,4 +1,4 @@
-SUBDIRS = lib parser switch tcpinterface issuer saf
+SUBDIRS = $(shell find . -maxdepth 2 -mindepth 2 -name Makefile -type f -printf "%h\n")
 
 .PHONY: subdirs $(SUBDIRS)
 
@@ -11,5 +11,4 @@ $(SUBDIRS):
 	$(MAKE) -C $@ $(TARGET)
 
 tcpinterface: lib parser
-switch: lib
-issuer: lib
+switch issuer saf: lib
