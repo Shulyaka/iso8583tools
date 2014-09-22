@@ -48,18 +48,28 @@ int mergeResponse(isomessage *message, isomessage *newmessage)
 	return 0;
 }
 
+int saveContext(isomessage *message)
+{
+	isomessage::Source *source=message->add_sourceinterface();
+	source->set_name(message->currentinterface());
+	source->set_context(message->currentcontext());
+
+	return 0;
+}
+
 int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 {
 	const char *dest;
 	char key[100];
 	int i;
 
-	isomessage::Source *source=message->add_sourceinterface();
-	source->set_name(message->currentinterface());
-	source->set_context(message->currentcontext());
+	saveContext(message);
 
 	if(message->timeout()<500000000)
 		message->set_timeout(time(NULL)+message->timeout());
+
+	if(!message->has_firsttransmissiontime())
+		message->set_firsttransmissiontime(time(NULL));
 
 	if((dest=routeMessage(message))==NULL)
 	{

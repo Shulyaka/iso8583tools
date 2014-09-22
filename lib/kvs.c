@@ -200,6 +200,57 @@ int kvsget(redisContext *c, const char *key, isomessage *message)
 	return 1;
 }
 
+int kvslistexpired(redisContext *c, char **keys)
+{
+	int i;
+	redisReply *reply;
+
+	reply = (redisReply*)redisCommand(c,"ZRANGEBYSCORE kvskeys -inf %ld", time(NULL));
+
+	if(!reply)
+	{
+		printf("Error: Unable to receive the reply from Redis: %s\n", c->errstr);
+		return 0;
+	}
+
+	if(reply->type==REDIS_REPLY_NIL)
+	{
+		printf("Warning: Key kvskeys not found\n");
+		freeReplyObject(reply);
+		return -1;
+	}
+	
+	if(reply->type==REDIS_REPLY_ERROR)
+	{
+		printf("Error: Unable to receive the reply from Redis: %s\n", reply->str);
+		freeReplyObject(reply);
+		return -1;
+	}
+
+	if(reply->type!=REDIS_REPLY_ARRAY)
+	{
+		printf("Error: Wrong reply type (%d)\n", reply->type);
+		freeReplyObject(reply);
+		return -1;
+	}
+
+	keys=(char**)malloc(sizeof(char*)*reply->elements);
+
+	for(i=0; i<reply->elements; i++)
+	{
+		keys[i]=(char*)malloc(sizeof(char)*(reply->element[i]->len+1));
+		strcpy(keys[i], reply->element[i]->str);
+	}
+
+	freeReplyObject(reply);
+}
+
+void kvsfreelist(char **keys, int n)
+{
+	for( ;n>0; free(keys[--n]));
+	free(keys);
+}
+
 void kvsfree(redisContext *c)
 {
 	redisFree(c);

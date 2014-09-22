@@ -32,6 +32,7 @@ message isomessage
 
 	optional sint64 Timeout = 5 [default = 30];  //if less than 500000000 then a number of seconds in the future, otherwise a unix timestamp of expiration time
 
+	optional sint64 FirstTransmissionTime = 6; //filled by switch
 
 
 

@@ -18,6 +18,8 @@ int main(void)
 	int ret;
 	redisContext *rcontext=NULL;
 
+	struct timespec timeout={1, 0};
+
 	GOOGLE_PROTOBUF_VERIFY_VERSION;	
 
 	sfd[0].fd=ipcopen((char*)"switch");
@@ -46,10 +48,24 @@ int main(void)
 
 		printf("Waiting for a message...\n");
 
-		if(ppoll(sfd, 1, NULL, NULL)==-1)
+		for(ret=0; ret==0; ret=ppoll(sfd, 1, &timeout, NULL))
+		{
+			ret=checkExpired(sfd[0].fd, rcontext);
+			if(ret==2)
+				break;
+		}
+
+		if(ret==-1)
 		{
 			printf("Error: poll: %s\n", strerror(errno));
 			break;
+		}
+		else if(ret==2)
+		{
+			printf("Disconnected from Redis. Reconnecting again...\n");
+			kvsfree(rcontext);
+			rcontext=NULL;
+			continue;
 		}
 
 		printf("recieving message\n");
@@ -79,6 +95,7 @@ int main(void)
 			printf("Disconnected from Redis. Reconnecting again...\n");
 			kvsfree(rcontext);
 			rcontext=NULL;
+			continue;
 		}
 	}
 

@@ -12,3 +12,4 @@ saf.o: saf.c ../lib/ipc.h ../lib/isomessage.pb.h response.h
 response.o: response.c ../lib/ipc.h response.h
 		g++ -c response.c
 
+%.o: %.c
