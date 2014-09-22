@@ -1,14 +1,14 @@
 #include <time.h>
 #include "reqresp.h"
 
-const char* routeMessage(isomessage *message)
+int routeMessage(isomessage *message, char *dest)
 {
 	isomessage::Destination *destination;
 
 	if(message->destinationinterface_size()>0)
 	{
 		printf("Message already routed\n");
-		destination=message->mutable_destinationinterface(message->destinationinterface_size());
+		destination=message->mutable_destinationinterface(message->destinationinterface_size()-1);
 	}
 	else
 	{
@@ -20,7 +20,9 @@ const char* routeMessage(isomessage *message)
 			destination->set_name("issuer");
 	}
 
-	return destination->name().c_str();
+	strcpy(dest, destination->name().c_str());
+
+	return 0;
 }
 
 int makeKey(isomessage *message, char *key, int size)
@@ -43,6 +45,8 @@ int mergeResponse(isomessage *message, isomessage *newmessage)
 		destination->CopyFrom(newmessage->destinationinterface(i));
 	}
 
+	message->set_messagefunction(newmessage->messagefunction());
+
 	message->set_responsecode(newmessage->responsecode());
 
 	return 0;
@@ -57,10 +61,16 @@ int saveContext(isomessage *message)
 	return 0;
 }
 
+int restoreContext(isomessage *to, isomessage *from, int i)
+{
+	to->set_currentcontext(from->sourceinterface(i).context());
+//	to->set_currentinterface(from->sourceinterface(i).name());
+}
+
 int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 {
-	const char *dest;
-	char key[100];
+	char dest[50];
+	char key[50];
 	int i;
 
 	saveContext(message);
@@ -71,7 +81,7 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 	if(!message->has_firsttransmissiontime())
 		message->set_firsttransmissiontime(time(NULL));
 
-	if((dest=routeMessage(message))==NULL)
+	if(routeMessage(message, dest))
 	{
 		printf("Error: Unable to route the message\n");
 		return 1;
@@ -80,8 +90,9 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 	printf("Destination=\"%s\"\n", dest);
 
 	message->set_currentinterface(dest);
+	message->clear_currentcontext();
 
-	if(!makeKey(message, key, sizeof(key)))
+	if(makeKey(message, key, sizeof(key)))
 	{
 		printf("Error: Unable to create unique key\n");
 		return 1;
@@ -98,6 +109,8 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 	message->clear_destinationinterface();
 	message->clear_sourceinterface();
 
+	printf("Sending request to %s\n", dest);
+
 	if(!ipcsendmsg(sfd, message, dest))
 	{
 		printf("Error: Unable to send the message\n");
@@ -109,14 +122,14 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 
 int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 {
-	char key[100];
+	char key[50];
 	int i;
 	int copied=0;
 	
 	isomessage newmessage;
 	isomessage::Destination *destination;
 
-	if(!makeKey(message, key, sizeof(key)))
+	if(makeKey(message, key, sizeof(key)))
 	{
 		printf("Error: Unable to create unique key\n");
 		return 1;
@@ -137,7 +150,7 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 
 	if(!(message->messageclass()==isomessage::REVERSAL && message->messagefunction()==isomessage::ADVICERESP && !strcmp(message->sourceinterface(0).name().c_str(),"saf"))) //only accept other destinations if not auto reversal advice
 	{
-		for(i=message->destinationinterface_size(); i>=0; i--) //send pending advices
+		for(i=message->destinationinterface_size()-1; i>=0; i--) //send pending advices
 		{
 			if(!(message->destinationinterface(i).flags()&isomessage::SAFADVICE) && !(message->messagefunction()==isomessage::ADVICERESP) && !(message->responsecode()!=0)) //only break if not advice and not decline
 				break;
@@ -165,7 +178,7 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 		}
 		else
 		{
-			for(i=message->sourceinterface_size(); i>=1; i--) //send reversal advices to all sources except first
+			for(i=message->sourceinterface_size()-1; i>=1; i--) //send reversal advices to all sources except first
 			{
 				switch(copied)
 				{
@@ -179,16 +192,20 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 						copied=2;
 				}
 
-				newmessage.set_currentcontext(message->sourceinterface(i).context());
+				restoreContext(&newmessage, message, i);
 
 				handleRequest(&newmessage, sfd, rcontext); //error handler needed
 			}
 		}
 	}
 
-	message->set_currentcontext(message->sourceinterface(0).context());
+	strcpy(key, message->sourceinterface(0).name().c_str());
+	restoreContext(message, message, 0);
+	message->clear_sourceinterface();
 
-	if(!ipcsendmsg(sfd, message, message->currentinterface().c_str()))
+	printf("Sending response to %s\n", key);
+
+	if(!ipcsendmsg(sfd, message, key))
 	{
 		printf("Error: Unable to send the response\n");
 		return 1;

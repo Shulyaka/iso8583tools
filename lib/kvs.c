@@ -200,7 +200,7 @@ int kvsget(redisContext *c, const char *key, isomessage *message)
 	return 1;
 }
 
-int kvslistexpired(redisContext *c, char **keys)
+int kvslistexpired(redisContext *c, char ***keys)
 {
 	int i;
 	redisReply *reply;
@@ -234,15 +234,17 @@ int kvslistexpired(redisContext *c, char **keys)
 		return -1;
 	}
 
-	keys=(char**)malloc(sizeof(char*)*reply->elements);
+	*keys=(char**)malloc(sizeof(char*)*reply->elements);
 
 	for(i=0; i<reply->elements; i++)
 	{
-		keys[i]=(char*)malloc(sizeof(char)*(reply->element[i]->len+1));
-		strcpy(keys[i], reply->element[i]->str);
+		*keys[i]=(char*)malloc(sizeof(char)*(reply->element[i]->len+1));
+		strcpy(*keys[i], reply->element[i]->str);
 	}
 
 	freeReplyObject(reply);
+
+	return i;
 }
 
 void kvsfreelist(char **keys, int n)

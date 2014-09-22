@@ -11,3 +11,5 @@ switch.o: switch.c ../lib/ipc.h ../lib/isomessage.pb.h reqresp.h
 
 reqresp.o: reqresp.c ../lib/ipc.h ../lib/kvs.h reqresp.h
 		g++ -c reqresp.c
+
+%.o: %.c

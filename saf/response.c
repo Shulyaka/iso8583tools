@@ -90,20 +90,18 @@ int handleExpired(char *key, int sfd, redisContext *rcontext)
 
 int checkExpired(int sfd, redisContext *rcontext)
 {
-	int i, k;
+	int ret, i;
 	char **keys;
-	int n=kvslistexpired(rcontext, keys);
+	int n=kvslistexpired(rcontext, &keys);
 
 	if(n==0)
 		return 0;
 
-	for(k=0; k<n; k++)
+	for(i=0; i<n; i++)
 	{
-		i=handleExpired(keys[k], sfd, rcontext);
-		if(i==0)
-			return 2;
-		else if(i<0)
-			return 1;
+		ret=handleExpired(keys[i], sfd, rcontext);
+		if(ret)
+			return ret;
 	}
 
 	kvsfreelist(keys, n);

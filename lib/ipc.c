@@ -103,7 +103,7 @@ int ipcsendmsg(int sfd, isomessage *message, const char *dest)
 
 	if(ipcsend(sfd, buf, size, dest)==-1)
 	{
-		printf("Error: Unable to send the message to switch\n");
+		printf("Error: Unable to send the message\n");
 		return -1;
 	}
 

@@ -24,7 +24,7 @@ double pow01(unsigned char x)
 
 fldformat* loadNetFormat(void)
 {
-	return load_format((char*)"../parser/formats/fields_visa");
+	return load_format((char*)"../parser/formats/fields_visa.frm");
 }
 
 field* parseNetMsg(char *buf, unsigned int length, fldformat *frm)
