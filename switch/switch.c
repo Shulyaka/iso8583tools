@@ -69,6 +69,8 @@ int main(void)
 			case isomessage::REQUEST:
 			case isomessage::ADVICE:
 				ret=handleRequest(&inmsg, sfd[0].fd, rcontext);
+				if(ret)
+					reverseRequest(&inmsg, sfd[0].fd, rcontext);
 				break;
 			case isomessage::REQUESTRESP:
 			case isomessage::ADVICERESP:

@@ -12,7 +12,16 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 	int i;
 
 	if(message->responsecode()!=96)
+	{
+		printf("Received a normal response. Ignoring.\n");
 		return 0;
+	}
+
+	if(!strncmp(message->currentinterface().c_str(), "saf", 3))
+	{
+		printf("Error: Received a message from myself! It shouldn't happen!\n");
+		return 0;
+	}
 
 	message->clear_responsecode();
 
@@ -65,7 +74,7 @@ int handleExpired(char *key, int sfd, redisContext *rcontext)
 			message.set_messagefunction(isomessage::ADVICERESP);
 		message.set_responsecode(96);
 
-		if(ipcsendmsg(sfd, &message, "switch")<0)
+		if(ipcsendmsg(sfd, &message, "switch")<=0)
 		{
 			printf("Error: Unable to send the message to switch.\n");
 			return 1;
@@ -94,7 +103,7 @@ int handleExpired(char *key, int sfd, redisContext *rcontext)
 
 	message.clear_sourceinterface();
 
-	if(ipcsendmsg(sfd, &message, "switch")<0)
+	if(ipcsendmsg(sfd, &message, "switch")<=0)
 	{
 		printf("Error: Unable to send the message to switch.\n");
 		return 1;

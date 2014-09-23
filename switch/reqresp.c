@@ -65,6 +65,8 @@ int restoreContext(isomessage *to, isomessage *from, int i)
 {
 	to->set_currentcontext(from->sourceinterface(i).context());
 //	to->set_currentinterface(from->sourceinterface(i).name());
+
+	return 0;
 }
 
 int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
@@ -81,7 +83,7 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 	if(!message->has_firsttransmissiontime())
 		message->set_firsttransmissiontime(time(NULL));
 
-	if(routeMessage(message, dest))
+	if(routeMessage(message, dest) || !strcmp(dest, "switch"))
 	{
 		printf("Error: Unable to route the message\n");
 		return 1;
@@ -109,11 +111,41 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 	message->clear_destinationinterface();
 	message->clear_sourceinterface();
 
-	printf("Sending request to %s\n", dest);
+	printf("Sending request to %s!\n", dest);
 
-	if(!ipcsendmsg(sfd, message, dest))
+	if(ipcsendmsg(sfd, message, dest)<=0)
 	{
-		printf("Error: Unable to send the message\n");
+		printf("Sending decline\n");
+
+		if(message->messagefunction()==isomessage::REQUEST)
+			message->set_messagefunction(isomessage::REQUESTRESP);
+		else if(message->messagefunction()==isomessage::ADVICE)
+			message->set_messagefunction(isomessage::ADVICERESP);
+
+		message->set_responsecode(96);
+
+		return handleResponse(message, sfd, rcontext);
+	}
+
+	return 0;
+}
+
+int reverseRequest(isomessage *message, int sfd, redisContext *rcontext)
+{
+	char src[50];
+
+	printf("Attempting to send a decline\n");
+
+	if(message->messagefunction()==isomessage::REQUEST)
+		message->set_messagefunction(isomessage::REQUESTRESP);
+	else if(message->messagefunction()==isomessage::ADVICE)
+		message->set_messagefunction(isomessage::ADVICERESP);
+
+	message->set_responsecode(96);
+
+	if(ipcsendmsg(sfd, message, message->sourceinterface(0).name().c_str())<=0)
+	{
+		printf("Error: Unable to send the decline. Message dropped.\n");
 		return 1;
 	}
 
@@ -212,7 +244,7 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 
 	printf("Sending response to %s\n", key);
 
-	if(!ipcsendmsg(sfd, message, key))
+	if(ipcsendmsg(sfd, message, key)<=0)
 	{
 		printf("Error: Unable to send the response\n");
 		return 1;
