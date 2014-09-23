@@ -23,7 +23,7 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 
 	message->set_timeout(message->timeout()-message->firsttransmissiontime());
 
-	if(!makeKey(message, key, sizeof(key)))
+	if(makeKey(message, key, sizeof(key)))
 	{
 		printf("Error: Unable to create unique key\n");
 		return 1;
@@ -49,7 +49,6 @@ int handleExpired(char *key, int sfd, redisContext *rcontext)
 	isomessage message;
 
 	i=kvsget(rcontext, key, &message);
-
 	if(i==0)
 		return 2;
 	else if(i<0)
@@ -68,8 +67,22 @@ int handleExpired(char *key, int sfd, redisContext *rcontext)
 
 		if(ipcsendmsg(sfd, &message, "switch")<0)
 		{
-			printf("Error: Unable to send the message to switch. Message dropped\n");
+			printf("Error: Unable to send the message to switch.\n");
 			return 1;
+		}
+
+		if(message.messagefunction()==isomessage::ADVICERESP) //don't send reversal for advices - they would be resent by saf instead
+		{
+			if(!memcmp(key, "saf", 3))
+			{
+				i=kvsdel(rcontext, key);
+				if(i==0)
+					return 2;
+				else if(i<0)
+					return 1;
+			}
+
+			return 0;
 		}
 
 		message.set_messageclass(isomessage::REVERSAL);
@@ -79,12 +92,22 @@ int handleExpired(char *key, int sfd, redisContext *rcontext)
 		message.set_currentinterface("saf");
 	}
 
+	message.clear_sourceinterface();
+
 	if(ipcsendmsg(sfd, &message, "switch")<0)
 	{
-		printf("Error: Unable to send the message to switch. Message dropped\n");
+		printf("Error: Unable to send the message to switch.\n");
 		return 1;
 	}
 
+	if(!memcmp(key, "saf", 3))
+	{
+		i=kvsdel(rcontext, key);
+		if(i==0)
+			return 2;
+		else if(i<0)
+			return 1;
+	}
 	return 0;
 }
 

@@ -167,6 +167,17 @@ int kvsget(redisContext *c, const char *key, isomessage *message)
 
 	freeReplyObject(reply);
 
+	return 1;
+}
+
+// return values:
+// 0: connection failure. Must call kvsfree and reconnect.
+// <0: other error without connection failure
+// >0: Success
+int kvsdel(redisContext *c, const char *key)
+{
+	redisReply *reply;
+
 	reply = (redisReply*)redisCommand(c,"ZREM kvskeys %b", key, (size_t)strlen(key));
 
 	if(!reply)
@@ -200,6 +211,10 @@ int kvsget(redisContext *c, const char *key, isomessage *message)
 	return 1;
 }
 
+// return values:
+// 0: connection failure. Must call kvsfree and reconnect.
+// <0: other error without connection failure
+// >0: Number of keys returned
 int kvslistexpired(redisContext *c, char ***keys)
 {
 	int i;
@@ -238,8 +253,8 @@ int kvslistexpired(redisContext *c, char ***keys)
 
 	for(i=0; i<reply->elements; i++)
 	{
-		*keys[i]=(char*)malloc(sizeof(char)*(reply->element[i]->len+1));
-		strcpy(*keys[i], reply->element[i]->str);
+		(*keys)[i]=(char*)malloc(sizeof(char)*(reply->element[i]->len+1));
+		strcpy((*keys)[i], reply->element[i]->str);
 	}
 
 	freeReplyObject(reply);

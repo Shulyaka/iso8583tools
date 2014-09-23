@@ -22,7 +22,7 @@ int main(void)
 
 	GOOGLE_PROTOBUF_VERIFY_VERSION;	
 
-	sfd[0].fd=ipcopen((char*)"switch");
+	sfd[0].fd=ipcopen((char*)"saf");
 
 	if(sfd[0].fd==-1)
 	{

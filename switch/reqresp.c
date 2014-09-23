@@ -146,6 +146,13 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 	else if(i<0)
 		return 1;
 
+	i=kvsdel(rcontext, key);
+
+	if(i==0)
+		return 2;
+	else if(i<0)
+		return 1;
+
 	mergeResponse(message, &newmessage);
 
 	if(!(message->messageclass()==isomessage::REVERSAL && message->messagefunction()==isomessage::ADVICERESP && !strcmp(message->sourceinterface(0).name().c_str(),"saf"))) //only accept other destinations if not auto reversal advice
