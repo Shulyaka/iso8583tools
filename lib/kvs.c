@@ -167,6 +167,22 @@ int kvsget(redisContext *c, const char *key, isomessage *message)
 
 	freeReplyObject(reply);
 
+	if(message->timeout()<time(NULL)+3) //temporary disable message expiration by 3 secondsto postpone saf
+	{
+		reply = (redisReply*)redisCommand(c,"ZADD kvskeys %ld %b", time(NULL)+3, key, (size_t)strlen(key));
+
+		if(!reply)
+		{
+			printf("Error: Unable to add key to set: %s\n", c->errstr);
+			return 0;
+		}
+
+		if(reply->type==REDIS_REPLY_ERROR)
+			printf("Warning: %s\n", reply->str);
+
+		freeReplyObject(reply);
+	}
+
 	return 1;
 }
 

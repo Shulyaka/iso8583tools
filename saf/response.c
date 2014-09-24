@@ -63,6 +63,9 @@ int handleExpired(char *key, int sfd, redisContext *rcontext)
 	else if(i<0)
 		return 1;
 
+	printf("\nFound expired message with key %s:\n", key);
+	message.PrintDebugString();
+
 	message.set_timeout(message.timeout()-message.firsttransmissiontime()<10?10:message.timeout()-message.firsttransmissiontime());
 
 	if(strcmp(message.currentinterface().c_str(), "saf")) //send the response on behalf of a failed interface

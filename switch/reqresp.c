@@ -111,7 +111,7 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 	message->clear_destinationinterface();
 	message->clear_sourceinterface();
 
-	printf("Sending request to %s!\n", dest);
+	printf("Sending request to %s\n", dest);
 
 	if(ipcsendmsg(sfd, message, dest)<=0)
 	{
@@ -135,6 +135,13 @@ int reverseRequest(isomessage *message, int sfd, redisContext *rcontext)
 	char src[50];
 
 	printf("Attempting to send a decline\n");
+	message->PrintDebugString();
+
+	if(message->sourceinterface_size()==0)
+	{
+		printf("Error: Source unknown. Message dropped.\n");
+		return 1;
+	}
 
 	if(message->messagefunction()==isomessage::REQUEST)
 		message->set_messagefunction(isomessage::REQUESTRESP);
@@ -154,6 +161,7 @@ int reverseRequest(isomessage *message, int sfd, redisContext *rcontext)
 
 int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 {
+	char dest[50];
 	char key[50];
 	int i;
 	int copied=0;
@@ -178,13 +186,6 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 	else if(i<0)
 		return 1;
 
-	i=kvsdel(rcontext, key);
-
-	if(i==0)
-		return 2;
-	else if(i<0)
-		return 1;
-
 	mergeResponse(message, &newmessage);
 
 	if(!(message->messageclass()==isomessage::REVERSAL && message->messagefunction()==isomessage::ADVICERESP && !strcmp(message->sourceinterface(0).name().c_str(),"saf"))) //only accept other destinations if not auto reversal advice
@@ -202,7 +203,8 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 				copied=1;
 			}
 
-			handleRequest(&newmessage, sfd, rcontext); //error handler needed
+			if(handleRequest(&newmessage, sfd, rcontext)==2)
+				return 2;
 
 			message->mutable_destinationinterface()->RemoveLast();
 		}
@@ -211,6 +213,13 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 		{
 			if(i>=0) //send to next remaining destination
 			{
+				i=kvsdel(rcontext, key);
+
+				if(i==0)
+					return 2;
+				else if(i<0)
+					return 1;
+
 				message->set_messagefunction(isomessage::REQUEST);
 				return handleRequest(message, sfd, rcontext);
 			}
@@ -233,20 +242,38 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 
 				restoreContext(&newmessage, message, i);
 
-				handleRequest(&newmessage, sfd, rcontext); //error handler needed
+				if(handleRequest(&newmessage, sfd, rcontext)==2)
+					return 2;
 			}
 		}
 	}
 
-	strcpy(key, message->sourceinterface(0).name().c_str());
+	strcpy(dest, message->sourceinterface(0).name().c_str());
 	restoreContext(message, message, 0);
 	message->clear_sourceinterface();
 
-	printf("Sending response to %s\n", key);
+	printf("Sending response to %s\n", dest);
 
-	if(ipcsendmsg(sfd, message, key)<=0)
+	if(ipcsendmsg(sfd, message, dest)<=0)
 	{
 		printf("Error: Unable to send the response\n");
+		isomessage::Source *source=message->add_sourceinterface();
+		source->set_name(dest);
+		return 1;
+	}
+
+	i=kvsdel(rcontext, key);
+
+	if(i==0)
+	{
+		isomessage::Source *source=message->add_sourceinterface();
+		source->set_name(dest);
+		return 2;
+	}
+	else if(i<0)
+	{
+		isomessage::Source *source=message->add_sourceinterface();
+		source->set_name(dest);
 		return 1;
 	}
 
