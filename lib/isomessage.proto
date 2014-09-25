@@ -36,47 +36,19 @@ message isomessage
 
 
 
-	enum MsgClass
+	enum MsgTypeIndicators
 	{
-		AUTHORIZATION = 1;
-		FINANCIAL = 2;
-		FILEACTIONS = 3;
-		REVERSAL = 4;
-		RECONCILIATION = 5;
-		ADMINISTRATIVE = 6;
-		FEECOLLECTION = 7;
-		NETWORKMANAGEMENT = 8;
-		ISORESERVED = 9;
-		PREAUTHORIZATION = 11;
-		PREAUTHCOMPLETION = 12;
+		RESPONSE = 0x1;
+		REVERSAL = 0x2;
+		AUTHORIZATION = 0x4;
+		CLEARING = 0x8;
+		ADVICE = 0x10;
+		REJECT = 0x20;
+		REPEAT = 0x40;
+		ISSUER = 0x80;
 	}
 
-	required MsgClass MessageClass = 10;
-
-	enum MsgFunction
-	{
-		REQUEST = 0;
-		REQUESTRESP = 1;
-		ADVICE = 2;
-		ADVICERESP = 3;
-		NOTIFICATION = 4;
-		RESPACK = 8;
-		NACK = 9;
-	}
-
-	required MsgFunction MessageFunction = 11;
-
-	enum MsgOrigin
-	{
-		ACQUIRER = 0;
-		ACQREPEAT = 1;
-		ISSUER = 2;
-		ISSREPEAT = 3;
-		OTHER = 4;
-		OTHREPEAT = 5;
-	}
-
-	optional MsgOrigin MessageOrigin = 12 [default = ACQUIRER];
+	required uint32 MessageType = 12 [default = 0x4];
 
 	optional string PAN = 13;
 
