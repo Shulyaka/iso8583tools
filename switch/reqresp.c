@@ -47,7 +47,8 @@ int mergeResponse(isomessage *message, isomessage *newmessage)
 
 	message->set_messagefunction(newmessage->messagefunction());
 
-	message->set_responsecode(newmessage->responsecode());
+	if(newmessage->has_responsecode())
+		message->set_responsecode(newmessage->responsecode());
 
 	return 0;
 }
@@ -101,6 +102,9 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 	}
 
 	printf("Key=\"%s\"\n", key);
+
+//	printf("Saving message:\n");
+//	message->PrintDebugString();
 
 	i=kvsset(rcontext, key, message);
 	if(i==0)
@@ -164,7 +168,6 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 	char dest[50];
 	char key[50];
 	int i;
-	int copied=0;
 	
 	isomessage newmessage;
 	isomessage::Destination *destination;
@@ -188,20 +191,22 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 
 	mergeResponse(message, &newmessage);
 
+//	printf("Merged message:\n");
+//	message->PrintDebugString();
+
 	if(!(message->messageclass()==isomessage::REVERSAL && message->messagefunction()==isomessage::ADVICERESP && !strcmp(message->sourceinterface(0).name().c_str(),"saf"))) //only accept other destinations if not auto reversal advice
 	{
 		for(i=message->destinationinterface_size()-1; i>=0; i--) //send pending advices
 		{
-			if(!(message->destinationinterface(i).flags()&isomessage::SAFADVICE) && !(message->messagefunction()==isomessage::ADVICERESP) && !(message->responsecode()!=0)) //only break if not advice and not decline
+			if(!(message->destinationinterface(i).flags()&isomessage::SAFADVICE) && !(message->messagefunction()==isomessage::ADVICERESP) && !(message->has_responsecode() && message->responsecode()!=0)) //only break if not advice and not decline
 				break;
 
-			if(!copied)
-			{
-				newmessage.CopyFrom(*message);
-				newmessage.set_currentinterface("saf");
-				newmessage.set_messagefunction(isomessage::ADVICE);
-				copied=1;
-			}
+			printf("Sending saf advice %d, %d, %d\n", message->has_responsecode(), message->responsecode()!=0, message->responsecode());
+
+			newmessage.CopyFrom(*message);
+			newmessage.clear_sourceinterface();
+			newmessage.set_currentinterface("saf");
+			newmessage.set_messagefunction(isomessage::ADVICE);
 
 			if(handleRequest(&newmessage, sfd, rcontext)==2)
 				return 2;
@@ -228,17 +233,11 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 		{
 			for(i=message->sourceinterface_size()-1; i>=1; i--) //send reversal advices to all sources except first
 			{
-				switch(copied)
-				{
-					case 0:
-						newmessage.CopyFrom(*message);
-						newmessage.set_currentinterface("saf");
-						newmessage.set_messagefunction(isomessage::ADVICE);
-						//no break
-					case 1:
-						newmessage.set_messageclass(isomessage::REVERSAL);
-						copied=2;
-				}
+				newmessage.CopyFrom(*message);
+				newmessage.clear_sourceinterface();
+				newmessage.set_currentinterface("saf");
+				newmessage.set_messagefunction(isomessage::ADVICE);
+				newmessage.set_messageclass(isomessage::REVERSAL);
 
 				restoreContext(&newmessage, message, i);
 

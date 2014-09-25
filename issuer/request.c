@@ -7,7 +7,10 @@ int handleRequest(isomessage *message, int sfd)
 	else if(message->messagefunction()==isomessage::ADVICE)
 		message->set_messagefunction(isomessage::ADVICERESP);
 
-	message->set_responsecode(14);
+	//message->set_responsecode(14);
+
+	isomessage::Destination *destination=message->add_destinationinterface();
+	destination->set_name("debit");
 
 	ipcsendmsg(sfd, message, "switch");
 

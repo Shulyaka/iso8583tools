@@ -11,4 +11,4 @@ $(SUBDIRS):
 	$(MAKE) -C $@ $(TARGET)
 
 tcpinterface: lib parser
-switch issuer saf: lib
+switch issuer saf debit: lib
