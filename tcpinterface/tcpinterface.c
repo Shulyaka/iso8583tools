@@ -2,12 +2,20 @@
 #include <errno.h>
 #include <poll.h>
 #include <unistd.h>
+#include <signal.h>
 #include "../parser/parser.h"
 #include "net.h"
 #include "tcp.h"
 #include "../lib/ipc.h"
 
 int declineMsg(isomessage*);
+
+volatile sig_atomic_t sigint_caught=0;
+
+static void catch_sigint(int signo)
+{
+	sigint_caught=1;
+}
 
 int main(void)
 {
@@ -55,6 +63,9 @@ int main(void)
 		return 1;
 	}
 
+	if (signal(SIGINT, catch_sigint) == SIG_ERR)
+		printf("Warning: unable to set the signal handler\n");
+
 	sfd[0].events=POLLIN;
 	sfd[1].events=POLLIN;
 
@@ -62,7 +73,21 @@ int main(void)
 	{
 		printf("Waiting for a connection...\n");
 
+		errno=0;
 		sfd[1].fd=tcpconnect(sfd[2].fd);
+		if(sfd[1].fd==-1)
+		{
+			if(sigint_caught)
+			{
+				printf("onnection aborted^\n");
+				break;
+			}
+
+			printf("Connection error: %s\n", strerror(errno));
+			sleep(1);
+			continue;
+		}
+
 		printf("Connected.\n");
 
 		while (1)
@@ -75,10 +100,16 @@ int main(void)
 
 			size=ppoll(sfd, 2, &ts_timeout, NULL);
 
-			printf("poll: %d: %hd, %hd: %s\n", size, sfd[0].revents, sfd[1].revents, strerror(errno));
+			//printf("poll: %d: %hd, %hd: %s\n", size, sfd[0].revents, sfd[1].revents, strerror(errno));
 
 			if(size==-1)
 			{
+				if(sigint_caught)
+				{
+					printf("losing connection^\n");
+					break;
+				}
+
 				printf("Error: poll (%hd, %hd): %s\n", sfd[0].revents, sfd[1].revents, strerror(errno));
 				if(sfd[1].revents)
 					break;
@@ -332,6 +363,9 @@ int main(void)
 		tcpclose(sfd[1].fd);
 
 		printf("Disconnected.\n");
+
+		if(sigint_caught)
+			break;
 	}
 
 	tcpclose(sfd[2].fd);

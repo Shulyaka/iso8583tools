@@ -4,10 +4,18 @@
 #include <errno.h>
 #include <unistd.h>
 #include <poll.h>
+#include <signal.h>
 #include "../lib/isomessage.pb.h"
 #include "../lib/ipc.h"
 
 #include "reqresp.h"
+
+volatile sig_atomic_t sigint_caught=0;
+
+static void catch_sigint(int signo)
+{
+	sigint_caught=1;
+}
 
 int main(void)
 {
@@ -31,6 +39,9 @@ int main(void)
 	}
 
 	sfd[0].events=POLLIN;
+
+	if (signal(SIGINT, catch_sigint) == SIG_ERR)
+		printf("Warning: unable to set the signal handler\n");
 
 	printf("Connecting to Redis...\n");
 
@@ -57,6 +68,9 @@ int main(void)
 
 		if(ret==-1)
 		{
+			if(sigint_caught)
+				break;
+
 			printf("Error: poll: %s\n", strerror(errno));
 			break;
 		}
@@ -94,6 +108,8 @@ int main(void)
 			continue;
 		}
 	}
+
+	printf("ancelling^\n");
 
 	ipcclose(sfd[0].fd);
 

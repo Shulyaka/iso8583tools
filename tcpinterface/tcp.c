@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include "net.h"
 #include "tcp.h"
 
@@ -53,10 +54,17 @@ int tcpinit(void)
 
 int tcpconnect(int sct) //blocking
 {
-	int sfd;
-	sfd=accept(sct, NULL, NULL);
-//	fcntl(sfd, F_SETFL, O_NONBLOCK);
-	return sfd;
+	struct pollfd sfd;
+
+	sfd.fd=sct;
+	sfd.events=POLLIN;
+
+	if(ppoll(&sfd, 1, NULL, NULL)==-1)
+		return -1;
+
+	sfd.fd=accept(sct, NULL, NULL);
+//	fcntl(sfd.fd, F_SETFL, O_NONBLOCK);
+	return sfd.fd;
 }
 
 //returns:
