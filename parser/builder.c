@@ -322,6 +322,13 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 //	printf("Building %s\n", frm->description);
 
+	if(frm->data && fld->data && strcmp(frm->data, fld->data))
+	{
+		if(debug)
+			printf("Error: Format mandatory data (%s) does not match field data (%s)\n", frm->data, fld->data);
+		return 0;
+	}
+
 	if(fld->data)
 		flength=strlen(fld->data);
 //	else if(frm->lengthFormat==FRM_FIXED)

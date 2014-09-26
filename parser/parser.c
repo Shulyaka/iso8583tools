@@ -642,6 +642,15 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 			return 0;
 	}
 
+	if(frm->data && fld->data && strcmp(frm->data, fld->data))
+	{
+		if(debug)
+			printf("Error: Format mandatory data (%s) does not match field data (%s)\n", frm->data, fld->data);
+		free(fld->data);
+		fld->data=NULL;
+		return 0;
+	}
+
 //	if(fld->data && frm->dataFormat!=FRM_SUBFIELDS)
 //		printf("%s \t[%d] [%s]\n", frm->description, fld->length, fld->data);
 

@@ -36,6 +36,7 @@ typedef struct fldformat
 	unsigned int dataFormat;
 	unsigned int tagFormat;
 	char *description;
+	char *data;
 	unsigned int maxFields;
 	unsigned int fields;
 	struct fldformat **fld;

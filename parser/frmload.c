@@ -291,6 +291,7 @@ int parseFormat(fldformat *frm, char *format)
 {
 	int i, j=0;
 	char tmpc;
+	char *p;
 
 	if(!frm)
 	{
@@ -408,6 +409,14 @@ int parseFormat(fldformat *frm, char *format)
 	frm->maxLength=atoi(format+j);
 	format[i]=tmpc;
 
+	p=strstr(format+i, "=");
+	if(p)
+	{
+		frm->data=(char *)malloc((strlen(p+1)+1)*sizeof(char));
+		strcpy(frm->data, p+1);
+		*p='\0';
+	}
+
 	if(!strcmp(format+i, "SF"))
 	{
 		frm->dataFormat=FRM_SUBFIELDS;
@@ -472,6 +481,8 @@ int parseFormat(fldformat *frm, char *format)
 	{
 		if(debug)
 			printf("Error: Unrecognized data format (%s)\n", format+i);
+		if(p)
+			*p='=';
 		return 0;
 	}
 
@@ -489,11 +500,16 @@ int parseFormat(fldformat *frm, char *format)
 		{
 			if(debug)
 				printf("Error: Unrecognized TLV tag format (%s)\n", format+i+4);
+			if(p)
+				*p='=';
 			return 0;
 		}
 	}
 
-	//printf("Field: %s, Length type: %d, LengthLength: %d, Max Length: %d, data format: %d\n", frm->description, frm->lengthFormat, frm->lengthLength, frm->maxLength, frm->dataFormat);
+	if(p)
+		*p='=';
+
+	//printf("Field: %s, Length type: %d, LengthLength: %d, Max Length: %d, Data format: %d, Mandatory data: %s\n", frm->description, frm->lengthFormat, frm->lengthLength, frm->maxLength, frm->dataFormat, frm->data);
 
 	return 1;
 }

@@ -77,6 +77,9 @@ void freeFormat(fldformat *frm)
 	if(frm->description!=NULL)
 		free(frm->description);
 
+	if(frm->data!=NULL)
+		free(frm->data);
+
 	if(frm->altformat!=NULL)
 		freeFormat(frm->altformat);
 
