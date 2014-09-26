@@ -30,11 +30,12 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 	}
 
 	message->clear_responsecode();
+	message->clear_destinationinterface();
 
 	isomessage::Destination *destination=message->add_destinationinterface();
 	destination->set_name(message->currentinterface());
 
-	message->set_messagetype(message->messagetype() & ~isomessage::RESPONSE);
+	message->set_messagetype((message->messagetype() & ~isomessage::RESPONSE) | isomessage::REPEAT);
 
 	message->set_timeout(message->timeout()-message->firsttransmissiontime());
 
