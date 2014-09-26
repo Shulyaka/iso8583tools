@@ -51,15 +51,10 @@ int main(void)
 		printf("\nIncommingMessage:\n");
 		inmsg.PrintDebugString();
 
-		switch(inmsg.messagefunction())
-		{
-			case isomessage::REQUEST:
-			case isomessage::ADVICE:
-				handleRequest(&inmsg, sfd[0].fd);
-				break;
-			default:
-				printf("Error: Unhandled message function %d\n", inmsg.messagefunction());
-		}		
+		if(inmsg.messagetype() & isomessage::RESPONSE)
+			printf("Error: Responses are not handled\n");
+		else
+			handleRequest(&inmsg, sfd[0].fd);
 	}
 
 	ipcclose(sfd[0].fd);

@@ -190,10 +190,54 @@ int processIncoming(isomessage *visamsg, field *fullmessage, VisaContext *contex
 		return 1;
 	}
 
-//	visamsg->set_isoversion(isomessage::ISO1987);
-	visamsg->set_messageclass((isomessage_MsgClass)(get_field(message, 0)[1]-'0'));
-	visamsg->set_messagefunction((isomessage_MsgFunction)(get_field(message, 0)[2]-'0'));
-	visamsg->set_messageorigin((isomessage_MsgOrigin)(get_field(message, 0)[3]-'0'));
+	switch(get_field(message, 0)[1]-'0')
+	{
+		case 1:
+			visamsg->set_messagetype(isomessage::AUTHORIZATION);
+			break;
+		case 2:
+			visamsg->set_messagetype(isomessage::AUTHORIZATION | isomessage::CLEARING);
+			break;
+		case 4:
+			visamsg->set_messagetype(isomessage::AUTHORIZATION | isomessage::REVERSAL);
+			break;
+		default:
+			printf("Error: Unknown message type: '%s'\n", get_field(message, 0));
+	}
+
+	switch(get_field(message, 0)[2]-'0')
+	{
+		case 0:
+			break;
+		case 1:
+			visamsg->set_messagetype(visamsg->messagetype() | isomessage::RESPONSE);
+			break;
+		case 2:
+			visamsg->set_messagetype(visamsg->messagetype() | isomessage::ADVICE);
+			break;
+		case 3:
+			visamsg->set_messagetype(visamsg->messagetype() | isomessage::ADVICE | isomessage::RESPONSE);
+			break;
+		default:
+			printf("Error: Unknown message type: '%s'\n", get_field(message, 0));
+	}
+
+	switch(get_field(message, 0)[3]-'0')
+	{
+		case 0:
+			break;
+		case 1:
+			visamsg->set_messagetype(visamsg->messagetype() | isomessage::REPEAT);
+			break;
+		case 2:
+			visamsg->set_messagetype(visamsg->messagetype() | isomessage::ISSUER);
+			break;
+		case 3:
+			visamsg->set_messagetype(visamsg->messagetype() | isomessage::ISSUER | isomessage::REPEAT);
+			break;
+		default:
+			printf("Error: Unknown message type: '%s'\n", get_field(message, 0));
+	}
 
 	if(has_field(message, 2))
 		visamsg->set_pan(get_field(message, 2));
@@ -450,7 +494,7 @@ int processIncoming(isomessage *visamsg, field *fullmessage, VisaContext *contex
 			break;
 
 		case 6:
-			visamsg->set_messageclass(isomessage::PREAUTHCOMPLETION);
+			visamsg->set_messagetype(visamsg->messagetype() | isomessage::PREAUTHCOMPLETION);
 			break;
 
 		case 8:
@@ -1109,18 +1153,36 @@ field* processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context
 	strcpy(add_field(header, 6), stationid);
 
 	add_field(message, 0)[0]='0';
-	switch(visamsg->messageclass())
-	{
-		case isomessage::PREAUTHORIZATION:
-		case isomessage::PREAUTHCOMPLETION:
-			message->fld[0]->data[1]='1';
-			break;
-		default:
-			message->fld[0]->data[1]='0'+visamsg->messageclass();
-	}
-	message->fld[0]->data[2]='0'+visamsg->messagefunction();
-	message->fld[0]->data[3]='0'+visamsg->messageorigin();
-	
+
+	if(visamsg->messagetype() & isomessage::REVERSAL)
+		message->fld[0]->data[1]='4';
+	else if(visamsg->messagetype() & isomessage::CLEARING)
+		message->fld[0]->data[1]='2';
+	else
+		message->fld[0]->data[1]='1';
+
+	if(visamsg->messagetype() & isomessage::ADVICE)
+		if(visamsg->messagetype() & isomessage::RESPONSE)
+			message->fld[0]->data[2]='3';
+		else
+			message->fld[0]->data[2]='2';
+	else
+		if(visamsg->messagetype() & isomessage::RESPONSE)
+			message->fld[0]->data[2]='1';
+		else
+			message->fld[0]->data[2]='0';
+
+	if(visamsg->messagetype() & isomessage::ISSUER)
+		if(visamsg->messagetype() & isomessage::REPEAT)
+			message->fld[0]->data[3]='3';
+		else
+			message->fld[0]->data[3]='2';
+	else
+		if(visamsg->messagetype() & isomessage::REPEAT)
+			message->fld[0]->data[3]='1';
+		else
+			message->fld[0]->data[3]='0';
+
 	if(visamsg->has_pan())
 		strcpy(add_field(message, 2), visamsg->pan().c_str());
 
@@ -1308,9 +1370,9 @@ field* processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context
 	if(isRequest(visamsg) && visamsg->has_cardsequencenumber())
 		snprintf(add_field(message, 23), 4, "%03d", visamsg->cardsequencenumber());
 
-	if(visamsg->messageclass()==isomessage::PREAUTHORIZATION)
+	if(visamsg->messagetype() & isomessage::PREAUTHORIZATION)
 		strcpy(add_field(message, 25 ), "00");
-	else if(visamsg->messageclass()==isomessage::PREAUTHCOMPLETION)
+	else if(visamsg->messagetype() & isomessage::PREAUTHCOMPLETION)
 		strcpy(add_field(message, 25 ), "06");
 	else if((visamsg->entrymodeflags() & isomessage::PHONEORDER) || (visamsg->entrymodeflags() & isomessage::RECURRING))
 		strcpy(add_field(message, 25 ), "08");
@@ -1357,7 +1419,7 @@ field* processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context
 	if(visamsg->has_authid())
 		strcpy(add_field(message, 38), visamsg->authid().c_str());
 
-	if(visamsg->has_responsecode())
+	if(visamsg->has_responsecode() || (visamsg->messagetype() & isomessage::RESPONSE))
 		sprintf(add_field(message, 39), "%02d", visamsg->responsecode());
 
 	if(visamsg->has_terminalid())

@@ -80,15 +80,11 @@ int main(void)
 		printf("\nIncommingMessage:\n");
 		inmsg.PrintDebugString();
 
-		switch(inmsg.messagefunction())
-		{
-			case isomessage::ADVICERESP:
-				ret=handleResponse(&inmsg, sfd[0].fd, rcontext);
-				break;
-			default:
-				ret=0;
-				printf("Error: Unhandled message function %d\n", inmsg.messagefunction());
-		}
+		ret=0;
+		if(inmsg.messagetype() & isomessage::RESPONSE)
+			ret=handleResponse(&inmsg, sfd[0].fd, rcontext);
+		else
+			printf("Error: Requests are not handled\n");
 
 		if(ret==2)
 		{

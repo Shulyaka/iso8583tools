@@ -14,7 +14,7 @@ int routeMessage(isomessage *message, char *dest)
 	{
 		destination=message->add_destinationinterface();
 
-		if(message->messageorigin()==isomessage::ISSUER || message->messageorigin()==isomessage::ISSREPEAT) //no real logic yet. Will be changed to something more clever later.
+		if(message->messagetype() & isomessage::ISSUER) //no real logic yet. Will be changed to something more clever later.
 			destination->set_name("visa");
 		else
 			destination->set_name("issuer");
@@ -27,7 +27,7 @@ int routeMessage(isomessage *message, char *dest)
 
 int makeKey(isomessage *message, char *key, int size)
 {
-	snprintf(key, size, "switch%s%s%d", message->currentinterface().c_str(), (message->messagefunction()==isomessage::ADVICE || message->messagefunction()==isomessage::ADVICERESP)?"A":"R", message->rrn());
+	snprintf(key, size, "switch%s%s%d", message->currentinterface().c_str(), (message->messagetype() & isomessage::ADVICE)?"A":"N", message->rrn());
 
 	return 0;
 }
@@ -45,7 +45,7 @@ int mergeResponse(isomessage *message, isomessage *newmessage)
 		destination->CopyFrom(newmessage->destinationinterface(i));
 	}
 
-	message->set_messagefunction(newmessage->messagefunction());
+	message->set_messagetype(message->messagetype() | isomessage::RESPONSE);
 
 	if(newmessage->has_responsecode())
 		message->set_responsecode(newmessage->responsecode());
@@ -121,10 +121,7 @@ int handleRequest(isomessage *message, int sfd, redisContext *rcontext)
 	{
 		printf("Sending decline\n");
 
-		if(message->messagefunction()==isomessage::REQUEST)
-			message->set_messagefunction(isomessage::REQUESTRESP);
-		else if(message->messagefunction()==isomessage::ADVICE)
-			message->set_messagefunction(isomessage::ADVICERESP);
+		message->set_messagetype(message->messagetype() | isomessage::RESPONSE);
 
 		message->set_responsecode(96);
 
@@ -147,10 +144,7 @@ int reverseRequest(isomessage *message, int sfd, redisContext *rcontext)
 		return 1;
 	}
 
-	if(message->messagefunction()==isomessage::REQUEST)
-		message->set_messagefunction(isomessage::REQUESTRESP);
-	else if(message->messagefunction()==isomessage::ADVICE)
-		message->set_messagefunction(isomessage::ADVICERESP);
+	message->set_messagetype(message->messagetype() | isomessage::RESPONSE);
 
 	message->set_responsecode(96);
 
@@ -194,11 +188,11 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 //	printf("Merged message:\n");
 //	message->PrintDebugString();
 
-	if(!(message->messageclass()==isomessage::REVERSAL && message->messagefunction()==isomessage::ADVICERESP && !strcmp(message->sourceinterface(0).name().c_str(),"saf"))) //only accept other destinations if not auto reversal advice
+	if((message->messagetype() & (isomessage::REVERSAL | isomessage::ADVICE)) != (isomessage::REVERSAL | isomessage::ADVICE) || strcmp(message->sourceinterface(0).name().c_str(),"saf")) //only accept other destinations if not auto reversal advice
 	{
 		for(i=message->destinationinterface_size()-1; i>=0; i--) //send pending advices
 		{
-			if(!(message->destinationinterface(i).flags()&isomessage::SAFADVICE) && !(message->messagefunction()==isomessage::ADVICERESP) && !(message->has_responsecode() && message->responsecode()!=0)) //only break if not advice and not decline
+			if(!(message->destinationinterface(i).flags()&isomessage::SAFADVICE) && !(message->messagetype() & isomessage::ADVICE) && !(message->has_responsecode() && message->responsecode()!=0)) //only break if not advice and not decline
 				break;
 
 			printf("Sending saf advice %d, %d, %d\n", message->has_responsecode(), message->responsecode()!=0, message->responsecode());
@@ -206,7 +200,7 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 			newmessage.CopyFrom(*message);
 			newmessage.clear_sourceinterface();
 			newmessage.set_currentinterface("saf");
-			newmessage.set_messagefunction(isomessage::ADVICE);
+			newmessage.set_messagetype(newmessage.messagetype() | isomessage::ADVICE);
 
 			if(handleRequest(&newmessage, sfd, rcontext)==2)
 				return 2;
@@ -214,7 +208,7 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 			message->mutable_destinationinterface()->RemoveLast();
 		}
 
-		if(message->responsecode()==0)
+		if(!message->has_responsecode() || message->responsecode()==0)
 		{
 			if(i>=0) //send to next remaining destination
 			{
@@ -225,7 +219,7 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 				else if(i<0)
 					return 1;
 
-				message->set_messagefunction(isomessage::REQUEST);
+				message->set_messagetype(message->messagetype() & ~isomessage::RESPONSE);
 				return handleRequest(message, sfd, rcontext);
 			}
 		}
@@ -236,8 +230,7 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 				newmessage.CopyFrom(*message);
 				newmessage.clear_sourceinterface();
 				newmessage.set_currentinterface("saf");
-				newmessage.set_messagefunction(isomessage::ADVICE);
-				newmessage.set_messageclass(isomessage::REVERSAL);
+				newmessage.set_messagetype((newmessage.messagetype() & ~isomessage::RESPONSE) | (isomessage::REVERSAL | isomessage::ADVICE));
 
 				restoreContext(&newmessage, message, i);
 

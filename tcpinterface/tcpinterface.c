@@ -344,15 +344,7 @@ int main(void)
 
 int isRequest(isomessage *message)
 {
-	switch(message->messagefunction())
-	{
-		case isomessage::REQUEST:
-			return 1;
-		case isomessage::ADVICE:
-			return 1;
-		default:
-			return 0;
-	}
+	return !(message->messagetype() & isomessage::RESPONSE);
 }
 
 int isDomestic(isomessage *message)
@@ -365,17 +357,10 @@ int isDomestic(isomessage *message)
 
 int declineMsg(isomessage *message)
 {
-	switch(message->messagefunction())
-	{
-		case isomessage::REQUEST:
-			message->set_messagefunction(isomessage::REQUESTRESP);
-			break;
-		case isomessage::ADVICE:
-			message->set_messagefunction(isomessage::ADVICERESP);
-			break;
-		default:
-			return 1;
-	}
+	if(message->messagetype() & isomessage::RESPONSE)
+		return 1;
+
+	message->set_messagetype(message->messagetype() | isomessage::RESPONSE);
 
 	message->set_responsecode(96);
 

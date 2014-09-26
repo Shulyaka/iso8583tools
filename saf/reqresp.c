@@ -17,6 +17,12 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 		return 0;
 	}
 
+	if(!(message->messagetype() & isomessage::ADVICE))
+	{
+		printf("Received message is not advice response. Ignoring.\n");
+		return 0;
+	}
+
 	if(!strncmp(message->currentinterface().c_str(), "saf", 3))
 	{
 		printf("Error: Received a message from myself! It shouldn't happen!\n");
@@ -28,7 +34,7 @@ int handleResponse(isomessage *message, int sfd, redisContext *rcontext)
 	isomessage::Destination *destination=message->add_destinationinterface();
 	destination->set_name(message->currentinterface());
 
-	message->set_messagefunction(isomessage::ADVICE);
+	message->set_messagetype(message->messagetype() & ~isomessage::RESPONSE);
 
 	message->set_timeout(message->timeout()-message->firsttransmissiontime());
 
@@ -71,10 +77,8 @@ int handleExpired(char *key, int sfd, redisContext *rcontext)
 	if(strcmp(message.currentinterface().c_str(), "saf")) //send the response on behalf of a failed interface
 	{
 		message.clear_destinationinterface();
-		if(message.messagefunction()==isomessage::REQUEST)
-			message.set_messagefunction(isomessage::REQUESTRESP);
-		else if(message.messagefunction()==isomessage::ADVICE)
-			message.set_messagefunction(isomessage::ADVICERESP);
+
+		message.set_messagetype(message.messagetype() | isomessage::RESPONSE);
 		message.set_responsecode(96);
 
 		if(ipcsendmsg(sfd, &message, "switch")<=0)
@@ -83,7 +87,7 @@ int handleExpired(char *key, int sfd, redisContext *rcontext)
 			return 1;
 		}
 
-		if(message.messagefunction()==isomessage::ADVICERESP) //don't send reversal for advices - they would be resent by saf instead
+		if(message.messagetype() & isomessage::ADVICE) //don't send reversal for advices - they would be resent by saf instead
 		{
 			if(!memcmp(key, "saf", 3))
 			{
@@ -97,8 +101,7 @@ int handleExpired(char *key, int sfd, redisContext *rcontext)
 			return 0;
 		}
 
-		message.set_messageclass(isomessage::REVERSAL);
-		message.set_messagefunction(isomessage::ADVICE);
+		message.set_messagetype((message.messagetype() & ~isomessage::RESPONSE) | (isomessage::REVERSAL | isomessage::ADVICE));
 		isomessage::Destination *destination=message.add_destinationinterface();
 		destination->set_name(message.currentinterface());
 		message.set_currentinterface("saf");

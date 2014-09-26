@@ -9,7 +9,7 @@ switch: switch.o reqresp.o ../lib/isomessage.pb.o ../lib/ipc.o ../lib/kvs.o
 switch.o: switch.c ../lib/ipc.h ../lib/isomessage.pb.h reqresp.h
 		g++ -c switch.c
 
-reqresp.o: reqresp.c ../lib/ipc.h ../lib/kvs.h reqresp.h
+reqresp.o: reqresp.c ../lib/ipc.h ../lib/kvs.h ../lib/isomessage.pb.h reqresp.h
 		g++ -c reqresp.c
 
 %.o: %.c

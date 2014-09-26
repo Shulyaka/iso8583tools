@@ -46,6 +46,8 @@ message isomessage
 		REJECT = 0x20;
 		REPEAT = 0x40;
 		ISSUER = 0x80;
+		PREAUTHORIZATION = 0x100;
+		PREAUTHCOMPLETION = 0x200;
 	}
 
 	required uint32 MessageType = 12 [default = 0x4];

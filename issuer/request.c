@@ -2,10 +2,7 @@
 
 int handleRequest(isomessage *message, int sfd)
 {
-	if(message->messagefunction()==isomessage::REQUEST)
-		message->set_messagefunction(isomessage::REQUESTRESP);
-	else if(message->messagefunction()==isomessage::ADVICE)
-		message->set_messagefunction(isomessage::ADVICERESP);
+	message->set_messagetype(message->messagetype() | isomessage::RESPONSE);
 
 	//message->set_responsecode(14);
 

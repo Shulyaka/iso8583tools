@@ -64,21 +64,13 @@ int main(void)
 		printf("\nIncommingMessage:\n");
 		inmsg.PrintDebugString();
 
-		switch(inmsg.messagefunction())
+		if(inmsg.messagetype() & isomessage::RESPONSE)
+			ret=handleResponse(&inmsg, sfd[0].fd, rcontext);
+		else
 		{
-			case isomessage::REQUEST:
-			case isomessage::ADVICE:
-				ret=handleRequest(&inmsg, sfd[0].fd, rcontext);
-				if(ret)
-					reverseRequest(&inmsg, sfd[0].fd, rcontext);
-				break;
-			case isomessage::REQUESTRESP:
-			case isomessage::ADVICERESP:
-				ret=handleResponse(&inmsg, sfd[0].fd, rcontext);
-				break;
-			default:
-				ret=0;
-				printf("Error: Unhandled message function %d\n", inmsg.messagefunction());
+			ret=handleRequest(&inmsg, sfd[0].fd, rcontext);
+			if(ret)
+				reverseRequest(&inmsg, sfd[0].fd, rcontext);
 		}
 
 		if(ret==2)
