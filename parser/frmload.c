@@ -4,11 +4,18 @@
 
 #include "parser.h"
 
-fldformat *findFrmParent(fldformat*, char*, int*);
+typedef struct link
+{
+	char name[256];
+	fldformat *frm;
+} link;
+
+fldformat *findFrmParent(link**, int*, char*, int*, fldformat *frm=NULL);
 //fldformat *newFrmChild(fldformat*, unsigned int);
 //void removeFrmChild(fldformat*, unsigned int);
-int parseFormat(fldformat*, char*);
-int linkFrmChild(fldformat*, unsigned int, fldformat*);
+int parseFormat(fldformat*, char*, link**, int*);
+int linkFrmChild(fldformat*, unsigned int, fldformat*, link*);
+int findLinkNumber(link**, int*, const char*, int maxlen=-1, fldformat *frm=NULL);
 
 fldformat* load_format(char *filename, fldformat *frmroot)
 {
@@ -22,9 +29,11 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 	int k=0;
 	fldformat *frmtmp, *frmpar, **altfrmpar=NULL;
 	FILE *file;
+	link *links=NULL;
+	int ln=0;
 
 	if(!frmroot)
-		frmroot=(fldformat*)calloc(1, sizeof(fldformat));
+		findLinkNumber(&links, &ln, (char*)"message");
 	else
 	{
 		for(; frmroot->altformat!=NULL; )
@@ -32,14 +41,18 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 
 		frmroot->altformat=(fldformat*)calloc(1, sizeof(fldformat));
 		altfrmpar=&(frmroot->altformat);
-		frmroot=frmroot->altformat;
+		frmroot->altformat->lengthFormat=FRM_UNKNOWN;
+		frmroot->altformat->maxLength=1024;
+		frmroot->altformat->dataFormat=FRM_SUBFIELDS;
+		frmroot->altformat->maxFields=196;
+		findLinkNumber(&links, &ln, (char *)"message", -1, frmroot->altformat);
 	}
 	
 	if((file=fopen(filename, "r"))==NULL)
 	{
 		if(debug)
 			perror("Error: Unable to open file\n");
-		freeFormat(frmroot);
+		freeFormat(links[0].frm);
 		if(altfrmpar)
 			*altfrmpar=NULL;
 		return NULL;
@@ -79,35 +92,15 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 
 		//printf("Number[%s] format[%s] descr[%s]\n", number, format, descr);
 
-		if(k==0 && !strcmp(number, "message"))
-		{
-			frmroot->description=(char*)malloc(strlen(descr)+1);
-			strcpy(frmroot->description, descr);
-
-			parseFormat(frmroot, format);
-
-			k++;
-			continue;
-		}
-
-		if(k==0)
-		{
-			if(debug)
-				printf("Warning: No 'message' format, implying default\n");
-			frmroot->description=(char*)malloc(strlen("ISO8583 Message")+1);
-			strcpy(frmroot->description, "ISO8583 Message");
-			
-			parseFormat(frmroot, (char*)"U1024SF");
-			
-			k++;
-		}
-
-		frmpar=findFrmParent(frmroot, number, &j);
+		frmpar=findFrmParent(&links, &ln, number, &j);
 		if(!frmpar)
 		{
-			if(debug)
-				printf("Error: Unable to parse field number, skipping:\n%s\n", line);
-			continue;
+			if(j<0)
+			{
+				if(debug)
+					printf("Error: Unable to parse field number, skipping:\n%s\n", line);
+				continue;
+			}
 		}
 
 		frmtmp=(fldformat*)calloc(1, sizeof(fldformat));
@@ -117,7 +110,7 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 		strcpy(frmtmp->description+strlen(frmtmp->description), ". ");
 		strcpy(frmtmp->description+strlen(frmtmp->description), descr);
 
-		if (!parseFormat(frmtmp, format))
+		if (!parseFormat(frmtmp, format, &links, &ln))
 		{
 			if(debug)
 				printf("Error: Unable to parse format, skipping:\n%s\n", line);
@@ -125,7 +118,7 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 			continue;
 		}
 
-		if(!linkFrmChild(frmpar, j, frmtmp))
+		if(!linkFrmChild(frmpar, j, frmtmp, links))
 		{
 			if(debug)
 				printf("Error: Unable to add format, skipping:\n%s\n", line);
@@ -137,6 +130,22 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 	}
 	fclose(file);
 
+	for(i=1; i<ln; i++)
+	{
+		freeFormat(links[i].frm);
+	}
+
+	frmtmp=links[0].frm;
+
+	free(links);
+
+	if(!frmtmp->description)
+	{
+		printf("Warning: No 'message' format, implying default\n");
+		frmtmp->description=(char*)malloc(strlen("No description")+1);
+		strcpy(frmtmp->description, "No description");
+	}
+
 	if(debug)
 		printf("Info: Loaded %d fields\n", k);
 
@@ -144,51 +153,104 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 	{
 		if(debug)
 			printf("Error: No fields loaded\n");
-		freeFormat(frmroot);
+		freeFormat(frmtmp);
 		if(altfrmpar)
 			*altfrmpar=NULL;
 		return NULL;
 	}
 
-	return frmroot;
+	return frmtmp;
 }
 
-fldformat *findFrmParent(fldformat *frm, char *number, int *position)
+int findLinkNumber(link **links, int *ln, const char *name, int maxlen, fldformat *frm)
+{
+	int i=0;
+
+	if(maxlen<0)
+		maxlen=strlen(name);
+
+	if(maxlen)
+	{
+		for(; i<*ln; i++)
+			if(!strncmp((*links)[i].name, name, maxlen))
+				break;
+	}
+
+	if(i==*ln)
+	{
+		*links=(link*)realloc(*links, (*ln+1)*sizeof(link));
+		*ln=*ln+1;
+		strncpy((*links)[i].name, name, maxlen);
+		if(!frm)
+		{
+			frm=(fldformat*)calloc(1, sizeof(fldformat));
+			frm->lengthFormat=FRM_UNKNOWN;
+			frm->maxLength=1024;
+			frm->dataFormat=FRM_SUBFIELDS;
+			frm->maxFields=196;
+		}
+		(*links)[i].frm=frm;
+	}
+
+	return i;
+}
+
+fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fldformat *frm)
 {
 	unsigned int i;
-	unsigned int l=strlen(number);
+	unsigned int l;
 	fldformat *altformat;
+	*position=-1;
 	
-	if(!frm)
+	if((!frm && !links) || (frm && links))
 	{
 		if(debug)
-			printf("Error: Null pointer to 1st arg\n");
+			printf("Error: Either one of frm and links must be provided\n");
 		return NULL;
 	}
 
-	if(!number)
+	if(!ln)
 	{
 		if(debug)
 			printf("Error: Null pointer to 2nd arg\n");
 		return NULL;
 	}
 
+	if(!number)
+	{
+		if(debug)
+			printf("Error: Null pointer to 3rd arg\n");
+		return NULL;
+	}
+
 	if(!position)
         {
 		if(debug)
-                	printf("Error: Null pointer to 3rd arg\n");
+                	printf("Error: Null pointer to 4th arg\n");
                 return NULL;
         }
+
+	l=strlen(number);
 
 	for(i=0; i<l; i++)
 		if((number[i]<'0' || number[i]>'9') && number[i]!='*')
 			break;
+
 	if(i==0)
 	{
-		if(debug)
-			printf("Error: Empty field number (%s)\n", number);
+		for(; i<l; i++)
+			if(number[i]=='.')
+				break;
+		if(links)
+			*position=findLinkNumber(links, ln, number, i);
+		else
+			*position=i;
 		return NULL;
 	}
+
+	if(links)
+		frm=(*links)[findLinkNumber(links, ln, number, 0)].frm;
+
 	if(i==l)
 	{
 		if(number[i-1]=='*')
@@ -196,21 +258,21 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 		else	
 			*position=atoi(number);
 
-		if(frm->altformat==NULL)
-			return frm;
-
-		//printf("Info: Using alternate format(%s)\n", number);
-
 		for(altformat=frm; altformat->altformat!=NULL; )
-			 altformat=altformat->altformat;
+			altformat=altformat->altformat;
 
 		return altformat;
 	}
 
 	if(number[i]!='.')
 	{
-		if(debug)
-			printf("Error: Unrecognized field number (%s)\n", number);
+		for(; i<l; i++)
+			if(number[i]=='.')
+				break;
+		if(links)
+			*position=findLinkNumber(links, ln, number, i);
+		else
+			*position=i;
 		return NULL;
 	}
 
@@ -226,26 +288,49 @@ fldformat *findFrmParent(fldformat *frm, char *number, int *position)
 	if(frm->fields < *position + 1)
 	{
 		if(debug)
-			printf("Error: Parent format not loaded yet [%s][%d]\n", number, *position);
+			printf("Warning: Parent format not loaded yet [%s][%d]\n", number, *position);
+
+		if(links)
+			*position=findLinkNumber(links, ln, number, *position+i);
+		else
+			*position=*position+i;
 		return NULL;
 	}
 
 	if(frm->fld[*position]->altformat==NULL)
-		return findFrmParent(frm->fld[*position], number+i+1, position);
+	{
+		altformat=findFrmParent(NULL, ln, number+i+1, position, frm->fld[*position]);
+		if(altformat)
+			return altformat;
+
+		if(links)
+			*position=findLinkNumber(links, ln, number, *position+i+1);
+		else
+			*position=*position+i+1;
+		return NULL;
+	}
 
 	//printf("Info: Using alternate format(%s)\n", number);
 
 	for(altformat=frm->fld[*position]; altformat->altformat!=NULL; )
 		 altformat=altformat->altformat;
 
-	return findFrmParent(altformat, number+i+1, position);
+	altformat=findFrmParent(NULL, ln, number+i+1, position, altformat);
+	if(altformat)
+		return altformat;
+
+	if(links)
+		*position=findLinkNumber(links, ln, number, *position+i+1);
+	else
+		*position=*position+i+1;
+	return NULL;
 }
 
-int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld)
+int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld, link *links)
 {
 	fldformat *altformat;
 
-	if(!frm)
+	if(!frm && !links)
 	{
 		if(debug)
 			printf("Error: Null pointer to first arg\n");
@@ -257,6 +342,30 @@ int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld)
 		if(debug)
 			printf("Error: Null pointer to third arg\n");
 		return 0;
+	}
+
+	if(!frm)
+	{
+		if(links[n].frm->description) //already loaded, adding as altformat
+		{
+			for(altformat=links[n].frm; altformat->altformat!=NULL; )
+				 altformat=altformat->altformat;
+			altformat->altformat=cld;
+		}
+		else	//replacing format fields of the link
+		{
+			if(cld->altformat || cld->fields || cld->fld)
+			{
+				printf("Error: The child has grown up\n");
+				return 0;
+			}
+
+			cld->fields=links[n].frm->fields;
+			cld->fld=links[n].frm->fld;
+			cld->altformat=links[n].frm->altformat;
+			links[n].frm=cld;
+		}
+		return 1;
 	}
 
 	if(n+1 > frm->maxFields)
@@ -287,11 +396,12 @@ int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld)
 	return 1;
 }
 
-int parseFormat(fldformat *frm, char *format)
+int parseFormat(fldformat *frm, char *format, link **links, int *ln)
 {
 	int i, j=0;
 	char tmpc;
 	char *p;
+	fldformat *tmpfrm;
 
 	if(!frm)
 	{
@@ -379,6 +489,23 @@ int parseFormat(fldformat *frm, char *format)
 			frm->lengthFormat=FRM_EMVL;
 			frm->lengthLength=1;
 			j=1;
+			break;
+
+		case 'R':
+			tmpfrm=findFrmParent(links, ln, format+1, &j);
+			if(!tmpfrm)
+				copyFormat(frm, (*links)[j].frm);
+			else
+				copyFormat(frm, tmpfrm->fld[j]);
+
+			if(frm->description)
+			{
+				free(frm->description);
+				frm->description=NULL;
+			}
+
+			return 1;
+
 			break;
 
 		default:

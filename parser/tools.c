@@ -55,7 +55,7 @@ void print_message(field *fld)
 	}
 }
 
-void freeFormat(fldformat *frm)
+void emptyFormat(fldformat *frm)
 {
 	unsigned int i; 
 
@@ -83,7 +83,70 @@ void freeFormat(fldformat *frm)
 	if(frm->altformat!=NULL)
 		freeFormat(frm->altformat);
 
+	memset(frm, 0, sizeof(fldformat));
+}
+
+void freeFormat(fldformat *frm)
+{
+	unsigned int i; 
+
+	if(!frm)
+	{
+		if(debug)
+			printf("Warning: already freed\n");
+		return;       
+	}      
+
+	emptyFormat(frm);
+
 	free(frm);
+}
+
+void copyFormat(fldformat *to, fldformat *from)
+{
+	unsigned int i;
+
+	if(!from || !to)
+	{
+		printf("Error: Field not provided\n");
+		return;
+	}
+
+	emptyFormat(to);
+
+	to->lengthFormat=from->lengthFormat;
+	to->lengthLength=from->lengthLength;
+	to->lengthInclusive=from->lengthInclusive;
+	to->maxLength=from->maxLength;
+	to->dataFormat=from->dataFormat;
+	to->tagFormat=from->tagFormat;
+	if(from->description)
+	{
+		to->description=(char *)malloc((strlen(from->description)+1)*sizeof(char));
+		strcpy(to->description, from->description);
+	}
+	if(from->data)
+	{
+		to->data=(char *)malloc((strlen(from->data)+1)*sizeof(char));
+		strcpy(to->data, from->data);
+	}
+	to->maxFields=from->maxFields;
+	to->fields=from->fields;
+	if(from->fld)
+	{
+		to->fld=(fldformat**)calloc(from->maxFields,sizeof(fldformat*));
+		for(i=0; i < from->fields; i++)
+			if(from->fld[i])
+			{
+				to->fld[i]=(fldformat*)malloc(sizeof(fldformat));
+				copyFormat(to->fld[i], from->fld[i]);
+			}
+	}
+	if(from->altformat)
+	{
+		to->altformat=(fldformat*)malloc(sizeof(fldformat));
+		copyFormat(to->altformat, from->altformat);
+	}
 }
 
 void emptyField(field *fld)

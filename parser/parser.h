@@ -55,9 +55,11 @@ typedef struct field
 } field;
 
 fldformat *load_format(char*, fldformat *frmroot=NULL);
+void emptyFormat(fldformat*);
 void freeFormat(fldformat*);
 void emptyField(field*);
 void freeField(field*);
+void copyFormat(fldformat *to, fldformat *from);
 field *parse_message(char*, unsigned int, fldformat*);
 unsigned int build_message(char*, unsigned int, field*);
 unsigned int get_length(field*);
