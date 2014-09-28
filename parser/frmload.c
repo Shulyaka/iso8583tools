@@ -412,8 +412,16 @@ int parseFormat(fldformat *frm, char *format)
 	p=strstr(format+i, "=");
 	if(p)
 	{
-		frm->data=(char *)malloc((strlen(p+1)+1)*sizeof(char));
-		strcpy(frm->data, p+1);
+		if(p[1])
+		{
+			frm->data=(char *)malloc((strlen(p+1)+1)*sizeof(char));
+			strcpy(frm->data, p+1);
+		}
+		else
+		{
+			frm->data=(char *)malloc(2*sizeof(char));
+			strcpy(frm->data, " "); //replacing empty string with a space character. It is a feature, not bug.
+		}
 		*p='\0';
 	}
 

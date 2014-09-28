@@ -222,6 +222,8 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 		if(debug)
 			printf("Info: parse_field: Retrying with alternate format\n");
 
+	emptyField(fld);
+
 	for(i=0; frm->altformat!=NULL; i++)
 	{
 		frm=frm->altformat;
@@ -231,6 +233,8 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 		length=parse_field_alt(buf, maxlength, fld);
 		if(length)
 			return length;
+
+		emptyField(fld);
 	}
 
 	return 0;
@@ -355,14 +359,26 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 					return 0;
 				}	
 
-				if(frm->fld[i] && (bitmap_found==-1 || (bitmap_found!=-1 && fld->fld[bitmap_found]->length > i-bitmap_found-1 && fld->fld[bitmap_found]->data[i-bitmap_found-1]=='1')))
+				if(frm->fld[i] && (bitmap_found==-1 || (fld->fld[bitmap_found]->length > i-bitmap_found-1 && fld->fld[bitmap_found]->data[i-bitmap_found-1]=='1')))
 				{
 					if(frm->fld[i]->dataFormat==FRM_BITMAP || frm->fld[i]->dataFormat==FRM_ISOBITMAP)
 						bitmap_found=i;
 					
 					fld->fld[i]=(field*)calloc(1, sizeof(field));
 					fld->fld[i]->frm=frm->fld[i];
-					sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i]);
+
+					if(frm->fld[i]->lengthFormat==FRM_UNKNOWN && i+1 < frm->fields && frm->fld[i+1] && frm->fld[i+1]->data && (bitmap_found==-1 || (fld->fld[bitmap_found]->length >= i-bitmap_found && fld->fld[bitmap_found]->data[i-bitmap_found]=='1')) && (j=strstr(buf+pos+1, frm->fld[i+1]->data)-buf-pos) && j < fld->length+lenlen-pos) //only probe for the next field to be fixed-data and ignoring its altformat. This could be replaced with a more proper algorithm which would however have a greateky increased computational complexity and I have not met any cases where it would be really necessary. Please let me know if you find one. And only look for the first occurence of the next field fixed data.
+					{
+						sflen=parse_field(buf+pos, j, fld->fld[i]);
+						if(!sflen)
+						{
+							if(debug)
+								printf("Error: unable to parse unknown-length field with following delimiter. Retrying without delimiter. Please report this error\n");
+							sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i]);
+						}
+					}
+					else
+						sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i]);
 					if(!sflen)
 					{
 						if(debug)

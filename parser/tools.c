@@ -86,7 +86,7 @@ void freeFormat(fldformat *frm)
 	free(frm);
 }
 
-void freeField(field *fld)
+void emptyField(field *fld)
 {
 	unsigned int i;
 
@@ -110,6 +110,22 @@ void freeField(field *fld)
 
 	if(fld->tag!=NULL)
 		free(fld->tag);
+
+	memset(fld, 0, sizeof(field));
+}
+
+void freeField(field *fld)
+{
+	unsigned int i;
+
+	if(!fld)
+	{
+		if(debug)
+			printf("Warning: already freed\n");
+		return;
+	}
+
+	emptyField(fld);
 
 	free(fld);
 }
