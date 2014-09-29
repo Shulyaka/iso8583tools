@@ -47,7 +47,7 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 		frmroot->altformat->maxFields=196;
 		findLinkNumber(&links, &ln, (char *)"message", -1, frmroot->altformat);
 	}
-	
+
 	if((file=fopen(filename, "r"))==NULL)
 	{
 		if(debug)
@@ -363,7 +363,9 @@ int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld, link *links)
 			cld->fields=links[n].frm->fields;
 			cld->fld=links[n].frm->fld;
 			cld->altformat=links[n].frm->altformat;
-			links[n].frm=cld;
+
+			mirrorFormat(links[n].frm, cld);
+			free(cld);
 		}
 		return 1;
 	}

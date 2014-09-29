@@ -102,6 +102,33 @@ void freeFormat(fldformat *frm)
 	free(frm);
 }
 
+// copy pointers but not data -- use with care (may create loops. And don't try to recursively free both formats!)
+void mirrorFormat(fldformat *to, fldformat *from)
+{
+	unsigned int i;
+
+	if(!from || !to)
+	{
+		printf("Error: Field not provided\n");
+		return;
+	}
+
+	emptyFormat(to);
+
+	to->lengthFormat=from->lengthFormat;
+	to->lengthLength=from->lengthLength;
+	to->lengthInclusive=from->lengthInclusive;
+	to->maxLength=from->maxLength;
+	to->dataFormat=from->dataFormat;
+	to->tagFormat=from->tagFormat;
+	to->description=from->description;
+	to->data=from->data;
+	to->maxFields=from->maxFields;
+	to->fields=from->fields;
+	to->fld=from->fld;
+	to->altformat=from->altformat;
+}
+
 void copyFormat(fldformat *to, fldformat *from)
 {
 	unsigned int i;

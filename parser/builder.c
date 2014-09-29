@@ -105,16 +105,11 @@ unsigned int get_length(field *fld)
 			break;
 
 		case FRM_BCDSF:
+			memset(&tmpfrm, 0, sizeof(fldformat));
+			mirrorFormat(&tmpfrm, frm);
 			tmpfrm.lengthFormat=FRM_UNKNOWN;
 			tmpfrm.lengthLength=0;
-			tmpfrm.maxLength=frm->maxLength;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
-			tmpfrm.tagFormat=0;
-			tmpfrm.description=frm->description;
-			tmpfrm.maxFields=frm->maxFields;
-			tmpfrm.fields=frm->fields;
-			tmpfrm.fld=frm->fld;
-
 			fld->frm=&tmpfrm;
 
 			flength=get_length(fld);

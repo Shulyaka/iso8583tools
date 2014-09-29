@@ -415,17 +415,14 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 					printf("Error: Not BCD field\n");
 				return 0;
 			}
-			
+
+			memset(&tmpfrm, 0, sizeof(fldformat));
+			mirrorFormat(&tmpfrm, frm);
 			tmpfrm.lengthFormat=FRM_FIXED;
 			tmpfrm.lengthLength=0;
 			tmpfrm.maxLength=fld->length;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
-			tmpfrm.tagFormat=0;
-			tmpfrm.description=frm->description;
-			tmpfrm.data=frm->data;
-			tmpfrm.maxFields=frm->maxFields;
-			tmpfrm.fields=frm->fields;
-			tmpfrm.fld=frm->fld;
+
 			fld->frm=&tmpfrm;
 
 			parse_field(fld->data, fld->length, fld);
