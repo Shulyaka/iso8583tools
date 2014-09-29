@@ -220,7 +220,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 
 	if(frm->altformat)
 		if(debug)
-			printf("Info: parse_field: Retrying with alternate format\n");
+			printf("Info: parse_field: Retrying with alternate format %s\n", frm->altformat->description);
 
 	emptyField(fld);
 
