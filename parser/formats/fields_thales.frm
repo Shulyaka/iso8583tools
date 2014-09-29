@@ -1,37 +1,37 @@
 #Yes, the parser is capable of parse and build Racal messages!
 #Number		Format		Description
 
-key		F17SF		Encryption key format template
+key		F33SF		Encryption key format template
 key.0		F1ASC=U		Key scheme (Variant)
-key.1		F16HEX		Double length DES key
+key.1		F32ASC		Double length DES key
 key		F5SF		Encryption key
 key.0		F1ASC=U		Key scheme (Double length DES Variant)
 key.1		F1ASC=K		User storage indicator
 key.2		F3ASC		key index
-key		F9SF		Encryption key
+key		F17SF		Encryption key
 key.0		F1ASC=Z		Key scheme (Variant)
-key.1		F8HEX		Single length DES key
+key.1		F16ASC		Single length DES key
 key		F5SF		Encryption key
 key.0		F1ASC=Z		Key scheme (Single length DES Variant)
 key.1		F1ASC=K		User storage indicator
 key.2		F3ASC		key index
-key		F25SF		Encryption key
+key		F49SF		Encryption key
 key.0		F1ASC=T		Key scheme (Variant)
-key.1		F24HEX		Triple length DES key
+key.1		F48ASC		Triple length DES key
 key		F5SF		Encryption key
 key.0		F1ASC=T		Key scheme (Triple length DES Variant)
 key.1		F1ASC=K		User storage indicator
 key.2		F3ASC		key index
-key		F17SF		Encryption key template
+key		F33SF		Encryption key template
 key.0		F1ASC=X		Key scheme
-key.1		F16HEX		Double length DES key
+key.1		F32ASC		Double length DES key
 key		F5SF		Encryption key
 key.0		F1ASC=X		Key scheme (Double length DES)
 key.1		F1ASC=K		User storage indicator
 key.2		F3ASC		key index
-key		F25SF		Encryption key
+key		F49SF		Encryption key
 key.0		F1ASC=Y		Key scheme
-key.1		F24HEX		Triple length DES key
+key.1		F48ASC		Triple length DES key
 key		F5SF		Encryption key
 key.0		F1ASC=Y		Key scheme (Triple length DES)
 key.1		F1ASC=K		User storage indicator
@@ -39,8 +39,8 @@ key.2		F3ASC		key index
 key		F4SF		Encryption key (Single length DES)
 key.1		F1ASC=K		User storage indicator
 key.2		F3ASC		key index
-key		F8SF		Encryption key
-key.1		F8HEX		Single length DES key
+key		F16SF		Encryption key (no key scheme)
+key.1		F16ASC		Single length DES key
 
 
 message 	BB1024SF	Thales HSM message
@@ -69,7 +69,7 @@ message 	BB1024SF	Thales HSM message
 1.3		F1ASC=;		Delimiter
 1.4		F4ASC		Expiration date
 1.5		F3ASC		Service code
-1		U7SF		Verify a VISA CVV (Response)
+1		U7SF		Generate a VISA CVV (Response)
 1.0		F2ASC=CX	Response code
 1.1		F2ASC		Error code
 1.2		F3ASC		CVV

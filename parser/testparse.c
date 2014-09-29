@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s parsed\n", message->frm->description);
+		printf("%s parsed, length: %d\n", message->frm->description, msglen1);
 
 	print_message(message);
 

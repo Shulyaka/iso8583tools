@@ -234,6 +234,10 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 		if(length)
 			return length;
 
+		if(frm->altformat)
+			if(debug)
+				printf("Info: parse_field: Retrying with alternate format %s\n", frm->altformat->description);
+
 		emptyField(fld);
 	}
 
@@ -401,7 +405,7 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 								printf("Error: No format for field %i which is present in bitmap\n", i);
 
 				if(debug)
-					printf("Error: Not enough subfield formats (%d, %d)\n", pos, fld->length);
+					printf("Error: Not enough subfield formats (%d, %d), %d, %s\n", pos, fld->length, frm->fields, frm->description);
 				return 0;
 			}
 			
@@ -665,8 +669,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 		return 0;
 	}
 
-//	if(fld->data && frm->dataFormat!=FRM_SUBFIELDS)
-//		printf("%s \t[%d] [%s]\n", frm->description, fld->length, fld->data);
+	if(fld->data && frm->dataFormat!=FRM_SUBFIELDS)
+		printf("%s \t[%d] [%s]\n", frm->description, fld->length, fld->data);
 
 	return lenlen+blength;
 }

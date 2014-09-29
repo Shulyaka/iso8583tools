@@ -4,7 +4,7 @@ CFLAGS=-ggdb
 all: libparser.a testparse
 
 clean:
-	rm -f *.o libparser.a testparse message_out
+	rm -f *.o libparser.a testparse core.* imessage* omessage*
 
 testparse: libparser.a testparse.o
 		g++ testparse.o -L . -l parser -o testparse

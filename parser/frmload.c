@@ -105,10 +105,18 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 
 		frmtmp=(fldformat*)calloc(1, sizeof(fldformat));
 
-		frmtmp->description=(char*)malloc(strlen(number)+2+strlen(descr)+1);
-		strcpy(frmtmp->description, number);
-		strcpy(frmtmp->description+strlen(frmtmp->description), ". ");
-		strcpy(frmtmp->description+strlen(frmtmp->description), descr);
+		if(frmpar)
+		{
+			frmtmp->description=(char*)malloc(strlen(number)+2+strlen(descr)+1);
+			strcpy(frmtmp->description, number);
+			strcpy(frmtmp->description+strlen(frmtmp->description), ". ");
+			strcpy(frmtmp->description+strlen(frmtmp->description), descr);
+		}
+		else
+		{
+			frmtmp->description=(char*)malloc(strlen(descr)+1);
+			strcpy(frmtmp->description, descr);
+		}
 
 		if (!parseFormat(frmtmp, format, &links, &ln))
 		{
@@ -200,12 +208,12 @@ fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fld
 	unsigned int i;
 	unsigned int l;
 	fldformat *altformat;
-	*position=-1;
 	
 	if((!frm && !links) || (frm && links))
 	{
 		if(debug)
 			printf("Error: Either one of frm and links must be provided\n");
+		*position=-1;
 		return NULL;
 	}
 
@@ -213,6 +221,7 @@ fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fld
 	{
 		if(debug)
 			printf("Error: Null pointer to 2nd arg\n");
+		*position=-1;
 		return NULL;
 	}
 
@@ -220,6 +229,7 @@ fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fld
 	{
 		if(debug)
 			printf("Error: Null pointer to 3rd arg\n");
+		*position=-1;
 		return NULL;
 	}
 
@@ -227,6 +237,7 @@ fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fld
         {
 		if(debug)
                 	printf("Error: Null pointer to 4th arg\n");
+		*position=-1;
                 return NULL;
         }
 
@@ -241,10 +252,25 @@ fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fld
 		for(; i<l; i++)
 			if(number[i]=='.')
 				break;
-		if(links)
-			*position=findLinkNumber(links, ln, number, i);
-		else
+		if(!links)
+		{
 			*position=i;
+			return NULL;
+		}
+
+		*position=findLinkNumber(links, ln, number, i);
+
+		if(i==l || i+1==l)
+			return NULL;
+
+		for(altformat=(*links)[*position].frm; altformat->altformat!=NULL; )
+			 altformat=altformat->altformat;
+
+		altformat=findFrmParent(NULL, ln, number+i+1, position, altformat);
+		if(altformat)
+			return altformat;
+
+		*position=findLinkNumber(links, ln, number, *position+i+1);
 		return NULL;
 	}
 
@@ -296,21 +322,6 @@ fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fld
 			*position=*position+i;
 		return NULL;
 	}
-
-	if(frm->fld[*position]->altformat==NULL)
-	{
-		altformat=findFrmParent(NULL, ln, number+i+1, position, frm->fld[*position]);
-		if(altformat)
-			return altformat;
-
-		if(links)
-			*position=findLinkNumber(links, ln, number, *position+i+1);
-		else
-			*position=*position+i+1;
-		return NULL;
-	}
-
-	//printf("Info: Using alternate format(%s)\n", number);
 
 	for(altformat=frm->fld[*position]; altformat->altformat!=NULL; )
 		 altformat=altformat->altformat;

@@ -11,8 +11,8 @@ isomessage.pb.o: isomessage.pb.cc isomessage.pb.h
 isomessage.pb.cc isomessage.pb.h: isomessage.proto
 		protoc --cpp_out=. isomessage.proto
 
-ipc.o: ipc.c ipc.h
+ipc.o: ipc.c ipc.h isomessage.pb.h
 		g++ -c ipc.c ${CFLAGS}
 
-kvs.o: kvs.c kvs.h
+kvs.o: kvs.c kvs.h isomessage.pb.h
 		g++ -c kvs.c ${CFLAGS}
