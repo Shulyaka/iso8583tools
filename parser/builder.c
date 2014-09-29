@@ -325,7 +325,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 	if(frm->data && fld->data && strcmp(frm->data, fld->data))
 	{
 		if(debug)
-			printf("Error: Format mandatory data (%s) does not match field data (%s)\n", frm->data, fld->data);
+			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data, fld->data, frm->description);
 		return 0;
 	}
 
@@ -413,6 +413,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
 			tmpfrm.tagFormat=0;
 			tmpfrm.description=frm->description;
+			tmpfrm.data=frm->data;
 			tmpfrm.maxFields=frm->maxFields;
 			tmpfrm.fields=frm->fields;
 			tmpfrm.fld=frm->fld;
