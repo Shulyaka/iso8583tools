@@ -187,7 +187,7 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 {
 	fldformat *frm;
 	unsigned int length;
-	unsigned int i;
+	unsigned int i=0;
 
 	if(!buf)
 	{
@@ -203,32 +203,10 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 		return 0;
 	}
 
-	frm=fld->frm;
-
-	if(!frm)
+	for(frm=fld->frm; frm!=NULL; frm=frm->altformat)
 	{
-		if(debug)
-			printf("Error: No frm\n");
-		return 0;
-	}
-
-	fld->altformat=0;
-
-	length=parse_field_alt(buf, maxlength, fld);
-	if(length)
-		return length;
-
-	if(frm->altformat)
-		if(debug)
-			printf("Info: parse_field: Retrying with alternate format %s\n", frm->altformat->description);
-
-	emptyField(fld);
-
-	for(i=0; frm->altformat!=NULL; i++)
-	{
-		frm=frm->altformat;
 		fld->frm=frm;
-		fld->altformat=i;
+		fld->altformat=i++;
 
 		length=parse_field_alt(buf, maxlength, fld);
 		if(length)
@@ -241,6 +219,9 @@ unsigned int parse_field(char *buf, unsigned int maxlength, field *fld)
 		emptyField(fld);
 	}
 
+	if(debug && i==0)
+		printf("Error: No frm\n");
+
 	return 0;
 }
 
@@ -250,7 +231,8 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 	unsigned int blength=0;
 	char lengthbuf[7];
 	unsigned int i, j;
-	int bitmap_found=-1;
+	int bitmap_start=-1;
+	int bitmap_end=0;
 	unsigned int pos;
 	unsigned int sflen;
 	unsigned int taglength;
@@ -347,47 +329,38 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 			pos=lenlen;
 			for(i=0; i < frm->fields; i++)
 			{
-				if(pos==fld->length+lenlen)
-				{
-					//printf("Warning: Some subfields are missing or canceled by bitmap for '%s'\n", frm->description);
-					break;
-				}
-
-				if(bitmap_found!=-1 && frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP && fld->fld[bitmap_found]->length < i-bitmap_found)
+				if(pos==fld->length+lenlen) // Some subfields are missing or canceled by bitmap
 					break;
 
-				if(!frm->fld[i] && bitmap_found!=-1 && fld->fld[bitmap_found]->length >= i-bitmap_found && fld->fld[bitmap_found]->data[i-bitmap_found-1]=='1')
+				if(bitmap_start!=-1 && frm->fld[bitmap_start]->dataFormat==FRM_ISOBITMAP && bitmap_end < i)
+					break;
+
+				if(!frm->fld[i] && bitmap_start!=-1 && bitmap_end >= i && fld->fld[bitmap_start]->data[i-bitmap_start-1]=='1')
 				{
 					if(debug)
 						printf("Error: No format for subfield %d which is present in bitmap\n", i);
 					return 0;
 				}	
 
-				if(frm->fld[i] && (bitmap_found==-1 || (fld->fld[bitmap_found]->length > i-bitmap_found-1 && fld->fld[bitmap_found]->data[i-bitmap_found-1]=='1')))
+				if(frm->fld[i] && (bitmap_start==-1 || (bitmap_end > i-1 && fld->fld[bitmap_start]->data[i-bitmap_start-1]=='1')))
 				{
-					if(frm->fld[i]->dataFormat==FRM_BITMAP || frm->fld[i]->dataFormat==FRM_ISOBITMAP)
-						bitmap_found=i;
-					
 					fld->fld[i]=(field*)calloc(1, sizeof(field));
 					fld->fld[i]->frm=frm->fld[i];
 
-					if(frm->fld[i]->lengthFormat==FRM_UNKNOWN && i+1 < frm->fields && frm->fld[i+1] && frm->fld[i+1]->data && (bitmap_found==-1 || (fld->fld[bitmap_found]->length >= i-bitmap_found && fld->fld[bitmap_found]->data[i-bitmap_found]=='1')) && (j=strstr(buf+pos+1, frm->fld[i+1]->data)-buf-pos) && j < fld->length+lenlen-pos) //only probe for the next field to be fixed-data and ignoring its altformat. This could be replaced with a more proper algorithm which would however have a greateky increased computational complexity and I have not met any cases where it would be really necessary. Please let me know if you find one. And only look for the first occurence of the next field fixed data.
-					{
-						sflen=parse_field(buf+pos, j, fld->fld[i]);
-						if(!sflen)
-						{
-							if(debug)
-								printf("Error: unable to parse unknown-length field with following delimiter. Retrying without delimiter. Please report this error\n");
-							sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i]);
-						}
-					}
-					else
-						sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i]);
+					sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i]);
 					if(!sflen)
 					{
 						if(debug)
 							printf("Error: unable to parse subfield\n");
 						return 0;
+					}
+
+					if(frm->fld[i]->dataFormat==FRM_BITMAP || frm->fld[i]->dataFormat==FRM_ISOBITMAP)
+					{
+						if(debug && bitmap_start!=-1 && bitmap_end > i-1)
+							printf("Warning: New bitmap found while previous is still active\n");
+						bitmap_start=i;
+						bitmap_end=strlen(fld->fld[i]->data)+i;
 					}
 
 					pos+=sflen;
@@ -398,14 +371,14 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 			if(pos!=fld->length+lenlen)
 			{
-				if(bitmap_found!=-1)
-					for(i=frm->fields; i<=bitmap_found + fld->fld[bitmap_found]->length; i++)
-						if(fld->fld[bitmap_found]->data[i-bitmap_found-1]=='1')
+				if(bitmap_start!=-1)
+					for(i=frm->fields; i<=bitmap_end; i++)
+						if(fld->fld[bitmap_start]->data[i-bitmap_start-1]=='1')
 							if(debug)
 								printf("Error: No format for field %i which is present in bitmap\n", i);
 
 				if(debug)
-					printf("Error: Not enough subfield formats (%d, %d), %d, %s\n", pos, fld->length, frm->fields, frm->description);
+					printf("Error: Not enough subfield formats (%d, %d) for %s\n", pos, fld->length, frm->description);
 				return 0;
 			}
 			
@@ -673,6 +646,21 @@ unsigned int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 		printf("%s \t[%d] [%s]\n", frm->description, fld->length, fld->data);
 
 	return lenlen+blength;
+}
+
+int has_altformat(field *fld)
+{
+	int i;
+
+	if(fld->frm->altformat)
+		return 1;
+
+	if(fld->frm->lengthFormat==FRM_UNKNOWN && (fld->frm->dataFormat==FRM_SUBFIELDS || fld->frm->dataFormat==FRM_BCDSF))
+		for (i=0; i < fld->fields; i++)
+			if(fld->fld[i] && has_altformat(fld->fld[i]))
+				return 1;
+
+	return 0;
 }
 
 void parse_ebcdic(char *from, char *to, unsigned int len)
