@@ -7,7 +7,7 @@
 
 #include "parser.h"
 
-int debug=1;
+int debug=0;
 
 int main(int argc, char **argv)
 {
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s parsed, length: %d\n", message->frm->description, msglen1);
+		printf("%s parsed, length: %d\n", message->frm->description, message->blength);
 
 	print_message(message);
 

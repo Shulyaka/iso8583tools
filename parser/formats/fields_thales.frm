@@ -46,7 +46,7 @@ key.1		F16ASC		Single length DES key
 message 	BB1024SF	Thales HSM message
 0		F4ASC		Message Header
 
-1		U82SF		Translate a PIN from One ZPK to Another
+1		U130SF		Translate a PIN from One ZPK to Another
 1.0		F2ASC=CC	Command code
 1.1		Rkey		Source ZPK
 1.2		Rkey		Destination ZPK
@@ -62,7 +62,7 @@ message 	BB1024SF	Thales HSM message
 1.3		F8HEX		Destination PIN block
 1.4		F2ASC		Destination PIN block format
 
-1		U46SF		Generate a VISA CVV
+1		U78SF		Generate a VISA CVV
 1.0		F2ASC=CW	Command code
 1.1		Rkey		CVK A / B
 1.2		U19ASC		Primary account number
@@ -74,7 +74,7 @@ message 	BB1024SF	Thales HSM message
 1.1		F2ASC		Error code
 1.2		F3ASC		CVV
 
-1		U49SF		Verify a VISA CVV
+1		U81SF		Verify a VISA CVV
 1.0		F2ASC=CY	Command code
 1.1		Rkey		CVK A / B
 1.2		F3ASC		CVV
@@ -89,8 +89,8 @@ message 	BB1024SF	Thales HSM message
 
 
 
-1		U1019SF		Unknown command
-1.0		F2ASC		Command Code
-1.1		U1017HEX	Data
+#1		U1019SF		Unknown command
+#1.0		F2ASC		Command Code
+#1.1		U1017HEX	Data
 2		F1HEX=19	Trailer control character
 3		U32ASC		Message Trailer

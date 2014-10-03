@@ -105,6 +105,14 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 
 		frmtmp=(fldformat*)calloc(1, sizeof(fldformat));
 
+		if (!parseFormat(frmtmp, format, &links, &ln))
+		{
+			if(debug)
+				printf("Error: Unable to parse format, skipping:\n%s\n", line);
+			freeFormat(frmtmp);
+			continue;
+		}
+
 		if(frmpar)
 		{
 			frmtmp->description=(char*)malloc(strlen(number)+2+strlen(descr)+1);
@@ -116,14 +124,6 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 		{
 			frmtmp->description=(char*)malloc(strlen(descr)+1);
 			strcpy(frmtmp->description, descr);
-		}
-
-		if (!parseFormat(frmtmp, format, &links, &ln))
-		{
-			if(debug)
-				printf("Error: Unable to parse format, skipping:\n%s\n", line);
-			freeFormat(frmtmp);
-			continue;
 		}
 
 		if(!linkFrmChild(frmpar, j, frmtmp, links))
@@ -376,6 +376,8 @@ int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld, link *links)
 			cld->altformat=links[n].frm->altformat;
 
 			mirrorFormat(links[n].frm, cld);
+			cld->data=NULL; //transfer pointer ownership to link
+			cld->description=NULL;
 			free(cld);
 		}
 		return 1;

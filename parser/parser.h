@@ -45,13 +45,15 @@ typedef struct fldformat
 
 typedef struct field
 {
-	char* data;
-	char* tag;
-	unsigned int length;
-	unsigned int fields;
-	fldformat *frm;
-	struct field **fld;
-	unsigned int altformat;
+	char* data;  //parsed data
+	char* tag;   //parsed TLV tag name
+	unsigned int start;  //start position inside the message binary data relative to the parent field
+	unsigned int blength;  //length of the field inside the message binary data (including length length)
+	unsigned int length;  //parsed data length
+	unsigned int fields;  //number of subfields
+	fldformat *frm;  //field format
+	struct field **fld;  //array of subfields
+	unsigned int altformat;  //altformat number
 } field;
 
 fldformat *load_format(char*, fldformat *frmroot=NULL);
@@ -64,7 +66,7 @@ void mirrorFormat(fldformat *to, fldformat *from);
 field *parse_message(char*, unsigned int, fldformat*);
 unsigned int build_message(char*, unsigned int, field*);
 unsigned int get_length(field*);
-unsigned int parse_field_length(char*, unsigned int, fldformat*);
+int parse_field_length(char*, unsigned int, fldformat*);
 int is_empty(field*);
 void print_message(field*);
 
