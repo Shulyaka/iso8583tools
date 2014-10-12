@@ -87,48 +87,12 @@ message 	BB800SF		Visa Message (with header)
 1.46.1.4	F2EBCDIC	sign
 1.46.1.5	F8EBCDIC	value
 1.46.1.6	F22EBCDIC	unused
-1.46.2		F36SF		Fee Amount 2
-1.46.2.1	F2EBCDIC	fee type
-1.46.2.2	F3EBCDIC	currency code
-1.46.2.3	F1EBCDIC	minor unit
-1.46.2.4	F2EBCDIC	sign
-1.46.2.5	F8EBCDIC	value
-1.46.2.6	F22EBCDIC	unused
-1.46.3		F36SF		Fee Amount 3
-1.46.3.1	F2EBCDIC	fee type
-1.46.3.2	F3EBCDIC	currency code
-1.46.3.3	F1EBCDIC	minor unit
-1.46.3.4	F2EBCDIC	sign
-1.46.3.5	F8EBCDIC	value
-1.46.3.6	F22EBCDIC	unused
-1.46.4		F36SF		Fee Amount 4
-1.46.4.1	F2EBCDIC	fee type
-1.46.4.2	F3EBCDIC	currency code
-1.46.4.3	F1EBCDIC	minor unit
-1.46.4.4	F2EBCDIC	sign
-1.46.4.5	F8EBCDIC	value
-1.46.4.6	F22EBCDIC	unused
-1.46.5		F36SF		Fee Amount 5
-1.46.5.1	F2EBCDIC	fee type
-1.46.5.2	F3EBCDIC	currency code
-1.46.5.3	F1EBCDIC	minor unit
-1.46.5.4	F2EBCDIC	sign
-1.46.5.5	F8EBCDIC	value
-1.46.5.6	F22EBCDIC	unused
-1.46.6		F36SF		Fee Amount 6
-1.46.6.1	F2EBCDIC	fee type
-1.46.6.2	F3EBCDIC	currency code
-1.46.6.3	F1EBCDIC	minor unit
-1.46.6.4	F2EBCDIC	sign
-1.46.6.5	F8EBCDIC	value
-1.46.6.6	F22EBCDIC	unused
-1.46.7		F36SF		Fee Amount 7
-1.46.7.1	F2EBCDIC	fee type
-1.46.7.2	F3EBCDIC	currency code
-1.46.7.3	F1EBCDIC	minor unit
-1.46.7.4	F2EBCDIC	sign
-1.46.7.5	F8EBCDIC	value
-1.46.7.6	F22EBCDIC	unused
+1.46.2		R1.46.1		Fee Amount 2
+1.46.3		R1.46.1		Fee Amount 3
+1.46.4		R1.46.1		Fee Amount 4
+1.46.5		R1.46.1		Fee Amount 5
+1.46.6		R1.46.1		Fee Amount 6
+1.46.7		R1.46.1		Fee Amount 7
 1.48		B4BCD		Usage 1b-Error Codes in 0312 Responses
 1.48		B2EBCDIC	Usage 1c-Cardholder Maintenance File Reject Codes
 1.48		B255SF		Additional Data—Private
@@ -152,36 +116,11 @@ message 	BB800SF		Visa Message (with header)
 1.54.0.3	F3EBCDIC	currency code
 1.54.0.4	F1EBCDIC	amount, sign
 1.54.0.5	F12EBCDIC	amount
-1.54.1		F20SF		amount 1
-1.54.1.1	F2EBCDIC	account type
-1.54.1.2	F2EBCDIC	amount type
-1.54.1.3	F3EBCDIC	currency code
-1.54.1.4	F1EBCDIC	amount, sign
-1.54.1.5	F12EBCDIC	amount
-1.54.2		F20SF		amount 2
-1.54.2.1	F2EBCDIC	account type
-1.54.2.2	F2EBCDIC	amount type
-1.54.2.3	F3EBCDIC	currency code
-1.54.2.4	F1EBCDIC	amount, sign
-1.54.2.5	F12EBCDIC	amount
-1.54.3		F20SF		amount 3
-1.54.3.1	F2EBCDIC	account type
-1.54.3.2	F2EBCDIC	amount type
-1.54.3.3	F3EBCDIC	currency code
-1.54.3.4	F1EBCDIC	amount, sign
-1.54.3.5	F12EBCDIC	amount
-1.54.4		F20SF		amount 4
-1.54.4.1	F2EBCDIC	account type
-1.54.4.2	F2EBCDIC	amount type
-1.54.4.3	F3EBCDIC	currency code
-1.54.4.4	F1EBCDIC	amount, sign
-1.54.4.5	F12EBCDIC	amount
-1.54.5		F20SF		amount 5
-1.54.5.1	F2EBCDIC	account type
-1.54.5.2	F2EBCDIC	amount type
-1.54.5.3	F3EBCDIC	currency code
-1.54.5.4	F1EBCDIC	amount, sign
-1.54.5.5	F12EBCDIC	amount
+1.54.1		R1.54.0		amount 1
+1.54.2		R1.54.0		amount 2
+1.54.3		R1.54.0		amount 3
+1.54.4		R1.54.0		amount 4
+1.54.5		R1.54.0		amount 5
 1.55		B255TLVDSBCD	Integrated Circuit Card (ICC)-Related Data
 1.55.00         BB252TLV2	Chip Card TLV data elements (Usage 2)
 1.55.00.*	B250HEX		Chip data tag

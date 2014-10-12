@@ -76,220 +76,114 @@ message U1024SF		Mast Message
 45	B76EBCDIC	Track 1 Data
 46	EEE999EBCDIC	Expanded Additional Amounts
 47	EEE999EBCDIC	Additional Data—National Use
-48	EEE999SF	Additional Data—Private Use
+48	EEE999SF	Additional Data—Private Use (no TCC)
+48.1	U998TLVDSEBCDIC	DE48 Subelements
+48.1.10	EE16EBCDIC	Encrypted PIN Block Key
+48.1.11	EE70EBCDIC	Key Exchange Block Data (Single-Length Keys)
+48.1.12	EE1EBCDIC	Routing Indicator
+48.1.13	EE47SF		Mobile Phone Top-up Request Data
+48.1.13.1 F17EBCDIC	Mobile Phone Number
+48.1.13.2 F30EBCDIC	Mobile Phone Service Provider Name
+48.1.15	EE10SF		Authorization System Advice Date and Time
+48.1.15.1 F4EBCDIC	Date
+48.1.15.2 F6EBCDIC	Time
+48.1.16	EE7EBCDIC	Processor Pseudo ICA
+48.1.20 EE1EBCDIC	Cardholder Verification Method
+48.1.32	EE6EBCDIC	MasterCard Assigned ID
+48.1.33 EE43TLVDSEBCDIC	PAN Mapping File Information
+48.1.33.01 EE1EBCDIC	Account Number Indicator
+48.1.33.02 EE19EBCDIC	Account Number
+48.1.33.03 EE4EBCDIC	Expiration Date
+48.1.33.04 EE3EBCDIC	Product Code
+48.1.34	EE11SF		Dynamic CVC 3 ATC Information
+48.1.34.1 F5EBCDIC	ATC Value
+48.1.34.2 F5EBCDIC	ATC Discrepancy Value
+48.1.34.3 F1EBCDIC	ATC Discrepancy Indicator
+48.1.35	EE1EBCDIC	PayPass Non-Card Form Factor Request/Response
+48.1.38 EE1EBCDIC	Account Category
+48.1.39	EE30SF		Expert Monitoring Compromised Account Service Information
+48.1.39.0 F3EBCDIC	Threat Score
+48.1.39.1 F3EBCDIC	Threat Score Days Elapsed
+48.1.39.2 F6EBCDIC	Case Key Code 1
+48.1.39.3 F6EBCDIC	Case Key Code 2
+48.1.39.4 F6EBCDIC	Case Key Code 3
+48.1.39.5 F1EBCDIC	Account Number
+48.1.39.6 F1EBCDIC	Expiration Date
+48.1.39.7 F1EBCDIC	CVC 2
+48.1.39.8 F1EBCDIC	PIN
+48.1.39.9 F1EBCDIC	Magnetic Stripe
+48.1.39.10 F1EBCDIC	Personal Information
+48.1.40	EE40TLVDSEBCDIC	Electronic Commerce Merchant/Cardholder Certificate Serial Number (Visa Only)
+48.1.40.01 EE16HEX	Merchant Certificate Serial Number
+48.1.40.02 EE16HEX	Cardholder Certificate Serial Number
+48.1.41	EE95EBCDIC	Electronic Commerce Certificate Qualifying Information
+48.1.42	EE7TLVDSEBCDIC	Electronic Commerce Indicators
+48.1.42.01 EE3SF	Electronic Commerce Security Level Indicator and UCAF Collection Indicator
+48.1.42.01.1 F1EBCDIC	Security Protocol
+48.1.42.01.2 F1EBCDIC	Cardholder Authentication
+48.1.42.01.3 F1EBCDIC	UCAF Collection Indicator
+48.1.43	EE32EBCDIC	Universal Cardholder Authentication Field (UCAF)
+48.1.44 EE20HEX		Visa 3-D Secure Electronic Commerce Transaction Identifier (XID)
+48.1.45	EE1EBCDIC	Visa 3-D Secure Electronic Commerce Transaction Response Code
+48.1.46	EE2EBCDIC	Card-Level Result
+48.1.47	EE8EBCDIC	MC Payment Gateway Transaction Indicator
+48.1.58	EE33SF		ATM Additional Data
+48.1.58.1 F4EBCDIC	ATM Time
+48.1.58.2 F6EBCDIC	ATM Date
+48.1.58.3 F12EBCDIC	Watermark
+48.1.58.4 F2EBCDIC	Mark 1
+48.1.58.5 F2EBCDIC	Mark 2
+48.1.58.6 F2EBCDIC	Mark 3
+48.1.58.7 F1EBCDIC	Card Swallowed Status
+48.1.58.8 F4EBCDIC	Posting Date
+48.1.61	EE5SF		POS Data Extended Condition Codes
+48.1.61.1 F1EBCDIC	Partial Approval Terminal Support Indicator
+48.1.61.2 F1EBCDIC	Purchase Amount Only Terminal Support Indicator
+48.1.61.3 F1EBCDIC	Real-time Substantiation Indicator
+48.1.61.4 F2EBCDIC	Reserved for Future Use
+48.1.63	EE15SF		Trace ID
+48.1.63.0 F9EBCDIC	Network Data
+48.1.63.1 F6EBCDIC	Date Settlement
+48.1.71	EE40TLV2EBCDIC	On-behalf Services
+48.1.71.* F2SF		On-behalf (OB) Service
+48.1.71.*.0 F1EBCDIC	On-behalf Result 1
+48.1.71.*.1 F1EBCDIC	On-behalf Result 2
+48.1.72	EE16HEX		Issuer Chip Authentication
+48.1.74	EE30TLV2EBCDIC	Additional Processing Information
+48.1.74.* F1EBCDIC	Processing Information
+48.1.75 EE7TLVDSEBCDIC	Fraud Scoring Data
+48.1.75.01 EE3EBCDIC	Fraud Score
+48.1.76	EE1EBCDIC	MC Electronic Acceptance Indicator
+48.1.77 EE3EBCDIC	Payment Transaction Type Indicator
+48.1.78 EE1EBCDIC	U.S. Deferred Billing Indicator (Visa Only)
+48.1.79	EE50TLV1EBCDIC	Chip CVR/TVR Bit Error Results
+48.1.79.* F4SF		CVR or TVR Identifier
+48.1.79.*.0 F2EBCDIC	Byte ID
+48.1.79.*.1 F1EBCDIC	Byte Identifier
+48.1.79.*.2 F1EBCDIC	Value of Bit in Error
+48.1.80	EE2EBCDIC	PIN Service Code
+48.1.82	EE2EBCDIC	Address Verification Service Request
+48.1.83	EE1EBCDIC	Address Verification Service Response
+48.1.84	EE2EBCDIC	Merchant Advice Code
+48.1.85	EE1EBCDIC	U.S. Existing Debt Indicator (Visa Only)
+48.1.86	EE1EBCDIC	Relationship Participant Indicator (Visa Only)
+48.1.87	EE1EBCDIC	Card Validation Code Result
+48.1.88	EE1EBCDIC	Magnetic Stripe Compliance Status Indicator
+48.1.89	EE1EBCDIC	Magnetic Stripe Compliance Error Indicator
+48.1.90	EE1EBCDIC	MC Travel Industries Premier Service Interchange Program Indicator
+48.1.91	EE19EBCDIC	Acquirer Reference Data (American Express Only)
+48.1.92	EE3EBCDIC	CVC 2
+48.1.93	EE19SF		Fleet Card ID Request Data (Visa Only)
+48.1.93.1 F1EBCDIC	Fleet Card ID Request Indicator
+48.1.93.2 F18EBCDIC	Optional Free-form Informational Text
+48.1.94	EE4EBCDIC	Commercial Card Inquiry Request/Response (Visa Only)
+48.1.95	EE6EBCDIC	MasterCard Promotion Code
+48.1.96	EE1EBCDIC	Visa Market-Specific Data Identifier (Visa Only)
+48.1.97	EE1EBCDIC	Prestigious Properties Indicator (Visa Only)
+48.1.98	EE6EBCDIC	MC Corporate Fleet Card ID/Driver Number
+48.1.99	EE6EBCDIC	MC Corporate Fleet Card Vehicle Number
+48	R48		Additional Data—Private Use (with TCC)
 48.0	F1EBCDIC	Transaction Category Code
-48.1	U998TLVDSEBCDIC	DE48 Subelements
-48.1.10	EE16EBCDIC	Encrypted PIN Block Key
-48.1.11	EE70EBCDIC	Key Exchange Block Data (Single-Length Keys)
-48.1.12	EE1EBCDIC	Routing Indicator
-48.1.13	EE47SF		Mobile Phone Top-up Request Data
-48.1.13.1 F17EBCDIC	Mobile Phone Number
-48.1.13.2 F30EBCDIC	Mobile Phone Service Provider Name
-48.1.15	EE10SF		Authorization System Advice Date and Time
-48.1.15.1 F4EBCDIC	Date
-48.1.15.2 F6EBCDIC	Time
-48.1.16	EE7EBCDIC	Processor Pseudo ICA
-48.1.20 EE1EBCDIC	Cardholder Verification Method
-48.1.32	EE6EBCDIC	MasterCard Assigned ID
-48.1.33 EE43TLVDSEBCDIC	PAN Mapping File Information
-48.1.33.01 EE1EBCDIC	Account Number Indicator
-48.1.33.02 EE19EBCDIC	Account Number
-48.1.33.03 EE4EBCDIC	Expiration Date
-48.1.33.04 EE3EBCDIC	Product Code
-48.1.34	EE11SF		Dynamic CVC 3 ATC Information
-48.1.34.1 F5EBCDIC	ATC Value
-48.1.34.2 F5EBCDIC	ATC Discrepancy Value
-48.1.34.3 F1EBCDIC	ATC Discrepancy Indicator
-48.1.35	EE1EBCDIC	PayPass Non-Card Form Factor Request/Response
-48.1.38 EE1EBCDIC	Account Category
-48.1.39	EE30SF		Expert Monitoring Compromised Account Service Information
-48.1.39.0 F3EBCDIC	Threat Score
-48.1.39.1 F3EBCDIC	Threat Score Days Elapsed
-48.1.39.2 F6EBCDIC	Case Key Code 1
-48.1.39.3 F6EBCDIC	Case Key Code 2
-48.1.39.4 F6EBCDIC	Case Key Code 3
-48.1.39.5 F1EBCDIC	Account Number
-48.1.39.6 F1EBCDIC	Expiration Date
-48.1.39.7 F1EBCDIC	CVC 2
-48.1.39.8 F1EBCDIC	PIN
-48.1.39.9 F1EBCDIC	Magnetic Stripe
-48.1.39.10 F1EBCDIC	Personal Information
-48.1.40	EE40TLVDSEBCDIC	Electronic Commerce Merchant/Cardholder Certificate Serial Number (Visa Only)
-48.1.40.01 EE16HEX	Merchant Certificate Serial Number
-48.1.40.02 EE16HEX	Cardholder Certificate Serial Number
-48.1.41	EE95EBCDIC	Electronic Commerce Certificate Qualifying Information
-48.1.42	EE7TLVDSEBCDIC	Electronic Commerce Indicators
-48.1.42.01 EE3SF	Electronic Commerce Security Level Indicator and UCAF Collection Indicator
-48.1.42.01.1 F1EBCDIC	Security Protocol
-48.1.42.01.2 F1EBCDIC	Cardholder Authentication
-48.1.42.01.3 F1EBCDIC	UCAF Collection Indicator
-48.1.43	EE32EBCDIC	Universal Cardholder Authentication Field (UCAF)
-48.1.44 EE20HEX		Visa 3-D Secure Electronic Commerce Transaction Identifier (XID)
-48.1.45	EE1EBCDIC	Visa 3-D Secure Electronic Commerce Transaction Response Code
-48.1.46	EE2EBCDIC	Card-Level Result
-48.1.47	EE8EBCDIC	MC Payment Gateway Transaction Indicator
-48.1.58	EE33SF		ATM Additional Data
-48.1.58.1 F4EBCDIC	ATM Time
-48.1.58.2 F6EBCDIC	ATM Date
-48.1.58.3 F12EBCDIC	Watermark
-48.1.58.4 F2EBCDIC	Mark 1
-48.1.58.5 F2EBCDIC	Mark 2
-48.1.58.6 F2EBCDIC	Mark 3
-48.1.58.7 F1EBCDIC	Card Swallowed Status
-48.1.58.8 F4EBCDIC	Posting Date
-48.1.61	EE5SF		POS Data Extended Condition Codes
-48.1.61.1 F1EBCDIC	Partial Approval Terminal Support Indicator
-48.1.61.2 F1EBCDIC	Purchase Amount Only Terminal Support Indicator
-48.1.61.3 F1EBCDIC	Real-time Substantiation Indicator
-48.1.61.4 F2EBCDIC	Reserved for Future Use
-48.1.63	EE15SF		Trace ID
-48.1.63.0 F9EBCDIC	Network Data
-48.1.63.1 F6EBCDIC	Date Settlement
-48.1.71	EE40TLV2EBCDIC	On-behalf Services
-48.1.71.* F2SF		On-behalf (OB) Service
-48.1.71.*.0 F1EBCDIC	On-behalf Result 1
-48.1.71.*.1 F1EBCDIC	On-behalf Result 2
-48.1.72	EE16HEX		Issuer Chip Authentication
-48.1.74	EE30TLV2EBCDIC	Additional Processing Information
-48.1.74.* F1EBCDIC	Processing Information
-48.1.75 EE7TLVDSEBCDIC	Fraud Scoring Data
-48.1.75.01 EE3EBCDIC	Fraud Score
-48.1.76	EE1EBCDIC	MC Electronic Acceptance Indicator
-48.1.77 EE3EBCDIC	Payment Transaction Type Indicator
-48.1.78 EE1EBCDIC	U.S. Deferred Billing Indicator (Visa Only)
-48.1.79	EE50TLV1EBCDIC	Chip CVR/TVR Bit Error Results
-48.1.79.* F4SF		CVR or TVR Identifier
-48.1.79.*.0 F2EBCDIC	Byte ID
-48.1.79.*.1 F1EBCDIC	Byte Identifier
-48.1.79.*.2 F1EBCDIC	Value of Bit in Error
-48.1.80	EE2EBCDIC	PIN Service Code
-48.1.82	EE2EBCDIC	Address Verification Service Request
-48.1.83	EE1EBCDIC	Address Verification Service Response
-48.1.84	EE2EBCDIC	Merchant Advice Code
-48.1.85	EE1EBCDIC	U.S. Existing Debt Indicator (Visa Only)
-48.1.86	EE1EBCDIC	Relationship Participant Indicator (Visa Only)
-48.1.87	EE1EBCDIC	Card Validation Code Result
-48.1.88	EE1EBCDIC	Magnetic Stripe Compliance Status Indicator
-48.1.89	EE1EBCDIC	Magnetic Stripe Compliance Error Indicator
-48.1.90	EE1EBCDIC	MC Travel Industries Premier Service Interchange Program Indicator
-48.1.91	EE19EBCDIC	Acquirer Reference Data (American Express Only)
-48.1.92	EE3EBCDIC	CVC 2
-48.1.93	EE19SF		Fleet Card ID Request Data (Visa Only)
-48.1.93.1 F1EBCDIC	Fleet Card ID Request Indicator
-48.1.93.2 F18EBCDIC	Optional Free-form Informational Text
-48.1.94	EE4EBCDIC	Commercial Card Inquiry Request/Response (Visa Only)
-48.1.95	EE6EBCDIC	MasterCard Promotion Code
-48.1.96	EE1EBCDIC	Visa Market-Specific Data Identifier (Visa Only)
-48.1.97	EE1EBCDIC	Prestigious Properties Indicator (Visa Only)
-48.1.98	EE6EBCDIC	MC Corporate Fleet Card ID/Driver Number
-48.1.99	EE6EBCDIC	MC Corporate Fleet Card Vehicle Number
-48	EEE999SF	Additional Data—Private Use (No TCC)
-#48.0	F1EBCDIC	Transaction Category Code
-48.1	U998TLVDSEBCDIC	DE48 Subelements
-48.1.10	EE16EBCDIC	Encrypted PIN Block Key
-48.1.11	EE70EBCDIC	Key Exchange Block Data (Single-Length Keys)
-48.1.12	EE1EBCDIC	Routing Indicator
-48.1.13	EE47SF		Mobile Phone Top-up Request Data
-48.1.13.1 F17EBCDIC	Mobile Phone Number
-48.1.13.2 F30EBCDIC	Mobile Phone Service Provider Name
-48.1.15	EE10SF		Authorization System Advice Date and Time
-48.1.15.1 F4EBCDIC	Date
-48.1.15.2 F6EBCDIC	Time
-48.1.16	EE7EBCDIC	Processor Pseudo ICA
-48.1.20 EE1EBCDIC	Cardholder Verification Method
-48.1.32	EE6EBCDIC	MasterCard Assigned ID
-48.1.33 EE43TLVDSEBCDIC	PAN Mapping File Information
-48.1.33.01 EE1EBCDIC	Account Number Indicator
-48.1.33.02 EE19EBCDIC	Account Number
-48.1.33.03 EE4EBCDIC	Expiration Date
-48.1.33.04 EE3EBCDIC	Product Code
-48.1.34	EE11SF		Dynamic CVC 3 ATC Information
-48.1.34.1 F5EBCDIC	ATC Value
-48.1.34.2 F5EBCDIC	ATC Discrepancy Value
-48.1.34.3 F1EBCDIC	ATC Discrepancy Indicator
-48.1.35	EE1EBCDIC	PayPass Non-Card Form Factor Request/Response
-48.1.38 EE1EBCDIC	Account Category
-48.1.39	EE30SF		Expert Monitoring Compromised Account Service Information
-48.1.39.0 F3EBCDIC	Threat Score
-48.1.39.1 F3EBCDIC	Threat Score Days Elapsed
-48.1.39.2 F6EBCDIC	Case Key Code 1
-48.1.39.3 F6EBCDIC	Case Key Code 2
-48.1.39.4 F6EBCDIC	Case Key Code 3
-48.1.39.5 F1EBCDIC	Account Number
-48.1.39.6 F1EBCDIC	Expiration Date
-48.1.39.7 F1EBCDIC	CVC 2
-48.1.39.8 F1EBCDIC	PIN
-48.1.39.9 F1EBCDIC	Magnetic Stripe
-48.1.39.10 F1EBCDIC	Personal Information
-48.1.40	EE40TLVDSEBCDIC	Electronic Commerce Merchant/Cardholder Certificate Serial Number (Visa Only)
-48.1.40.01 EE16HEX	Merchant Certificate Serial Number
-48.1.40.02 EE16HEX	Cardholder Certificate Serial Number
-48.1.41	EE95EBCDIC	Electronic Commerce Certificate Qualifying Information
-48.1.42	EE7TLVDSEBCDIC	Electronic Commerce Indicators
-48.1.42.01 EE3SF	Electronic Commerce Security Level Indicator and UCAF Collection Indicator
-48.1.42.01.1 F1EBCDIC	Security Protocol
-48.1.42.01.2 F1EBCDIC	Cardholder Authentication
-48.1.42.01.3 F1EBCDIC	UCAF Collection Indicator
-48.1.43	EE32EBCDIC	Universal Cardholder Authentication Field (UCAF)
-48.1.44 EE20HEX		Visa 3-D Secure Electronic Commerce Transaction Identifier (XID)
-48.1.45	EE1EBCDIC	Visa 3-D Secure Electronic Commerce Transaction Response Code
-48.1.46	EE2EBCDIC	Card-Level Result
-48.1.47	EE8EBCDIC	MC Payment Gateway Transaction Indicator
-48.1.58	EE33SF		ATM Additional Data
-48.1.58.1 F4EBCDIC	ATM Time
-48.1.58.2 F6EBCDIC	ATM Date
-48.1.58.3 F12EBCDIC	Watermark
-48.1.58.4 F2EBCDIC	Mark 1
-48.1.58.5 F2EBCDIC	Mark 2
-48.1.58.6 F2EBCDIC	Mark 3
-48.1.58.7 F1EBCDIC	Card Swallowed Status
-48.1.58.8 F4EBCDIC	Posting Date
-48.1.61	EE5SF		POS Data Extended Condition Codes
-48.1.61.1 F1EBCDIC	Partial Approval Terminal Support Indicator
-48.1.61.2 F1EBCDIC	Purchase Amount Only Terminal Support Indicator
-48.1.61.3 F1EBCDIC	Real-time Substantiation Indicator
-48.1.61.4 F2EBCDIC	Reserved for Future Use
-48.1.63	EE15SF		Trace ID
-48.1.63.0 F9EBCDIC	Network Data
-48.1.63.1 F6EBCDIC	Date Settlement
-48.1.71	EE40TLV2EBCDIC	On-behalf Services
-48.1.71.* F2SF		On-behalf (OB) Service
-48.1.71.*.0 F1EBCDIC	On-behalf Result 1
-48.1.71.*.1 F1EBCDIC	On-behalf Result 2
-48.1.72	EE16HEX		Issuer Chip Authentication
-48.1.74	EE30TLV2EBCDIC	Additional Processing Information
-48.1.74.* F1EBCDIC	Processing Information
-48.1.75 EE7TLVDSEBCDIC	Fraud Scoring Data
-48.1.75.01 EE3EBCDIC	Fraud Score
-48.1.76	EE1EBCDIC	MC Electronic Acceptance Indicator
-48.1.77 EE3EBCDIC	Payment Transaction Type Indicator
-48.1.78 EE1EBCDIC	U.S. Deferred Billing Indicator (Visa Only)
-48.1.79	EE50TLV1EBCDIC	Chip CVR/TVR Bit Error Results
-48.1.79.* F4SF		CVR or TVR Identifier
-48.1.79.*.0 F2EBCDIC	Byte ID
-48.1.79.*.1 F1EBCDIC	Byte Identifier
-48.1.79.*.2 F1EBCDIC	Value of Bit in Error
-48.1.80	EE2EBCDIC	PIN Service Code
-48.1.82	EE2EBCDIC	Address Verification Service Request
-48.1.83	EE1EBCDIC	Address Verification Service Response
-48.1.84	EE2EBCDIC	Merchant Advice Code
-48.1.85	EE1EBCDIC	U.S. Existing Debt Indicator (Visa Only)
-48.1.86	EE1EBCDIC	Relationship Participant Indicator (Visa Only)
-48.1.87	EE1EBCDIC	Card Validation Code Result
-48.1.88	EE1EBCDIC	Magnetic Stripe Compliance Status Indicator
-48.1.89	EE1EBCDIC	Magnetic Stripe Compliance Error Indicator
-48.1.90	EE1EBCDIC	MC Travel Industries Premier Service Interchange Program Indicator
-48.1.91	EE19EBCDIC	Acquirer Reference Data (American Express Only)
-48.1.92	EE3EBCDIC	CVC 2
-48.1.93	EE19SF		Fleet Card ID Request Data (Visa Only)
-48.1.93.1 F1EBCDIC	Fleet Card ID Request Indicator
-48.1.93.2 F18EBCDIC	Optional Free-form Informational Text
-48.1.94	EE4EBCDIC	Commercial Card Inquiry Request/Response (Visa Only)
-48.1.95	EE6EBCDIC	MasterCard Promotion Code
-48.1.96	EE1EBCDIC	Visa Market-Specific Data Identifier (Visa Only)
-48.1.97	EE1EBCDIC	Prestigious Properties Indicator (Visa Only)
-48.1.98	EE6EBCDIC	MC Corporate Fleet Card ID/Driver Number
-48.1.99	EE6EBCDIC	MC Corporate Fleet Card Vehicle Number
 49	F3EBCDIC	Currency Code, Transaction
 50	F3EBCDIC	Currency Code, Settlement
 51	F3EBCDIC	Currency Code, Cardholder Billing
@@ -302,14 +196,16 @@ message U1024SF		Mast Message
 53.5	F2EBCDIC        Reserved for Future Use
 53.6	F4EBCDIC        Reserved for Future Use
 54	EEE120SF	Additional Amounts
-54.1	F2EBCDIC	Account Type 1
-54.2	F2EBCDIC	Amount Type 1
-54.3	F3EBCDIC	Currence Code 1
-54.4	F13EBCDIC	Amount 1
-54.5	F2EBCDIC	Account Type 2
-54.6	F2EBCDIC	Amount Type 2
-54.7	F3EBCDIC	Currence Code 2
-54.8	F13EBCDIC	Amount 2
+54.0	F20SF		Amount 1
+54.0.1	F2EBCDIC	Account Type
+54.0.2	F2EBCDIC	Amount Type
+54.0.3	F3EBCDIC	Currence Code
+54.0.4	F13SF		Amount
+54.0.4.0 F1EBCDIC	Debit/Credit Indicator
+54.0.4.1 F12EBCDIC	Amount
+54.1	R54.0		Amount 2
+54.2	R54.0		Amount 3
+54.3	R54.0		Amount 4
 55	EEE255TLVEMV	Integrated Circuit Card (ICC) System-Related Data
 55.*	M255HEX		Chip data tag
 60	EEE60SF		Advice Reason Code

@@ -511,7 +511,14 @@ int parseFormat(fldformat *frm, char *format, link **links, int *ln)
 			if(!tmpfrm)
 				copyFormat(frm, (*links)[j].frm);
 			else
+			{
+				if(tmpfrm->fields<j)
+				{
+					printf("Error: Unable to find referenced format (%s)\n", format+1);
+					return 0;
+				}
 				copyFormat(frm, tmpfrm->fld[j]);
+			}
 
 			if(frm->description)
 			{
@@ -550,6 +557,9 @@ int parseFormat(fldformat *frm, char *format, link **links, int *ln)
 	format[i]='\0';
 	frm->maxLength=atoi(format+j);
 	format[i]=tmpc;
+
+	if(!frm->maxLength)
+		return 1; //allow zero length fields
 
 	p=strstr(format+i, "=");
 	if(p)

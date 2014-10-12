@@ -248,6 +248,9 @@ int parse_field(char *buf, unsigned int maxlength, field *fld)
 			printf("Info: parse_field: Retrying with alternate format \"%s\"\n", frm->altformat->description);
 
 		emptyField(fld);
+
+		fld->frm=frm; //save last attempted format
+		fld->altformat=i-1;
 	}
 
 	if(debug && i==0)
@@ -410,10 +413,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 								fld->fld[cursf]->blength=0;
 								sflen=parse_field(buf+pos, i, fld->fld[cursf]);
 
-								if(sflen>0)
-									break;
-
-								if(sflen==0)
+								if(sflen>=0)
 									break;
 
 								fld->fld[cursf]->frm=frm->fld[cursf];
@@ -425,10 +425,19 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 						else
 							sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[cursf]);
 
+						if(sflen==0 && fld->fld[cursf]->frm->maxLength==0)
+						{
+							if(debug)
+								printf("Optional subfield %d (%s) skipped\n", cursf, fld->fld[cursf]->frm->description);
+							fld->fld[cursf]=NULL;
+							continue;
+						}
+
 						if(sflen<=0)
 						{
 							if(debug)
 								printf("Error: unable to parse subfield (%d)\n", sflen);
+							fld->fld[cursf]=NULL;
 							build_failed=1;
 							break;
 						}
@@ -606,6 +615,10 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 						printf("Error: unable to parse TLV subfield\n");
 					return sflen;
 				}
+
+				fld->fld[i]->start=pos-taglength;
+				fld->fld[i]->blength=fld->fld[i]->blength+taglength;
+
 				pos+=sflen;
 			}
 
@@ -685,6 +698,10 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 						printf("Error: unable to parse TLV subfield %d\n", j);
 					return sflen;
 				}
+
+				fld->fld[j]->start=pos-taglength;
+				fld->fld[j]->blength=fld->fld[j]->blength+taglength;
+
 				pos+=sflen;
 			}
 
@@ -773,21 +790,6 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 		printf("%s \t[%d(%d)] [%s]\n", frm->description, fld->length, fld->blength, fld->data);
 
 	return lenlen+blength;
-}
-
-int has_altformat(field *fld)
-{
-	int i;
-
-	if(fld->frm->altformat)
-		return 1;
-
-	if(fld->frm->lengthFormat==FRM_UNKNOWN && (fld->frm->dataFormat==FRM_SUBFIELDS || fld->frm->dataFormat==FRM_BCDSF))
-		for (i=0; i < fld->fields; i++)
-			if(fld->fld[i] && has_altformat(fld->fld[i]))
-				return 1;
-
-	return 0;
 }
 
 void parse_ebcdic(char *from, char *to, unsigned int len)

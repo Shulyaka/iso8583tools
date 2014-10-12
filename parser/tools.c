@@ -165,13 +165,13 @@ void copyFormat(fldformat *to, fldformat *from)
 		for(i=0; i < from->fields; i++)
 			if(from->fld[i])
 			{
-				to->fld[i]=(fldformat*)malloc(sizeof(fldformat));
+				to->fld[i]=(fldformat*)calloc(1, sizeof(fldformat));
 				copyFormat(to->fld[i], from->fld[i]);
 			}
 	}
 	if(from->altformat)
 	{
-		to->altformat=(fldformat*)malloc(sizeof(fldformat));
+		to->altformat=(fldformat*)calloc(1, sizeof(fldformat));
 		copyFormat(to->altformat, from->altformat);
 	}
 }
