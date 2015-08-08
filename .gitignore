@@ -1,0 +1,9 @@
+*.o
+*.cc
+*.a
+saf/saf
+switch/switch
+tcpinterface/tcpif_*
+parser/testparse
+debit/debit
+issuer/issuer
