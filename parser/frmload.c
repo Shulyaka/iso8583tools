@@ -558,6 +558,28 @@ int parseFormat(fldformat *frm, char *format, link **links, int *ln)
 	frm->maxLength=atoi(format+j);
 	format[i]=tmpc;
 
+	if(format[i]=='+' || format[i]=='-')
+	{
+		for(j=i+1; j<strlen(format); j++)
+			if (format[j]<'0' || format[j]>'9')
+				break;
+
+		if(j==i+1)
+		{
+			if(debug)
+				printf("Error: Unrecognized additional length (%s)\n", format);
+			return 0;
+		}
+
+		tmpc=format[j];
+		format[j]='\0';
+		frm->addLength=(format[i]=='+')? atoi(format+i+1) : -atoi(format+i+1);
+		format[j]=tmpc;
+		i=j;
+	}
+	else
+		frm->addLength=0;
+
 	if(!frm->maxLength)
 		return 1; //allow zero length fields
 

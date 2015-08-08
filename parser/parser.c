@@ -184,6 +184,8 @@ int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 			}
 	}
 
+	length+=frm->addLength;
+
 	if(frm->dataFormat==FRM_BCDSF && frm->lengthFormat!=FRM_FIXED)
 		length*=2;
 

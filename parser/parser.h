@@ -33,6 +33,7 @@ typedef struct fldformat
 	unsigned int lengthLength;
 	unsigned short lengthInclusive;
 	unsigned int maxLength;
+	int addLength;
 	unsigned int dataFormat;
 	unsigned int tagFormat;
 	char *description;

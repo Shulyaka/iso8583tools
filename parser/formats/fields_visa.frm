@@ -2,7 +2,7 @@
 
 # This is just an example, not a real Visa header
 #Number		Format		Description
-message 	BB800SF		Visa Message (with header)
+message 	BBBB800+2SF	Visa Message (with header)
 0		BI22SF		Visa Header
 0.2		F2BCD		Header Format
 0.3		F2BCD		Text format
