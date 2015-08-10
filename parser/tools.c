@@ -119,6 +119,7 @@ void mirrorFormat(fldformat *to, fldformat *from)
 	to->lengthLength=from->lengthLength;
 	to->lengthInclusive=from->lengthInclusive;
 	to->maxLength=from->maxLength;
+	to->addLength=from->addLength;
 	to->dataFormat=from->dataFormat;
 	to->tagFormat=from->tagFormat;
 	to->description=from->description;
@@ -145,6 +146,7 @@ void copyFormat(fldformat *to, fldformat *from)
 	to->lengthLength=from->lengthLength;
 	to->lengthInclusive=from->lengthInclusive;
 	to->maxLength=from->maxLength;
+	to->addLength=from->addLength;
 	to->dataFormat=from->dataFormat;
 	to->tagFormat=from->tagFormat;
 	if(from->description)

@@ -222,7 +222,7 @@ unsigned int get_length(field *fld)
 			return 0;
 	}
 
-	blength-=frm->addLength;
+	blength+=frm->addLength;
 
 	//printf("get_length: %s length %d\n", frm->description, lenlen+blength);
 
@@ -730,7 +730,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 	if(frm->lengthInclusive)
 		mlength+=lenlen;
 
-	mlength-=frm->addLength;
+	mlength+=frm->addLength;
 
 	switch(frm->lengthFormat)
 	{

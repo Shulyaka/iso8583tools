@@ -69,11 +69,11 @@ unsigned int buildNetMsg(char *buf, unsigned int maxlength, field *message)
 		return 0;
 	}
 
-	strcpy(add_field(message, 0,4 ), "0000");
+	strcpy(add_field(message, 1,4 ), "0000");
 
 	length=get_length(message);
 
-	if(length==0 || snprintf(message->fld[0]->fld[4]->data, 5, "%04X", length - message->frm->lengthLength) > 4)
+	if(length==0 || snprintf(message->fld[1]->fld[4]->data, 5, "%04X", length - message->frm->lengthLength) > 4)
 	{
 		printf("Error: Unable to calculate the message length (%d)\n", length);
 //		return 0;
@@ -161,20 +161,20 @@ int processIncoming(isomessage *visamsg, field *fullmessage, VisaContext *contex
 	time(&now);
 	gmtime_r(&now, &current);
 
-	if(!fullmessage->fld[0])
+	if(!fullmessage->fld[1])
 	{
 		printf("Error: No message header found\n");
 		return 1;
 	}
 
-	if(!fullmessage->fld[1])
+	if(!fullmessage->fld[2])
 	{
 		printf("Error: No message body found\n");
 		return 1;
 	}
 
-	header=fullmessage->fld[0];
-	message=fullmessage->fld[1];
+	header=fullmessage->fld[1];
+	message=fullmessage->fld[2];
 
 	context->set_sourcestationid(get_field(header, 6));
 	context->set_visaroundtripinf(get_field(header, 7));
@@ -1116,11 +1116,12 @@ field* processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context
 
 	unsigned int i;
 
-	add_field(fullmessage, 0);
+	strcpy(add_field(fullmessage, 0), "0000");
 	add_field(fullmessage, 1);
+	add_field(fullmessage, 2);
 
-	header=fullmessage->fld[0];
-	message=fullmessage->fld[1];
+	header=fullmessage->fld[1];
+	message=fullmessage->fld[2];
 
 	strcpy(add_field(header, 2), "01");
 
@@ -1923,10 +1924,10 @@ field* processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context
 
 int isNetMgmt(field *message)
 {
-	if(!message || !message->fld || !message->fld[1] || !message->fld[1]->fld || !message->fld[1]->fld[0] || !message->fld[1]->fld[0]->data)
+	if(!message || !message->fld || !message->fld[2] || !message->fld[2]->fld || !message->fld[2]->fld[0] || !message->fld[2]->fld[0]->data)
 		return 0;
 
-	if(message->fld[1]->fld[0]->data[1]=='8')
+	if(message->fld[2]->fld[0]->data[1]=='8')
 		return 1;
 
 	return 0;
@@ -1934,10 +1935,10 @@ int isNetMgmt(field *message)
 
 int isNetRequest(field *message)
 {
-	if(!message || !message->fld || !message->fld[1] || !message->fld[1]->fld || !message->fld[1]->fld[0] || !message->fld[1]->fld[0]->data)
+	if(!message || !message->fld || !message->fld[2] || !message->fld[2]->fld || !message->fld[2]->fld[0] || !message->fld[2]->fld[0]->data)
 		return 0;
 
-	if(message->fld[1]->fld[0]->data[2]=='0' || message->fld[1]->fld[0]->data[2]=='2')
+	if(message->fld[2]->fld[0]->data[2]=='0' || message->fld[2]->fld[0]->data[2]=='2')
 		return 1;
 
 	return 0;
@@ -1948,11 +1949,11 @@ int processNetMgmt(field *message)
 	field *header;
 	field *mbody;
 
-	if(!message || !message->fld || !message->fld[0] || !message->fld[1])
+	if(!message || !message->fld || !message->fld[1] || !message->fld[2])
 		return 0;
 
-	header=message->fld[0];
-	mbody=message->fld[1];
+	header=message->fld[1];
+	mbody=message->fld[2];
 
 	strncpy(add_field(header, 5), get_field(header, 6), 6);
 	strncpy(add_field(header, 6), stationid, 6);
@@ -1973,11 +1974,11 @@ int declineNetMsg(field *message)
 	field *header;
 	field *mbody;
 
-	if(!message || !message->fld || !message->fld[0] || !message->fld[1])
+	if(!message || !message->fld || !message->fld[1] || !message->fld[2])
 		return 0;
 
-	header=message->fld[0];
-	mbody=message->fld[1];
+	header=message->fld[1];
+	mbody=message->fld[2];
 
 	strncpy(add_field(header, 5), get_field(header, 6), 6);
 	strncpy(add_field(header, 6), stationid, 6);

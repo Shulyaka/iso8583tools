@@ -184,7 +184,7 @@ int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 			}
 	}
 
-	length+=frm->addLength;
+	length-=frm->addLength;
 
 	if(frm->dataFormat==FRM_BCDSF && frm->lengthFormat!=FRM_FIXED)
 		length*=2;
@@ -527,6 +527,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 			tmpfrm.lengthFormat=FRM_FIXED;
 			tmpfrm.lengthLength=0;
 			tmpfrm.maxLength=fld->length;
+			tmpfrm.addLength=0;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
 
 			fld->frm=&tmpfrm;
