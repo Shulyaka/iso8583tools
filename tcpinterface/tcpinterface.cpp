@@ -28,15 +28,13 @@ int main(void)
 
 	field *pmessage;
 
-	fldformat *frm;
+	fldformat frm;
 
 	isomessage smessage;
 
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-	frm=loadNetFormat();
-
-	if(!frm)
+	if(!loadNetFormat(frm))
 	{
 		printf("Error: Can't load format\n");
 		return 1;
@@ -49,7 +47,6 @@ int main(void)
 	if(sfd[2].fd==-1)
 	{
 		printf("Error: Unable to start TCP connection\n");
-		freeFormat(frm);
 		return 1;
 	}
 
@@ -59,7 +56,6 @@ int main(void)
 	{
 		printf("Error: Unable to connect to switch\n");
 		close(sfd[2].fd);
-		freeFormat(frm);
 		return 1;
 	}
 
@@ -129,7 +125,7 @@ int main(void)
 			{
 				printf("Receiving message from net\n");
 
-				size=tcprecvmsg(sfd[1].fd, &pmessage, frm);
+				size=tcprecvmsg(sfd[1].fd, &pmessage, &frm);
 
 				if(size==-1)
 				{
@@ -139,7 +135,7 @@ int main(void)
 				else if(size==0)
 					continue;
 
-				print_message(pmessage);
+				pmessage->print_message();
 
 				if(isNetMgmt(pmessage))
 				{
@@ -148,30 +144,30 @@ int main(void)
 						if(!processNetMgmt(pmessage))
 						{
 							printf("Error: Unable to process Network Management request. Message dropped.\n");
-							freeField(pmessage);
+							delete pmessage;
 							continue;
 						}
 
-						print_message(pmessage);
+						pmessage->print_message();
 
 						size=tcpsendmsg(sfd[1].fd, pmessage);
 
 						if(size==-1)
 						{
 							printf("Closing connection\n");
-							freeField(pmessage);
+							delete pmessage;
 							break;
 						}
 						else if(size==0)
 						{
-							freeField(pmessage);
+							delete pmessage;
 							continue;
 						}
 
 						printf("Network Management Message sent (%d bytes)\n", size);
 					}
 
-					freeField(pmessage);
+					delete pmessage;
 					continue;
 				}
 
@@ -184,30 +180,30 @@ int main(void)
 						if(!declineNetMsg(pmessage))
 						{
 							printf("Error: Unable to decline the request. Message dropped.\n");
-							freeField(pmessage);
+							delete pmessage;
 							continue;
 						}
 
-						print_message(pmessage);
+						pmessage->print_message();
 
 						size=tcpsendmsg(sfd[1].fd, pmessage);
 
 						if(size==-1)
 						{
 							printf("Closing connection\n");
-							freeField(pmessage);
+							delete pmessage;
 							break;
 						}
 						else if(size==0)
 						{
-							freeField(pmessage);
+							delete pmessage;
 							continue;
 						}
 
 						printf("Decline message sent (%d bytes)\n", size);
 					}
 
-					freeField(pmessage);
+					delete pmessage;
 					continue;
 				}
 
@@ -225,34 +221,34 @@ int main(void)
 						if(!declineNetMsg(pmessage))
 						{
 							printf("Error: Unable to decline the request. Message dropped.\n");
-							freeField(pmessage);
+							delete pmessage;
 							continue;
 						}
 
-						print_message(pmessage);
+						pmessage->print_message();
 
 						size=tcpsendmsg(sfd[1].fd, pmessage);
 
 						if(size==-1)
 						{
 							printf("Closing connection\n");
-							freeField(pmessage);
+							delete pmessage;
 							break;
 						}
 						else if(size==0)
 						{
-							freeField(pmessage);
+							delete pmessage;
 							continue;
 						}
 
 						printf("Decline message sent (%d bytes)\n", size);
 					}
 
-					freeField(pmessage);
+					delete pmessage;
 					continue;
 				}
 
-				freeField(pmessage);
+				delete pmessage;
 
 				printf("Message sent, size is %d bytes.\n", size);
 			}
@@ -267,7 +263,7 @@ int main(void)
 				printf("\nOutgoingMessage:\n");
 		                smessage.PrintDebugString();
 
-				pmessage=translateSwitchToNet(&smessage, frm);
+				pmessage=translateSwitchToNet(&smessage, &frm);
 
 				if(!pmessage)
 				{
@@ -297,11 +293,11 @@ int main(void)
 					continue;
 				}
 
-				print_message(pmessage);
+				pmessage->print_message();
 
 				size=tcpsendmsg(sfd[1].fd, pmessage);
 
-				freeField(pmessage);
+				delete pmessage;
 
 				if(size==-1)
 				{
@@ -370,7 +366,6 @@ int main(void)
 
 	tcpclose(sfd[2].fd);
 	ipcclose(sfd[0].fd);
-	freeFormat(frm);
 	google::protobuf::ShutdownProtobufLibrary();
 	
 	return 0;

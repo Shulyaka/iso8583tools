@@ -139,7 +139,7 @@ int fldformat::load_format(char *filename)
 	int k=0;
 	fldformat *frmtmp, *frmpar, **altfrmpar=NULL;
 	FILE *file;
-	link *links=NULL;
+	rootlink *links=NULL;
 	int ln=0;
 
 	if(this->is_empty())
@@ -295,7 +295,7 @@ fldformat* fldformat::get_altformat(void)
 
 //returns the index in the links array of a loaded format for the requested name
 //if not found, new entry is created and added to the array so that the function always returns valid index
-int findLinkNumber(link **links, int *ln, const char *name, int maxlen, fldformat *frm)
+int findLinkNumber(rootlink **links, int *ln, const char *name, int maxlen, fldformat *frm)
 {
 	int i=0;
 
@@ -311,7 +311,7 @@ int findLinkNumber(link **links, int *ln, const char *name, int maxlen, fldforma
 
 	if(i==*ln)
 	{
-		*links=(link*)realloc(*links, (*ln+1)*sizeof(link));
+		*links=(rootlink*)realloc(*links, (*ln+1)*sizeof(rootlink));
 		*ln=*ln+1;
 		strncpy((*links)[i].name, name, maxlen);
 		if(!frm)
@@ -323,7 +323,7 @@ int findLinkNumber(link **links, int *ln, const char *name, int maxlen, fldforma
 }
 
 //parses number string and returns pointer to a parent format
-fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fldformat *frm)
+fldformat *findFrmParent(rootlink **links, int *ln, char *number, int *position, fldformat *frm)
 {
 	unsigned int i;
 	unsigned int l;
@@ -458,7 +458,7 @@ fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fld
 }
 
 //adds a subformat with a specified number either to links or to another format
-int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld, link *links)
+int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld, rootlink *links)
 {
 	fldformat *altformat;
 
@@ -538,7 +538,7 @@ int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld, link *links)
 }
 
 //parses format string
-int parseFormat(fldformat *frm, char *format, link **links, int *ln)
+int parseFormat(fldformat *frm, char *format, rootlink **links, int *ln)
 {
 	int i, j=0;
 	char tmpc;

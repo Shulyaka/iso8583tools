@@ -10,8 +10,8 @@ int isDomestic(isomessage*);
 field* parseNetMsg(char*, unsigned int, fldformat*);
 unsigned int buildNetMsg(char*, unsigned int, field*);
 int translateNetToSwitch(isomessage*, field*);
-field* translateSwitchToNet(isomessage*, fldformat *);
-fldformat* loadNetFormat(void);
+field* translateSwitchToNet(isomessage*, fldformat*);
+int loadNetFormat(fldformat&);
 
 int isNetMgmt(field*);
 int isNetRequest(field*);

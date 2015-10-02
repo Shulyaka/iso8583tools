@@ -93,7 +93,7 @@ int tcprecv(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 
 	if(length==0)
 	{
-		if(numread>=frm->lengthLength || frm->lengthLength > maxlen)
+		if(numread>=frm->get_lengthLength() || frm->get_lengthLength() > maxlen)
 		{
 			numread=0;
 			return -1;
@@ -101,7 +101,7 @@ int tcprecv(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 
 		errno=0;
 
-		i=read(sfd, buf + numread, frm->lengthLength - numread);
+		i=read(sfd, buf + numread, frm->get_lengthLength() - numread);
 
 		if(errno==EAGAIN || errno==EWOULDBLOCK)
 			return 0;
@@ -118,7 +118,7 @@ int tcprecv(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 
 		numread+=i;
 
-		if(numread < frm->lengthLength)
+		if(numread < frm->get_lengthLength())
 			return 0;
 
 		length=parse_field_length(buf, numread, frm);
@@ -129,7 +129,7 @@ int tcprecv(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 			return -1;
 		}
 
-		if(length>frm->maxLength)
+		if(length>frm->get_maxLength())
 		{
 			numread=0;
 			return -1;
@@ -140,7 +140,7 @@ int tcprecv(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 
 	errno=0;
 
-	if(numread>=frm->lengthLength + length || frm->lengthLength + length > maxlen)
+	if(numread>=frm->get_lengthLength() + length || frm->get_lengthLength() + length > maxlen)
 	{
 		numread=0;
 		return -1;
@@ -148,7 +148,7 @@ int tcprecv(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 
 	errno=0;
 
-	i=read(sfd, buf + numread, frm->lengthLength + length - numread);
+	i=read(sfd, buf + numread, frm->get_lengthLength() + length - numread);
 
 	if(errno==EAGAIN || errno==EWOULDBLOCK)
 		return 0;
@@ -165,11 +165,11 @@ int tcprecv(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
 
 	numread+=i;
 
-	if(numread < frm->lengthLength + length)
+	if(numread < frm->get_lengthLength() + length)
 		return 0;
 
 	numread=0;
-	return frm->lengthLength + length;
+	return frm->get_lengthLength() + length;
 }
 
 int tcpsend(int sfd, char *buf, unsigned int length)
