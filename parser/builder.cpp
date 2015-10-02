@@ -5,14 +5,10 @@
 #include "parser.h"
 
 //unsigned int build_message(char*, unsigned int, field*, fldformat*);
-unsigned int build_field(char*, unsigned int, field*);
-unsigned int build_field_alt(char*, unsigned int, field*);
 unsigned int build_ebcdic(char*, char*, unsigned int);
 unsigned int build_hex(char*, char*, unsigned int);
 unsigned int build_bcdl(char*, char*, unsigned int);
 unsigned int build_bcdr(char*, char*, unsigned int);
-unsigned int build_isobitmap(char*, unsigned int, field*, unsigned int);
-unsigned int build_bitmap(char*, unsigned int, field*, unsigned int);
 
 unsigned int build_message(char *buf, unsigned int maxlength, field *fld)
 {
@@ -88,7 +84,7 @@ unsigned int get_length(field *fld)
 						bitmap_found=i;
 						sflen=(frm->fld[i]->maxLength+7)/8;
 					}
-					else if(is_empty(fld->fld[i]))
+					else if(fld->fld[i]->is_empty())
 						continue;
 					else
 						sflen=get_length(fld->fld[i]);
@@ -105,16 +101,15 @@ unsigned int get_length(field *fld)
 			break;
 
 		case FRM_BCDSF:
-			memset(&tmpfrm, 0, sizeof(fldformat));
-			mirrorFormat(&tmpfrm, frm);
+			tmpfrm.copyFrom(frm);
 			tmpfrm.lengthFormat=FRM_UNKNOWN;
 			tmpfrm.lengthLength=0;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
-			fld->frm=&tmpfrm;
+			fld->change_format(&tmpfrm);
 
 			flength=get_length(fld);
 
-			fld->frm=frm;
+			fld->change_format(frm);
 
 			if(!flength)
 				return 0;
@@ -143,7 +138,7 @@ unsigned int get_length(field *fld)
 				if(!fld->fld[i]->tag)
 					return 0;
 
-				if(is_empty(fld->fld[i]))
+				if(fld->fld[i]->is_empty())
 					continue;
 
 				if(frm->dataFormat==FRM_TLVEMV)
@@ -181,7 +176,7 @@ unsigned int get_length(field *fld)
 				if(!frm->fld[i])
 					return 0;
 
-				if(is_empty(fld->fld[i]))
+				if(fld->fld[i]->is_empty())
 					continue;
 
 				pos+=taglength;
@@ -271,7 +266,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 	for(; frm->altformat; frm=frm->altformat)   //if that failed,
 	{
 		fld->altformat++;            //then iterate through remaining altformats
-		if(change_format(fld, frm->altformat))  //that we are able to change to
+		if(fld->change_format(frm->altformat))  //that we are able to change to
 		{
 			length=build_field_alt(buf, maxlength, fld);
 			if(length)
@@ -376,7 +371,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 						bitmap_found=i;
 						sflen=build_bitmap(buf+pos, maxlength-pos, fld, i);
 					}
-					else if(is_empty(fld->fld[i]))
+					else if(fld->fld[i]->is_empty())
 					{
 						if(debug)
 							printf("Warning: No subfields for subfield %d\n", i);
@@ -403,26 +398,24 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 		case FRM_BCDSF:
 			fld->data=(char*)malloc(maxlength*2+1);
-			
+
+			tmpfrm.copyFrom(frm);
 			tmpfrm.lengthFormat=FRM_UNKNOWN;
 			tmpfrm.lengthLength=0;
-			tmpfrm.maxLength=frm->maxLength;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
-			tmpfrm.tagFormat=0;
-			tmpfrm.description=frm->description;
-			tmpfrm.data=frm->data;
-			tmpfrm.maxFields=frm->maxFields;
-			tmpfrm.fields=frm->fields;
-			tmpfrm.fld=frm->fld;
 
-			fld->frm=&tmpfrm;
+			fld->change_format(&tmpfrm);
 
 			flength=build_field(fld->data, maxlength*2, fld);
 
-			fld->frm=frm;
+			fld->change_format(frm);
 
 			if(!flength)
+			{
+				free(fld->data);
+				fld->data=0;
 				return 0;
+			}
 
 			blength=(flength+1)/2;
 			
@@ -432,10 +425,16 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 				mlength=blength;
 
 			if(lenlen+blength>maxlength)
+			{
+				free(fld->data);
+				fld->data=0;
 				return 0;
+			}
 			
 			if(!build_bcdl(fld->data, buf+lenlen, flength))
 			{
+				free(fld->data);
+				fld->data=0;
 				if(debug)
 					printf("Error: Not BCD subfield\n");
 				return 0;
@@ -474,7 +473,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 					return 0;
 				}
 
-				if(is_empty(fld->fld[i]))
+				if(fld->fld[i]->is_empty())
 					continue;
 
 				sflen=strlen(fld->fld[i]->tag);
@@ -562,7 +561,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 					return 0;
 				}
 
-				if(is_empty(fld->fld[i]))
+				if(fld->fld[i]->is_empty())
 					continue;
 
 				switch(frm->tagFormat)
@@ -986,7 +985,7 @@ unsigned int build_isobitmap(char *buf, unsigned int maxlength, field *fld, unsi
 			buf[i*64]=0x80;
 
 		for(j=1; j<64; j++)
-			if(fld->fld[i*64+j+index] && !is_empty(fld->fld[i*64+j+index]))
+			if(fld->fld[i*64+j+index] && !fld->fld[i*64+j+index]->is_empty())
 				buf[i*8+j/8]|=1<<(7-j%8);
 	}
 	
@@ -1007,44 +1006,9 @@ unsigned int build_bitmap(char *buf, unsigned int maxlength, field *fld, unsigne
 	memset(buf, '\0', blength);
 
 	for(i=0; i<flength && i<fld->fields-index-1; i++)
-		if(fld->fld[index+1+i] && !is_empty(fld->fld[index+1+i]))
+		if(fld->fld[index+1+i] && !fld->fld[index+1+i]->is_empty())
 			buf[i/8]|=1<<(7-i%8);
 
 	return blength;
-}
-
-int is_empty(field *fld)
-{
-	int i;
-
-	switch(fld->frm->dataFormat)
-	{
-		case FRM_SUBFIELDS:
-		case FRM_BCDSF:
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
-		case FRM_TLVEMV:
-		case FRM_TLVDS:
-			break;
-		case FRM_ISOBITMAP:
-		case FRM_BITMAP:
-			return 0;
-		default:
-			if(!fld->data || !fld->data[0])
-				return 1;
-			else
-				return 0;
-	}
-
-	if(!fld->fld)
-		return 1;
-
-	for(i=0; i<fld->frm->fields; i++)
-		if(fld->fld[i] && fld->fld[i]->frm->dataFormat!=FRM_ISOBITMAP && fld->fld[i]->frm->dataFormat!=FRM_BITMAP && !is_empty(fld->fld[i]))
-			return 0;
-
-	return 1;
 }
 

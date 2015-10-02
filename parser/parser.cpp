@@ -4,8 +4,6 @@
 
 #include "parser.h"
 
-int parse_field(char*, unsigned int, field*);
-int parse_field_alt(char*, unsigned int, field*);
 void parse_ebcdic(char*, char*, unsigned int);
 int parse_hex(char*, char*, unsigned int);
 int parse_bcdr(char*, char*, unsigned int);
@@ -29,7 +27,7 @@ field *parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 		return NULL;
 	}
 	
-	message=(field *)calloc(1, sizeof(field));
+	message=new field;
 
 	message->frm=frm;
 
@@ -37,7 +35,7 @@ field *parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 	{
 		if(debug)
 			printf("Error: Can't parse\n");
-		freeField(message);
+		delete message;
 		return NULL;
 	}
 	
@@ -202,7 +200,7 @@ int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 // return value:
 // >0: successfully parsed, the value is the length
 // <0: Parse failed but you could try a greater maxlength of at least the negated returned value
-// =0: Parse failed and don't try again, there is no point, it would fail anyway.
+// =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
 int parse_field(char *buf, unsigned int maxlength, field *fld)
 {
 	fldformat *frm;
@@ -224,10 +222,10 @@ int parse_field(char *buf, unsigned int maxlength, field *fld)
 		return 0;
 	}
 
-	if(fld->blength &&fld->frm && fld->frm->altformat)
+	if(fld->blength && fld->frm && fld->frm->altformat)
 	{
 		frm=fld->frm->altformat;
-		emptyField(fld);
+		fld->clear();
 		if(debug)
 			printf("Field was already parsed. Retrying with alternate format \"%s\"\n", frm->description);
 	}
@@ -249,7 +247,7 @@ int parse_field(char *buf, unsigned int maxlength, field *fld)
 		if(debug && frm->altformat)
 			printf("Info: parse_field: Retrying with alternate format \"%s\"\n", frm->altformat->description);
 
-		emptyField(fld);
+		fld->clear();
 
 		fld->frm=frm; //save last attempted format
 		fld->altformat=i-1;
@@ -269,7 +267,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 	unsigned int i, j;
 	int bitmap_start=-1;
 	int bitmap_end=0;
-	int build_failed;
+	int parse_failed;
 	int cursf;
 	unsigned int pos;
 	int sflen;
@@ -368,13 +366,13 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 	{
 		case FRM_SUBFIELDS:
 			fld->fld=(field**)calloc(frm->maxFields, sizeof(field*));
-			build_failed=1;
+			parse_failed=1;
 			cursf=0;
 			pos=lenlen;
 			minlength=0;
-			while(build_failed)
+			while(parse_failed)
 			{
-				build_failed=0;
+				parse_failed=0;
 				for(; cursf < frm->fields; cursf++)
 				{
 					sflen=0;
@@ -388,7 +386,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 					{
 						if(debug)
 							printf("Error: No format for subfield %d which is present in bitmap\n", cursf);
-						build_failed=1;
+						parse_failed=1;
 						break;
 					}
 
@@ -397,7 +395,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 						if(fld->fld[cursf])
 						{
 							sflen=fld->fld[cursf]->blength;
-							emptyField(fld->fld[cursf]);
+							fld->fld[cursf]->clear();
 							fld->fld[cursf]->blength=sflen;
 						}
 						else
@@ -440,7 +438,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 							if(debug)
 								printf("Error: unable to parse subfield (%d)\n", sflen);
 							fld->fld[cursf]=NULL;
-							build_failed=1;
+							parse_failed=1;
 							break;
 						}
 
@@ -460,7 +458,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				fld->fields=cursf;
 
-				if(!build_failed && pos!=fld->length+lenlen)
+				if(!parse_failed && pos!=fld->length+lenlen)
 				{
 					if(bitmap_start!=-1)
 						for(i=frm->fields; i<=bitmap_end; i++)
@@ -470,10 +468,10 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 					if(debug)
 						printf("Error: Not enough subfield formats (%d, %d) for %s\n", pos, fld->length, frm->description);
-					build_failed=1;
+					parse_failed=1;
 				}
 
-				if(build_failed)
+				if(parse_failed)
 				{
 					if(sflen<0 && (minlength==0 || sflen-pos>minlength))
 						minlength=sflen-pos;
@@ -492,7 +490,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 						}
 						else if(fld->fld[cursf])
 						{
-							freeField(fld->fld[cursf]);
+							fld->fld[cursf]->clear();
 							fld->fld[cursf]=0;
 						}
 					}
@@ -506,7 +504,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 				}
 			}
 
-			if(build_failed)
+			if(parse_failed)
 			{
 				return minlength;
 			}
@@ -522,21 +520,20 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 				return 0;
 			}
 
-			memset(&tmpfrm, 0, sizeof(fldformat));
-			mirrorFormat(&tmpfrm, frm);
+			tmpfrm.copyFrom(frm);
 			tmpfrm.lengthFormat=FRM_FIXED;
 			tmpfrm.lengthLength=0;
 			tmpfrm.maxLength=fld->length;
 			tmpfrm.addLength=0;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
 
-			fld->frm=&tmpfrm;
+			fld->change_format(&tmpfrm);
 
 			sflen=parse_field(fld->data, fld->length, fld);
 			
 			free(fld->data);
 			fld->data=0;
-			fld->frm=frm;			
+			fld->change_format(frm);
 
 			if(sflen<=0)
 			{

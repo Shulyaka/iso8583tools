@@ -328,3 +328,7 @@ message 	BB800-2SF	Visa Message (with header)
 2.148		F3BCD		Cryptogram Currency Code
 2.149		F12BCD		Cryptogram Cashback Amount
 2.152		F8HEX		Secondary PIN Block
+
+#message 	U800SF		Visa Message (with header, no length)
+#1		R1		Visa Header
+#2		R2		Visa Message

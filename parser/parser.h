@@ -26,9 +26,36 @@
 
 extern int debug;
 
-typedef struct fldformat
+class fldformat;
+class field;
+
+//during format loading, the array of links would contain loaded formats without parents
+typedef struct link
 {
-	//unsigned int number;
+	char name[256];
+	fldformat *frm;
+} link;
+
+fldformat *findFrmParent(link**, int*, char*, int*, fldformat *frm=NULL);
+int parseFormat(fldformat*, char*, link**, int*);
+int linkFrmChild(fldformat*, unsigned int, fldformat*, link*);
+int findLinkNumber(link**, int*, const char*, int maxlen=-1, fldformat *frm=NULL);
+
+field *parse_message(char*, unsigned int, fldformat*);
+int parse_field_length(char*, unsigned int, fldformat*);
+int parse_field(char*, unsigned int, field*);
+int parse_field_alt(char*, unsigned int, field*);
+
+unsigned int build_message(char*, unsigned int, field*);
+unsigned int get_length(field*);
+unsigned int build_field(char*, unsigned int, field*);
+unsigned int build_field_alt(char*, unsigned int, field*);
+unsigned int build_isobitmap(char*, unsigned int, field*, unsigned int);
+unsigned int build_bitmap(char*, unsigned int, field*, unsigned int);
+
+class fldformat
+{
+	private:
 	unsigned int lengthFormat;
 	unsigned int lengthLength;
 	unsigned short lengthInclusive;
@@ -40,12 +67,42 @@ typedef struct fldformat
 	char *data;
 	unsigned int maxFields;
 	unsigned int fields;
-	struct fldformat **fld;
-	struct fldformat *altformat;
-} fldformat;
+	fldformat **fld;
+	fldformat *altformat;
 
-typedef struct field
+	void fill_default(void);
+
+	friend field;
+	friend fldformat *findFrmParent(link**, int*, char*, int*, fldformat*);
+	friend int parseFormat(fldformat*, char*, link**, int*);
+	friend int linkFrmChild(fldformat*, unsigned int, fldformat*, link*);
+	friend int findLinkNumber(link**, int*, const char*, int, fldformat*);
+
+	friend field *parse_message(char*, unsigned int, fldformat*);
+	friend int parse_field(char*, unsigned int, field*);
+	friend int parse_field_alt(char*, unsigned int, field*);
+	friend int parse_field_length(char*, unsigned int, fldformat*);
+	friend unsigned int build_message(char*, unsigned int, field*);
+	friend unsigned int get_length(field*);
+	friend unsigned int build_field(char*, unsigned int, field*);
+	friend unsigned int build_field_alt(char*, unsigned int, field*);
+	friend unsigned int build_isobitmap(char*, unsigned int, field*, unsigned int);
+	friend unsigned int build_bitmap(char*, unsigned int, field*, unsigned int);
+
+	public:
+	fldformat(void);
+	~fldformat(void);
+	void clear(void);
+	int is_empty(void);
+	int load_format(char *filename);
+	void copyFrom(fldformat *from);
+	fldformat *get_altformat(void);
+	const char *get_description(void);
+};
+
+class field
 {
+	private:
 	char* data;  //parsed data
 	char* tag;   //parsed TLV tag name
 	unsigned int start;  //start position inside the message binary data relative to the parent field
@@ -55,30 +112,40 @@ typedef struct field
 	fldformat *frm;  //field format
 	struct field **fld;  //array of subfields
 	unsigned int altformat;  //altformat number
-} field;
 
-fldformat *load_format(char*, fldformat *frmroot=NULL);
-void emptyFormat(fldformat*);
-void freeFormat(fldformat*);
-void emptyField(field*);
-void freeField(field*);
-void copyFormat(fldformat *to, fldformat *from);
-void mirrorFormat(fldformat *to, fldformat *from);
-field *parse_message(char*, unsigned int, fldformat*);
-unsigned int build_message(char*, unsigned int, field*);
-unsigned int get_length(field*);
-int parse_field_length(char*, unsigned int, fldformat*);
-int is_empty(field*);
-void print_message(field*);
+	void fill_default(void);
+	int change_format(fldformat *frmnew);
 
-int change_format(field*, fldformat*);
-const char* get_field(field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-char* add_field(field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-int field_format(field *fld, int altformat, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-void remove_field(field *fld,  int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-int has_field(field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-char* add_tag(const char *tag, field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-const char* get_tag(field *fld, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	friend field *parse_message(char*, unsigned int, fldformat*);
+	friend int parse_field(char*, unsigned int, field*);
+	friend int parse_field_alt(char*, unsigned int, field*);
+	friend int parse_field_length(char*, unsigned int, fldformat*);
+	friend unsigned int build_message(char*, unsigned int, field*);
+	friend unsigned int get_length(field*);
+	friend unsigned int build_field(char*, unsigned int, field*);
+	friend unsigned int build_field_alt(char*, unsigned int, field*);
+	friend unsigned int build_isobitmap(char*, unsigned int, field*, unsigned int);
+	friend unsigned int build_bitmap(char*, unsigned int, field*, unsigned int);
+
+	public:
+	field(void);
+	~field(void);
+	void print_message(void);
+	void clear(void);
+	int is_empty(void);
+	//int change_format(fldformat*);
+
+	const char *get_description(void);
+	inline int get_parsed_blength() {return this->blength;};
+
+	const char* get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	char* add_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	int field_format(int altformat, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	void remove_field(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	int has_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	char* add_tag(const char *tag, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	const char* get_tag(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+};
 
 #endif
 

@@ -4,33 +4,70 @@
 
 #include "parser.h"
 
-void print_message(field *fld)
+field::field(void)
+{
+	this->fill_default();
+}
+
+field::~field(void)
+{
+	this->clear();
+}
+
+void field::fill_default(void)
+{
+	this->data=NULL;
+	this->tag=NULL;
+	this->start=0;
+	this->blength=0;
+	this->length=0;
+	this->fields=0;
+	this->frm=NULL;
+	this->fld=NULL;
+	this->altformat=0;
+}
+
+void field::clear(void)
+{
+	unsigned int i;
+
+	if(this->fields!=0)
+	{
+		for(i=0; i<this->fields; i++)
+			if(this->fld[i]!=NULL)
+				delete this->fld[i];
+		free(this->fld);
+	}
+
+	if(this->data!=NULL)
+		free(this->data);
+
+	if(this->tag!=NULL)
+		free(this->tag);
+
+	this->fill_default();
+}
+
+void field::print_message(void)
 {
 	unsigned int i,j;
 
 	fldformat *frm;
 
-	if(!fld)
-	{
-		if(debug)
-			printf("Error: First arg is null\n");
-		return;
-	}
-
-	frm=fld->frm;
+	frm=this->frm;
 
 	if(!frm)
 	{
 		if(debug)
-			printf("Error: Second arg is null\n");
+			printf("Error: No format assigned\n");
 		return;
 	}
 
 	printf("%s", frm->description);
-	if(fld->tag)
-		printf(" [%s]", fld->tag);
-	if(fld->data)
-		printf(" (%d): [%s]\n", fld->length, fld->data);
+	if(this->tag)
+		printf(" [%s]", this->tag);
+	if(this->data)
+		printf(" (%d): [%s]\n", this->length, this->data);
 	else
 		printf(":\n");
 
@@ -39,222 +76,90 @@ void print_message(field *fld)
 		case FRM_SUBFIELDS:
 		case FRM_BCDSF:
 		case FRM_TLVDS:
-			for(i=0; i<fld->fields; i++)
-				if(fld->fld[i])
-					print_message(fld->fld[i]);
+			for(i=0; i<this->fields; i++)
+				if(this->fld[i])
+					this->fld[i]->print_message();
 			break;
 		case FRM_TLV1:
 		case FRM_TLV2:
 		case FRM_TLV3:
 		case FRM_TLV4:
 		case FRM_TLVEMV:
-			for(i=0; i<fld->fields; i++)
-				if(fld->fld[i])
-					print_message(fld->fld[i]);
+			for(i=0; i<this->fields; i++)
+				if(this->fld[i])
+					this->fld[i]->print_message();
 			break;
 	}
 }
 
-void emptyFormat(fldformat *frm)
+int field::is_empty(void)
 {
-	unsigned int i; 
+	int i;
 
-	if(!frm)
+	switch(this->frm->dataFormat)
 	{
-		if(debug)
-			printf("Warning: already freed\n");
-		return;       
-	}      
+		case FRM_SUBFIELDS:
+		case FRM_BCDSF:
+		case FRM_TLV1:
+		case FRM_TLV2:
+		case FRM_TLV3:
+		case FRM_TLV4:
+		case FRM_TLVEMV:
+		case FRM_TLVDS:
+			break;
+		case FRM_ISOBITMAP:
+		case FRM_BITMAP:
+			return 0;
+		default:
+			if(!this->data || !this->data[0])
+				return 1;
+			else
+				return 0;
+	}
 
-	if(frm->fields!=0)
-	{      
-		for(i=0; i<frm->fields; i++)
-			if(frm->fld[i]!=NULL)
-				freeFormat(frm->fld[i]);    
-		free(frm->fld);
-	}      
+	if(!this->fld)
+		return 1;
 
-	if(frm->description!=NULL)
-		free(frm->description);
+	for(i=0; i<this->frm->fields; i++)
+		if(this->fld[i] && this->fld[i]->frm->dataFormat!=FRM_ISOBITMAP && this->fld[i]->frm->dataFormat!=FRM_BITMAP && !this->fld[i]->is_empty())
+			return 0;
 
-	if(frm->data!=NULL)
-		free(frm->data);
-
-	if(frm->altformat!=NULL)
-		freeFormat(frm->altformat);
-
-	memset(frm, 0, sizeof(fldformat));
+	return 1;
 }
 
-void freeFormat(fldformat *frm)
-{
-	unsigned int i; 
-
-	if(!frm)
-	{
-		if(debug)
-			printf("Warning: already freed\n");
-		return;       
-	}      
-
-	emptyFormat(frm);
-
-	free(frm);
-}
-
-// copy pointers but not data -- use with care (may create loops. And don't try to recursively free both formats!)
-void mirrorFormat(fldformat *to, fldformat *from)
-{
-	unsigned int i;
-
-	if(!from || !to)
-	{
-		printf("Error: Field not provided\n");
-		return;
-	}
-
-	emptyFormat(to);
-
-	to->lengthFormat=from->lengthFormat;
-	to->lengthLength=from->lengthLength;
-	to->lengthInclusive=from->lengthInclusive;
-	to->maxLength=from->maxLength;
-	to->addLength=from->addLength;
-	to->dataFormat=from->dataFormat;
-	to->tagFormat=from->tagFormat;
-	to->description=from->description;
-	to->data=from->data;
-	to->maxFields=from->maxFields;
-	to->fields=from->fields;
-	to->fld=from->fld;
-	to->altformat=from->altformat;
-}
-
-void copyFormat(fldformat *to, fldformat *from)
-{
-	unsigned int i;
-
-	if(!from || !to)
-	{
-		printf("Error: Field not provided\n");
-		return;
-	}
-
-	emptyFormat(to);
-
-	to->lengthFormat=from->lengthFormat;
-	to->lengthLength=from->lengthLength;
-	to->lengthInclusive=from->lengthInclusive;
-	to->maxLength=from->maxLength;
-	to->addLength=from->addLength;
-	to->dataFormat=from->dataFormat;
-	to->tagFormat=from->tagFormat;
-	if(from->description)
-	{
-		to->description=(char *)malloc((strlen(from->description)+1)*sizeof(char));
-		strcpy(to->description, from->description);
-	}
-	if(from->data)
-	{
-		to->data=(char *)malloc((strlen(from->data)+1)*sizeof(char));
-		strcpy(to->data, from->data);
-	}
-	to->maxFields=from->maxFields;
-	to->fields=from->fields;
-	if(from->fld)
-	{
-		to->fld=(fldformat**)calloc(from->maxFields,sizeof(fldformat*));
-		for(i=0; i < from->fields; i++)
-			if(from->fld[i])
-			{
-				to->fld[i]=(fldformat*)calloc(1, sizeof(fldformat));
-				copyFormat(to->fld[i], from->fld[i]);
-			}
-	}
-	if(from->altformat)
-	{
-		to->altformat=(fldformat*)calloc(1, sizeof(fldformat));
-		copyFormat(to->altformat, from->altformat);
-	}
-}
-
-void emptyField(field *fld)
-{
-	unsigned int i;
-
-	if(!fld)
-	{
-		if(debug)
-			printf("Warning: already freed\n");
-		return;
-	}
-
-	if(fld->fields!=0)
-	{
-		for(i=0; i<fld->fields; i++)
-			if(fld->fld[i]!=NULL)
-				freeField(fld->fld[i]);
-		free(fld->fld);
-	}
-
-	if(fld->data!=NULL)
-		free(fld->data);
-
-	if(fld->tag!=NULL)
-		free(fld->tag);
-
-	memset(fld, 0, sizeof(field));
-}
-
-void freeField(field *fld)
-{
-	unsigned int i;
-
-	if(!fld)
-	{
-		if(debug)
-			printf("Warning: already freed\n");
-		return;
-	}
-
-	emptyField(fld);
-
-	free(fld);
-}
-
-int change_format(field *fld, fldformat *frmnew)
+int field::change_format(fldformat *frmnew)
 {
 	unsigned int i;
 	fldformat *frmold;
 
-	if(!fld || !frmnew)
+	if(!frmnew)
 		return 0;
 
-	if(fld->frm == frmnew)
+	if(this->frm == frmnew)
 		return 1;
 
-	frmold=fld->frm;
+	frmold=this->frm;
 
-	fld->frm=frmnew;
+	this->frm=frmnew;
 
-	for(i=0; i<fld->fields; i++)
-		if(fld->fld[i]!=NULL)
-			if(frmnew->fields<=i || !frmnew->fld[i] || !change_format(fld->fld[i], frmnew->fld[i]))
+	for(i=0; i<this->fields; i++)
+		if(this->fld[i]!=NULL)
+			if(frmnew->fields<=i || !frmnew->fld[i] || !this->fld[i]->change_format(frmnew->fld[i]))
 				break;
 
-	if(i!=fld->fields)
+	if(i!=this->fields)
 	{
 		if(debug)
 			printf("Error: Unable to change field format (%d). Reverting.\n", i);
 
-		for(fld->frm=frmold; i!=0; i--)
-			if(fld->fld[i]!=NULL)
-				if(frmold->fields<=i || !frmold->fld[i] || !change_format(fld->fld[i], frmold->fld[i]))
+		for(this->frm=frmold; i!=0; i--)
+			if(this->fld[i]!=NULL)
+				if(frmold->fields<=i || !frmold->fld[i] || !this->fld[i]->change_format(frmold->fld[i]))
 					if(debug)
 						printf("Error: Unable to revert\n");
 
-		if(fld->fld[0]!=NULL)
-			if(frmold->fields==0 || !frmold->fld[0] || !change_format(fld->fld[0], frmold->fld[0]))
+		if(this->fld[0]!=NULL)
+			if(frmold->fields==0 || !frmold->fld[0] || !this->fld[0]->change_format(frmold->fld[0]))
 				if(debug)
 					printf("Error: Unable to revert\n");
 
@@ -264,12 +169,13 @@ int change_format(field *fld, fldformat *frmnew)
 	return 1;
 }
 
-//a segfault-save accessor function. Returns a pointer to the field contents. If the field does not exist, it would be created. If it cannot be created, a valid pointer to a dummy array is returned.
-char* add_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+//a segfault-safe accessor function. Returns a pointer to the field contents. If the field does not exist, it would be created. If it cannot be created, a valid pointer to a dummy array is returned.
+char* field::add_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	static char def[255]={0};
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
+	field *fld=this;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
 	{
@@ -339,11 +245,12 @@ char* add_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int 
 	return fld->data;
 }
 
-int field_format(field *fld, int altformat, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+int field::field_format(int altformat, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
 	fldformat *tmpfrm;
+	field *fld=this;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
 	{
@@ -415,7 +322,7 @@ int field_format(field *fld, int altformat, int n0, int n1, int n2, int n3, int 
 			else
 				tmpfrm=tmpfrm->altformat;
 
-		if(change_format(fld, tmpfrm))
+		if(fld->change_format(tmpfrm))
 			fld->altformat=altformat;
 		else
 			return 1;
@@ -441,7 +348,7 @@ int field_format(field *fld, int altformat, int n0, int n1, int n2, int n3, int 
 		else
 			tmpfrm=tmpfrm->altformat;
 
-	if(change_format(fld, tmpfrm))
+	if(fld->change_format(tmpfrm))
 		fld->altformat=altformat;
 	else
 		return 1;
@@ -449,11 +356,12 @@ int field_format(field *fld, int altformat, int n0, int n1, int n2, int n3, int 
 	return 0;
 } 
 
-char* add_tag(const char *tag, field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+char* field::add_tag(const char *tag, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	static char def[255]={0};
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
+	field *fld=this;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
 	{
@@ -560,11 +468,12 @@ char* add_tag(const char *tag, field *fld, int n0, int n1, int n2, int n3, int n
 }
 
 //a segfault-safe accessor function. Return a pointer to the fields contents. If the field does not exist, returns a valid pointer to an empty string. The field structure is not modified.
-const char* get_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+const char* field::get_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	static const char def[255]={0};
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
+	field *fld=this;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
 	{
@@ -583,11 +492,12 @@ const char* get_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5
 	return fld->data;
 }
 
-const char* get_tag(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+const char* field::get_tag(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	static const char def[10]={0};
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
+	field *fld=this;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
 	{
@@ -606,10 +516,11 @@ const char* get_tag(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, 
 	return fld->tag;
 }
 
-void remove_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+void field::remove_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
+	field *fld=this;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0])-1; i++)
 	{
@@ -625,17 +536,18 @@ void remove_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, in
 	if(!fld || !fld->fld || !fld->fld[n[i]])
 		return;
 
-	freeField(fld->fld[n[i]]);
+	delete fld->fld[n[i]];
 	fld->fld[n[i]]=NULL;
 	return;
 }
 
 //returns zero if fields does not exists or has no subfields or empty.
 //otherwise, returns field length or number of subfields.
-int has_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+int field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
+	field *fld=this;
 
 	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
 	{
@@ -675,5 +587,15 @@ int has_field(field *fld, int n0, int n1, int n2, int n3, int n4, int n5, int n6
 			else
 				return strlen(fld->data);
 	}
+}
+
+const char *field::get_description(void)
+{
+	static const char dummy[]="";
+	
+	if(!this->frm)
+		return dummy;
+	else
+		return this->frm->get_description();
 }
 

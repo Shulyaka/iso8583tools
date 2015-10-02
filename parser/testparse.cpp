@@ -11,7 +11,7 @@ int debug=0;
 
 int main(int argc, char **argv)
 {
-	fldformat *frmtmp, *frm=NULL;
+	fldformat frm;
 	field *message;
 	char format_dir[]="./formats";
 	char filename[sizeof(format_dir)+NAME_MAX+1];
@@ -54,23 +54,10 @@ int main(int argc, char **argv)
 		if(debug)
 			printf("Loading %s\n", filename);
 
-		frmtmp=load_format(filename, frm);
-
-		if(!frmtmp)
+		if(!frm.load_format(filename))
 			continue;
 
-		if(frmcounter++==0)
-			frm=frmtmp;
-
-		if(frmtmp->lengthFormat!=FRM_UNKNOWN)
-		{
-			if(load_format(filename, frm))		//load again without length as an altformat
-			{
-				frmcounter++;
-				frmtmp->lengthFormat=FRM_UNKNOWN;
-				frmtmp->lengthLength=0;
-			}
-		}
+		frmcounter++;
 	}
 
 	closedir(frmdir);
@@ -106,7 +93,6 @@ int main(int argc, char **argv)
 			printf("Message is too big\n");
 			if(infile!=stdin)
 				fclose(infile);
-			freeFormat(frm);
 			return 5;
 		}
 
@@ -117,12 +103,11 @@ int main(int argc, char **argv)
 
 	msglen1=msglen;
 
-	message=parse_message(msgbuf, msglen, frm);
+	message=parse_message(msgbuf, msglen, &frm);
 
 	if(!message)
 	{
 		printf("Error: Unable to parse message\n");
-		freeFormat(frm);
 
 		sprintf(filename, "imessage%ld", time(NULL));
 		outfile=fopen(filename, "w");
@@ -135,21 +120,20 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s parsed, length: %d\n", message->frm->description, message->blength);
+		printf("%s parsed, length: %d\n", message->get_description(), message->get_parsed_blength());
 
-	print_message(message);
+	message->print_message();
 
 	if(debug)
-		printf("Building %s, estimated length: %d\n", message->frm->description, get_length(message));
+		printf("Building %s, estimated length: %d\n", message->get_description(), get_length(message));
 
 	msglen2=build_message(msgbuf2, sizeof(msgbuf2), message);
 
 	if(!msglen2)
 	{
 		if(debug)
-			printf("Error: Unable to build %s\n", message->frm->description);
-		freeField(message);
-		freeFormat(frm);
+			printf("Error: Unable to build %s\n", message->get_description());
+		delete message;
 
 		sprintf(filename, "imessage%ld", time(NULL));
 		outfile=fopen(filename, "w");
@@ -162,10 +146,9 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s built. Length: %d\n", message->frm->description, msglen2);
+		printf("%s built. Length: %d\n", message->get_description(), msglen2);
 
-	freeField(message);
-	freeFormat(frm);
+	delete message;
 
 	if(msglen2!=msglen)
 	{

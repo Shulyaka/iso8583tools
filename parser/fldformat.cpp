@@ -4,20 +4,130 @@
 
 #include "parser.h"
 
-typedef struct link
+//constructor
+fldformat::fldformat(void)
 {
-	char name[256];
-	fldformat *frm;
-} link;
+	this->fill_default();
+}
 
-fldformat *findFrmParent(link**, int*, char*, int*, fldformat *frm=NULL);
-//fldformat *newFrmChild(fldformat*, unsigned int);
-//void removeFrmChild(fldformat*, unsigned int);
-int parseFormat(fldformat*, char*, link**, int*);
-int linkFrmChild(fldformat*, unsigned int, fldformat*, link*);
-int findLinkNumber(link**, int*, const char*, int maxlen=-1, fldformat *frm=NULL);
+//destructor
+fldformat::~fldformat(void)
+{
+	this->clear();
+}
 
-fldformat* load_format(char *filename, fldformat *frmroot)
+//default format
+void fldformat::fill_default(void)
+{
+	this->lengthFormat=FRM_UNKNOWN;
+	this->lengthLength=0;
+	this->lengthInclusive=0;
+	this->maxLength=1024;
+	this->addLength=0;
+	this->dataFormat=FRM_SUBFIELDS;
+	this->tagFormat=0;
+	this->description=NULL;
+	this->data=NULL;
+	this->maxFields=196;
+	this->fields=0;
+	this->fld=NULL;
+	this->altformat=NULL;
+}
+
+//empty to default
+void fldformat::clear(void)
+{
+	unsigned int i; 
+
+	if(this->fields!=0)
+	{      
+		for(i=0; i<this->fields; i++)
+			if(this->fld[i]!=NULL)
+				delete this->fld[i];
+		free(this->fld);
+	}
+
+	if(this->description!=NULL)
+		free(this->description);
+
+	if(this->data!=NULL)
+		free(this->data);
+
+	if(this->altformat!=NULL)
+		delete this->altformat;
+
+	this->fill_default();
+}
+
+int fldformat::is_empty(void)
+{
+	return this->lengthFormat==FRM_UNKNOWN
+	    && this->lengthLength==0
+	    && this->lengthInclusive==0
+	    && this->maxLength==1024
+	    && this->addLength==0
+	    && this->dataFormat==FRM_SUBFIELDS
+	    && this->tagFormat==0
+	    && this->description==NULL
+	    && this->data==NULL
+	    && this->maxFields==196
+	    && this->fields==0
+	    && this->fld==NULL
+	    && this->altformat==NULL;
+}
+
+//forks the format. All data and subformat are also copied so that all pointers will have new values to newly copied data but non-pointers will have same values
+void fldformat::copyFrom(fldformat *from)
+{
+	unsigned int i;
+
+	if(!from)
+	{
+		printf("Error: Field not provided\n");
+		return;
+	}
+
+	this->clear();
+
+	this->lengthFormat=from->lengthFormat;
+	this->lengthLength=from->lengthLength;
+	this->lengthInclusive=from->lengthInclusive;
+	this->maxLength=from->maxLength;
+	this->addLength=from->addLength;
+	this->dataFormat=from->dataFormat;
+	this->tagFormat=from->tagFormat;
+	if(from->description)
+	{
+		this->description=(char *)malloc((strlen(from->description)+1)*sizeof(char));
+		strcpy(this->description, from->description);
+	}
+	if(from->data)
+	{
+		this->data=(char *)malloc((strlen(from->data)+1)*sizeof(char));
+		strcpy(this->data, from->data);
+	}
+	this->maxFields=from->maxFields;
+	this->fields=from->fields;
+	if(from->fld)
+	{
+		this->fld=(fldformat**)calloc(from->maxFields,sizeof(fldformat*));
+		for(i=0; i < from->fields; i++)
+			if(from->fld[i])
+			{
+				this->fld[i]=new fldformat;
+				this->fld[i]->copyFrom(from->fld[i]);
+			}
+	}
+	if(from->altformat)
+	{
+		this->altformat=new fldformat;
+		this->altformat->copyFrom(from->altformat);
+	}
+}
+
+// load format from file
+// returns 0 on failure, 1 on success
+int fldformat::load_format(char *filename)
 {
 	char line[256];
 	char number[sizeof(line)];
@@ -32,30 +142,26 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 	link *links=NULL;
 	int ln=0;
 
-	if(!frmroot)
+	if(this->is_empty())
 		findLinkNumber(&links, &ln, (char*)"message");
 	else
 	{
-		for(; frmroot->altformat!=NULL; )
-			frmroot=frmroot->altformat;
+		for(frmtmp=this; frmtmp->altformat!=NULL; )
+			frmtmp=frmtmp->altformat;
 
-		frmroot->altformat=(fldformat*)calloc(1, sizeof(fldformat));
-		altfrmpar=&(frmroot->altformat);
-		frmroot->altformat->lengthFormat=FRM_UNKNOWN;
-		frmroot->altformat->maxLength=1024;
-		frmroot->altformat->dataFormat=FRM_SUBFIELDS;
-		frmroot->altformat->maxFields=196;
-		findLinkNumber(&links, &ln, (char *)"message", -1, frmroot->altformat);
+		frmtmp->altformat=new fldformat;
+		altfrmpar=&(frmtmp->altformat);
+		findLinkNumber(&links, &ln, (char *)"message", -1, frmtmp->altformat);
 	}
 
 	if((file=fopen(filename, "r"))==NULL)
 	{
 		if(debug)
 			perror("Error: Unable to open file\n");
-		freeFormat(links[0].frm);
+		delete links[0].frm;
 		if(altfrmpar)
 			*altfrmpar=NULL;
-		return NULL;
+		return 0;
 	}
 
 	while ((chr=fgetc(file))!=EOF)
@@ -103,13 +209,13 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 			}
 		}
 
-		frmtmp=(fldformat*)calloc(1, sizeof(fldformat));
+		frmtmp=new fldformat;
 
 		if (!parseFormat(frmtmp, format, &links, &ln))
 		{
 			if(debug)
 				printf("Error: Unable to parse format, skipping:\n%s\n", line);
-			freeFormat(frmtmp);
+			delete frmtmp;
 			continue;
 		}
 
@@ -130,7 +236,7 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 		{
 			if(debug)
 				printf("Error: Unable to add format, skipping:\n%s\n", line);
-			freeFormat(frmtmp);
+			delete frmtmp;
 			continue;
 		}
 
@@ -138,38 +244,57 @@ fldformat* load_format(char *filename, fldformat *frmroot)
 	}
 	fclose(file);
 
+	if(k>1)
+	{
+		if(!altfrmpar)
+		{
+			this->copyFrom(links[0].frm);
+			delete links[0].frm;
+		}
+	}
+	else
+		delete links[0].frm;
+
 	for(i=1; i<ln; i++)
 	{
-		freeFormat(links[i].frm);
+		delete links[i].frm;
 	}
-
-	frmtmp=links[0].frm;
 
 	free(links);
-
-	if(!frmtmp->description)
-	{
-		printf("Warning: No 'message' format, implying default\n");
-		frmtmp->description=(char*)malloc(strlen("No description")+1);
-		strcpy(frmtmp->description, "No description");
-	}
-
-	if(debug)
-		printf("Info: Loaded %d fields\n", k);
 
 	if(k==1)
 	{
 		if(debug)
 			printf("Error: No fields loaded\n");
-		freeFormat(frmtmp);
+
 		if(altfrmpar)
+		{
+			delete *altfrmpar;
 			*altfrmpar=NULL;
-		return NULL;
+		}
+		return 0;
 	}
 
-	return frmtmp;
+	if(!this->description)
+	{
+		printf("Warning: No 'message' format, implying default\n");
+		this->description=(char*)malloc(strlen("No description")+1);
+		strcpy(this->description, "No description");
+	}
+
+	if(debug)
+		printf("Info: Loaded %d fields\n", k);
+
+	return 1;
 }
 
+fldformat* fldformat::get_altformat(void)
+{
+	return this->altformat;
+}
+
+//returns the index in the links array of a loaded format for the requested name
+//if not found, new entry is created and added to the array so that the function always returns valid index
 int findLinkNumber(link **links, int *ln, const char *name, int maxlen, fldformat *frm)
 {
 	int i=0;
@@ -190,19 +315,14 @@ int findLinkNumber(link **links, int *ln, const char *name, int maxlen, fldforma
 		*ln=*ln+1;
 		strncpy((*links)[i].name, name, maxlen);
 		if(!frm)
-		{
-			frm=(fldformat*)calloc(1, sizeof(fldformat));
-			frm->lengthFormat=FRM_UNKNOWN;
-			frm->maxLength=1024;
-			frm->dataFormat=FRM_SUBFIELDS;
-			frm->maxFields=196;
-		}
+			frm=new fldformat;
 		(*links)[i].frm=frm;
 	}
 
 	return i;
 }
 
+//parses number string and returns pointer to a parent format
 fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fldformat *frm)
 {
 	unsigned int i;
@@ -263,8 +383,8 @@ fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fld
 		if(i==l || i+1==l)
 			return NULL;
 
-		for(altformat=(*links)[*position].frm; altformat->altformat!=NULL; )
-			 altformat=altformat->altformat;
+		for(altformat=(*links)[*position].frm; altformat->get_altformat()!=NULL; )
+			 altformat=altformat->get_altformat();
 
 		altformat=findFrmParent(NULL, ln, number+i+1, position, altformat);
 		if(altformat)
@@ -284,8 +404,8 @@ fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fld
 		else	
 			*position=atoi(number);
 
-		for(altformat=frm; altformat->altformat!=NULL; )
-			altformat=altformat->altformat;
+		for(altformat=frm; altformat->get_altformat()!=NULL; )
+			altformat=altformat->get_altformat();
 
 		return altformat;
 	}
@@ -323,8 +443,8 @@ fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fld
 		return NULL;
 	}
 
-	for(altformat=frm->fld[*position]; altformat->altformat!=NULL; )
-		 altformat=altformat->altformat;
+	for(altformat=frm->fld[*position]; altformat->get_altformat()!=NULL; )
+		 altformat=altformat->get_altformat();
 
 	altformat=findFrmParent(NULL, ln, number+i+1, position, altformat);
 	if(altformat)
@@ -337,6 +457,7 @@ fldformat *findFrmParent(link **links, int *ln, char *number, int *position, fld
 	return NULL;
 }
 
+//adds a subformat with a specified number either to links or to another format
 int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld, link *links)
 {
 	fldformat *altformat;
@@ -375,10 +496,15 @@ int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld, link *links)
 			cld->fld=links[n].frm->fld;
 			cld->altformat=links[n].frm->altformat;
 
-			mirrorFormat(links[n].frm, cld);
-			cld->data=NULL; //transfer pointer ownership to link
-			cld->description=NULL;
-			free(cld);
+//			printf("links[%d]: relink %s (%X)->(%X)\n", n, links[n].name, links[n].frm, cld);
+//			delete links[n].frm;
+//			links[n].frm=cld;
+
+			links[n].frm->copyFrom(cld);
+//			cld->data=NULL; //transfer pointer ownership to link
+//			cld->description=NULL;
+			delete cld;
+
 		}
 		return 1;
 	}
@@ -411,6 +537,7 @@ int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld, link *links)
 	return 1;
 }
 
+//parses format string
 int parseFormat(fldformat *frm, char *format, link **links, int *ln)
 {
 	int i, j=0;
@@ -509,7 +636,7 @@ int parseFormat(fldformat *frm, char *format, link **links, int *ln)
 		case 'R':
 			tmpfrm=findFrmParent(links, ln, format+1, &j);
 			if(!tmpfrm)
-				copyFormat(frm, (*links)[j].frm);
+				frm->copyFrom((*links)[j].frm);
 			else
 			{
 				if(tmpfrm->fields<j)
@@ -517,7 +644,7 @@ int parseFormat(fldformat *frm, char *format, link **links, int *ln)
 					printf("Error: Unable to find referenced format (%s)\n", format+1);
 					return 0;
 				}
-				copyFormat(frm, tmpfrm->fld[j]);
+				frm->copyFrom(tmpfrm->fld[j]);
 			}
 
 			if(frm->description)
@@ -696,3 +823,12 @@ int parseFormat(fldformat *frm, char *format, link **links, int *ln)
 	return 1;
 }
 
+const char *fldformat::get_description(void)
+{
+	static const char dummy[]="";
+	
+	if(!this->description)
+		return dummy;
+	else
+		return this->description;
+}
