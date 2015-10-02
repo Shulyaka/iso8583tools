@@ -10,7 +10,7 @@ int debug=1;
 int ipcconnect(int);
 
 int processIncoming(isomessage *visamsg, field *fullmessage, VisaContext *context);
-field* processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context);
+int processOutgoing(field *fullmessage, isomessage *visamsg, fldformat *frm, VisaContext *context);
 
 char stationid[7]="456789";
 
@@ -27,10 +27,8 @@ int loadNetFormat(fldformat &frm)
 	return frm.load_format((char*)"../parser/formats/fields_visa.frm");
 }
 
-field* parseNetMsg(char *buf, unsigned int length, fldformat *frm)
+int parseNetMsg(field &message, char *buf, unsigned int length, fldformat *frm)
 {
-	field *message;
-
 	if(!buf)
 	{
 		printf("Error: no buf\n");
@@ -45,12 +43,10 @@ field* parseNetMsg(char *buf, unsigned int length, fldformat *frm)
 	
 	printf("\nMessage received, length %d\n", length);
 
-	message=parse_message(buf, length, frm);   //TODO: For Visa, parse header (frm->fld[0]) and message(frm->fld[1]) separately to handle reject header properly.
-
-	if(!message)
+	if(message.parse_message(buf, length, frm)<=0)   //TODO: For Visa, parse header (frm->fld[0]) and message(frm->fld[2]) separately to handle reject header properly.
 		printf("Error: Unable to parse\n");
 
-	return message;
+	return 1;
 }
 
 unsigned int buildNetMsg(char *buf, unsigned int maxlength, field *message)
@@ -79,7 +75,7 @@ unsigned int buildNetMsg(char *buf, unsigned int maxlength, field *message)
 //		return 0;
 	}
 
-	return build_message(buf, maxlength, message);
+	return message->build_message(buf, maxlength);
 	
 }
 
@@ -123,20 +119,20 @@ int translateNetToSwitch(isomessage *visamsg, field *fullmessage)
 	return 0;
 }
 
-field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
+int translateSwitchToNet(field *message, isomessage *visamsg, fldformat *frm)
 {
 	VisaContext context;
 
 	if(!frm)
 	{
 		printf("Error: No frm\n");
-		return NULL;
+		return 0;
 	}
 
 	if(!visamsg)
 	{
 		printf("Error: No visamsg\n");
-		return NULL;
+		return 0;
 	}
 
 	if(visamsg->has_currentcontext())
@@ -144,7 +140,7 @@ field* translateSwitchToNet(isomessage *visamsg, fldformat *frm)
 	else
 		fillDefaultContext(&context);
 
-	return processOutgoing(visamsg, frm, &context);
+	return processOutgoing(message, visamsg, frm, &context);
 }
 
 int processIncoming(isomessage *visamsg, field *fullmessage, VisaContext *context)
@@ -1104,11 +1100,10 @@ int processIncoming(isomessage *visamsg, field *fullmessage, VisaContext *contex
 	return 0;
 }
 
-field* processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context)
+int processOutgoing(field *fullmessage, isomessage *visamsg, fldformat *frm, VisaContext *context)
 {
 	field *header;
 	field *message;
-	field *fullmessage=(field*)calloc(1, sizeof(field));
 
 	fullmessage->change_format(frm);
 
@@ -1213,8 +1208,7 @@ field* processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context
 
 			default:
 				printf("Error: Unknown transaction type: %d\n", visamsg->transactiontype());
-				delete fullmessage;
-				return NULL;
+				return 0;
 		}
 
 		switch(visamsg->accounttypefrom())
@@ -1919,7 +1913,7 @@ field* processOutgoing(isomessage *visamsg, fldformat *frm, VisaContext *context
 
 
 
-	return fullmessage;
+	return 1;
 }
 
 int isNetMgmt(field *message)

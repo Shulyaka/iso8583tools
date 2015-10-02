@@ -30,6 +30,7 @@ void field::fill_default(void)
 void field::clear(void)
 {
 	unsigned int i;
+	fldformat *frm=this->frm;
 
 	if(this->fields!=0)
 	{
@@ -46,6 +47,79 @@ void field::clear(void)
 		free(this->tag);
 
 	this->fill_default();
+	this->frm=frm; //make frm immune to clear()
+}
+
+//forks the field. All data and subfields are also copied so that all pointers except frm will have new values to newly copied data but non-pointers will have same values
+void field::copyFrom(field *from)
+{
+	unsigned int i;
+
+	if(!from)
+	{
+		printf("Error: Field not provided\n");
+		return;
+	}
+
+	this->clear();
+
+	if(from->data)
+	{
+		this->data=(char *)malloc((strlen(from->data)+1)*sizeof(char));
+		strcpy(this->data, from->data);
+	}
+	if(from->tag)
+	{
+		this->tag=(char *)malloc((strlen(from->tag)+1)*sizeof(char));
+		strcpy(this->tag, from->tag);
+	}
+	this->start=from->start;
+	this->blength=from->blength;
+	this->length=from->length;
+	this->fields=from->fields;
+	this->frm=from->frm;
+	if(from->fld)
+	{
+		this->fld=(field**)calloc(from->frm->maxFields,sizeof(field*));
+		for(i=0; i < from->fields; i++)
+			if(from->fld[i])
+			{
+				this->fld[i]=new field;
+				this->fld[i]->copyFrom(from->fld[i]);
+			}
+	}
+	this->altformat=from->altformat;
+}
+
+//relink data from another format. The old format will become empty
+void field::moveFrom(field *from)
+{
+	unsigned int i;
+
+	if(!from)
+	{
+		printf("Error: Field not provided\n");
+		return;
+	}
+
+	this->clear();
+
+	this->data=from->data;
+	this->tag=from->tag;
+	this->start=from->start;
+	this->blength=from->blength;
+	this->length=from->length;
+	this->fields=from->fields;
+	this->frm=from->frm;
+	this->fld=from->fld;
+	this->altformat=from->altformat;
+
+	from->data=NULL;
+	from->tag=NULL;
+	from->fld=NULL;
+	from->fields=0;
+
+	from->clear();
 }
 
 void field::print_message(void)

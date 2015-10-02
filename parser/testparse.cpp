@@ -12,7 +12,7 @@ int debug=0;
 int main(int argc, char **argv)
 {
 	fldformat frm;
-	field *message;
+	field message;
 	char format_dir[]="./formats";
 	char filename[sizeof(format_dir)+NAME_MAX+1];
 	DIR *frmdir;
@@ -103,9 +103,7 @@ int main(int argc, char **argv)
 
 	msglen1=msglen;
 
-	message=parse_message(msgbuf, msglen, &frm);
-
-	if(!message)
+	if(message.parse_message(msgbuf, msglen, &frm)<=0)
 	{
 		printf("Error: Unable to parse message\n");
 
@@ -120,20 +118,19 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s parsed, length: %d\n", message->get_description(), message->get_parsed_blength());
+		printf("%s parsed, length: %d\n", message.get_description(), message.get_parsed_blength());
 
-	message->print_message();
+	message.print_message();
 
 	if(debug)
-		printf("Building %s, estimated length: %d\n", message->get_description(), get_length(message));
+		printf("Building %s, estimated length: %d\n", message.get_description(), get_length(&message));
 
-	msglen2=build_message(msgbuf2, sizeof(msgbuf2), message);
+	msglen2=message.build_message(msgbuf2, sizeof(msgbuf2));
 
 	if(!msglen2)
 	{
 		if(debug)
-			printf("Error: Unable to build %s\n", message->get_description());
-		delete message;
+			printf("Error: Unable to build %s\n", message.get_description());
 
 		sprintf(filename, "imessage%ld", time(NULL));
 		outfile=fopen(filename, "w");
@@ -146,9 +143,7 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s built. Length: %d\n", message->get_description(), msglen2);
-
-	delete message;
+		printf("%s built. Length: %d\n", message.get_description(), msglen2);
 
 	if(msglen2!=msglen)
 	{

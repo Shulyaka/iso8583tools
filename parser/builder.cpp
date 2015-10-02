@@ -10,9 +10,9 @@ unsigned int build_hex(char*, char*, unsigned int);
 unsigned int build_bcdl(char*, char*, unsigned int);
 unsigned int build_bcdr(char*, char*, unsigned int);
 
-unsigned int build_message(char *buf, unsigned int maxlength, field *fld)
+unsigned int field::build_message(char *buf, unsigned int maxlength)
 {
-	return build_field(buf, maxlength, fld);
+	return build_field(buf, maxlength, this);
 }
 
 unsigned int get_length(field *fld)

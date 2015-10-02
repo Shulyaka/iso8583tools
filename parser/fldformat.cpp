@@ -125,6 +125,42 @@ void fldformat::copyFrom(fldformat *from)
 	}
 }
 
+//relink data from another format. The old format will become empty
+void fldformat::moveFrom(fldformat *from)
+{
+	unsigned int i;
+
+	if(!from)
+	{
+		printf("Error: Field not provided\n");
+		return;
+	}
+
+	this->clear();
+
+	this->lengthFormat=from->lengthFormat;
+	this->lengthLength=from->lengthLength;
+	this->lengthInclusive=from->lengthInclusive;
+	this->maxLength=from->maxLength;
+	this->addLength=from->addLength;
+	this->dataFormat=from->dataFormat;
+	this->tagFormat=from->tagFormat;
+	this->description=from->description;
+	this->data=from->data;
+	this->maxFields=from->maxFields;
+	this->fields=from->fields;
+	this->fld=from->fld;
+	this->altformat=from->altformat;
+
+	from->description=NULL;
+	from->data-NULL;
+	from->fld=NULL;
+	from->altformat=NULL;
+	from->fields=0;
+
+	from->clear();
+}
+
 // load format from file
 // returns 0 on failure, 1 on success
 int fldformat::load_format(char *filename)
@@ -248,7 +284,7 @@ int fldformat::load_format(char *filename)
 	{
 		if(!altfrmpar)
 		{
-			this->copyFrom(links[0].frm);
+			this->moveFrom(links[0].frm);
 			delete links[0].frm;
 		}
 	}
@@ -496,13 +532,7 @@ int linkFrmChild(fldformat *frm, unsigned int n, fldformat *cld, rootlink *links
 			cld->fld=links[n].frm->fld;
 			cld->altformat=links[n].frm->altformat;
 
-//			printf("links[%d]: relink %s (%X)->(%X)\n", n, links[n].name, links[n].frm, cld);
-//			delete links[n].frm;
-//			links[n].frm=cld;
-
-			links[n].frm->copyFrom(cld);
-//			cld->data=NULL; //transfer pointer ownership to link
-//			cld->description=NULL;
+			links[n].frm->moveFrom(cld);
 			delete cld;
 
 		}

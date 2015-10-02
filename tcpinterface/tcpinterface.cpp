@@ -26,7 +26,7 @@ int main(void)
 
 	int size;
 
-	field *pmessage;
+	field pmessage;
 
 	fldformat frm;
 
@@ -125,7 +125,7 @@ int main(void)
 			{
 				printf("Receiving message from net\n");
 
-				size=tcprecvmsg(sfd[1].fd, &pmessage, &frm);
+				size=tcprecvmsg(sfd[1].fd, pmessage, &frm);
 
 				if(size==-1)
 				{
@@ -135,75 +135,63 @@ int main(void)
 				else if(size==0)
 					continue;
 
-				pmessage->print_message();
+				pmessage.print_message();
 
-				if(isNetMgmt(pmessage))
+				if(isNetMgmt(&pmessage))
 				{
-					if(isNetRequest(pmessage))
+					if(isNetRequest(&pmessage))
 					{
-						if(!processNetMgmt(pmessage))
+						if(!processNetMgmt(&pmessage))
 						{
 							printf("Error: Unable to process Network Management request. Message dropped.\n");
-							delete pmessage;
 							continue;
 						}
 
-						pmessage->print_message();
+						pmessage.print_message();
 
-						size=tcpsendmsg(sfd[1].fd, pmessage);
+						size=tcpsendmsg(sfd[1].fd, &pmessage);
 
 						if(size==-1)
 						{
 							printf("Closing connection\n");
-							delete pmessage;
 							break;
 						}
 						else if(size==0)
-						{
-							delete pmessage;
 							continue;
-						}
 
 						printf("Network Management Message sent (%d bytes)\n", size);
 					}
 
-					delete pmessage;
 					continue;
 				}
 
-				if(translateNetToSwitch(&smessage, pmessage)!=0)
+				if(translateNetToSwitch(&smessage, &pmessage)!=0)
 				{
 					printf("Error: Unable to translate the message to format-independent representation.\n");
 
-					if(isNetRequest(pmessage))
+					if(isNetRequest(&pmessage))
 					{
-						if(!declineNetMsg(pmessage))
+						if(!declineNetMsg(&pmessage))
 						{
 							printf("Error: Unable to decline the request. Message dropped.\n");
-							delete pmessage;
 							continue;
 						}
 
-						pmessage->print_message();
+						pmessage.print_message();
 
-						size=tcpsendmsg(sfd[1].fd, pmessage);
+						size=tcpsendmsg(sfd[1].fd, &pmessage);
 
 						if(size==-1)
 						{
 							printf("Closing connection\n");
-							delete pmessage;
 							break;
 						}
 						else if(size==0)
-						{
-							delete pmessage;
 							continue;
-						}
 
 						printf("Decline message sent (%d bytes)\n", size);
 					}
 
-					delete pmessage;
 					continue;
 				}
 
@@ -216,39 +204,31 @@ int main(void)
 				{
 					printf("Error: Unable to send the message to switch\n");
 
-					if(isNetRequest(pmessage))
+					if(isNetRequest(&pmessage))
 					{
-						if(!declineNetMsg(pmessage))
+						if(!declineNetMsg(&pmessage))
 						{
 							printf("Error: Unable to decline the request. Message dropped.\n");
-							delete pmessage;
 							continue;
 						}
 
-						pmessage->print_message();
+						pmessage.print_message();
 
-						size=tcpsendmsg(sfd[1].fd, pmessage);
+						size=tcpsendmsg(sfd[1].fd, &pmessage);
 
 						if(size==-1)
 						{
 							printf("Closing connection\n");
-							delete pmessage;
 							break;
 						}
 						else if(size==0)
-						{
-							delete pmessage;
 							continue;
-						}
 
 						printf("Decline message sent (%d bytes)\n", size);
 					}
 
-					delete pmessage;
 					continue;
 				}
-
-				delete pmessage;
 
 				printf("Message sent, size is %d bytes.\n", size);
 			}
@@ -263,9 +243,7 @@ int main(void)
 				printf("\nOutgoingMessage:\n");
 		                smessage.PrintDebugString();
 
-				pmessage=translateSwitchToNet(&smessage, &frm);
-
-				if(!pmessage)
+				if(!translateSwitchToNet(&pmessage, &smessage, &frm))
 				{
 					printf("Error: Unable to translate the message from format-independent representation.\n");
 
@@ -293,11 +271,9 @@ int main(void)
 					continue;
 				}
 
-				pmessage->print_message();
+				pmessage.print_message();
 
-				size=tcpsendmsg(sfd[1].fd, pmessage);
-
-				delete pmessage;
+				size=tcpsendmsg(sfd[1].fd, &pmessage);
 
 				if(size==-1)
 				{

@@ -9,37 +9,43 @@ int parse_hex(char*, char*, unsigned int);
 int parse_bcdr(char*, char*, unsigned int);
 int parse_bcdl(char*, char*, unsigned int);
 
-field *parse_message(char *msgbuf, unsigned int length, fldformat *frm)
+// return value:
+// >0: successfully parsed, the value is the length
+// <0: Parse failed but you could try a greater maxlength of at least the negated returned value
+// =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
+int field::parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 {
 	field *message;
+	int parsedlength;
 
 	if(!msgbuf)
 	{
 		if(debug)
 			printf("Error: No buffer\n");
-		return NULL;
+		return 0;
 	}
 
 	if(!frm)
 	{
 		if(debug)
 			printf("Error: No frm\n");
-		return NULL;
+		return 0;
 	}
-	
+
 	message=new field;
 
 	message->frm=frm;
 
-	if(parse_field(msgbuf, length, message)<=0)
-	{
+	parsedlength=parse_field(msgbuf, length, message);
+
+	if(parsedlength>0)
+		this->moveFrom(message);
+	else
 		if(debug)
 			printf("Error: Can't parse\n");
-		delete message;
-		return NULL;
-	}
-	
-	return message;
+
+	delete message;
+	return parsedlength;
 }
 
 int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)

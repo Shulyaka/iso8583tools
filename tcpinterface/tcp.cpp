@@ -187,7 +187,7 @@ int tcpclose(int sfd)
 //-1: TCP error
 //0: Message error
 //Otherwise, the message size is returned
-int tcprecvmsg(int sfd, field **message, fldformat *frm)
+int tcprecvmsg(int sfd, field &message, fldformat *frm)
 {
 	int size;
 	static char buf[10000];
@@ -216,7 +216,7 @@ int tcprecvmsg(int sfd, field **message, fldformat *frm)
 		return 0;
 	}
 
-	*message=parseNetMsg(buf, size, frm);
+	parseNetMsg(message, buf, size, frm);
 
 	return size;
 }

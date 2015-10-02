@@ -41,12 +41,10 @@ int parseFormat(fldformat*, char*, rootlink**, int*);
 int linkFrmChild(fldformat*, unsigned int, fldformat*, rootlink*);
 int findLinkNumber(rootlink**, int*, const char*, int maxlen=-1, fldformat *frm=NULL);
 
-field *parse_message(char*, unsigned int, fldformat*);
 int parse_field_length(char*, unsigned int, fldformat*);
 int parse_field(char*, unsigned int, field*);
 int parse_field_alt(char*, unsigned int, field*);
 
-unsigned int build_message(char*, unsigned int, field*);
 unsigned int get_length(field*);
 unsigned int build_field(char*, unsigned int, field*);
 unsigned int build_field_alt(char*, unsigned int, field*);
@@ -78,11 +76,9 @@ class fldformat
 	friend int linkFrmChild(fldformat*, unsigned int, fldformat*, rootlink*);
 	friend int findLinkNumber(rootlink**, int*, const char*, int, fldformat*);
 
-	friend field *parse_message(char*, unsigned int, fldformat*);
 	friend int parse_field(char*, unsigned int, field*);
 	friend int parse_field_alt(char*, unsigned int, field*);
 	friend int parse_field_length(char*, unsigned int, fldformat*);
-	friend unsigned int build_message(char*, unsigned int, field*);
 	friend unsigned int get_length(field*);
 	friend unsigned int build_field(char*, unsigned int, field*);
 	friend unsigned int build_field_alt(char*, unsigned int, field*);
@@ -96,6 +92,7 @@ class fldformat
 	int is_empty(void);
 	int load_format(char *filename);
 	void copyFrom(fldformat *from);
+	void moveFrom(fldformat *from);
 	fldformat *get_altformat(void);
 	const char *get_description(void);
 	inline const unsigned int get_lengthLength() {return this->lengthLength;};
@@ -116,13 +113,10 @@ class field
 	unsigned int altformat;  //altformat number
 
 	void fill_default(void);
-	//int change_format(fldformat *frmnew);
 
-	friend field *parse_message(char*, unsigned int, fldformat*);
 	friend int parse_field(char*, unsigned int, field*);
 	friend int parse_field_alt(char*, unsigned int, field*);
 	friend int parse_field_length(char*, unsigned int, fldformat*);
-	friend unsigned int build_message(char*, unsigned int, field*);
 	friend unsigned int get_length(field*);
 	friend unsigned int build_field(char*, unsigned int, field*);
 	friend unsigned int build_field_alt(char*, unsigned int, field*);
@@ -136,6 +130,11 @@ class field
 	void clear(void);
 	int is_empty(void);
 	int change_format(fldformat*);
+	void copyFrom(field *from);
+	void moveFrom(field *from);
+
+	int parse_message(char*, unsigned int, fldformat*);
+	unsigned int build_message(char*, unsigned int);
 
 	const char *get_description(void);
 	inline const int get_parsed_blength() {return this->blength;};
