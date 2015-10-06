@@ -24,22 +24,14 @@
 
 #include <stdlib.h>
 
+#include <string>
+#include <map>
+using namespace std;
+
 extern int debug;
 
 class fldformat;
 class field;
-
-//during format loading, the array of links would contain loaded formats without parents
-typedef struct rootlink
-{
-	char name[256];
-	fldformat *frm;
-} rootlink;
-
-fldformat *findFrmParent(rootlink**, int*, char*, int*, fldformat *frm=NULL);
-int parseFormat(fldformat*, char*, rootlink**, int*);
-int linkFrmChild(fldformat*, unsigned int, fldformat*, rootlink*);
-int findLinkNumber(rootlink**, int*, const char*, int maxlen=-1, fldformat *frm=NULL);
 
 int parse_field_length(char*, unsigned int, fldformat*);
 int parse_field(char*, unsigned int, field*);
@@ -54,6 +46,7 @@ unsigned int build_bitmap(char*, unsigned int, field*, unsigned int);
 class fldformat
 {
 	private:
+	char *description;
 	unsigned int lengthFormat;
 	unsigned int lengthLength;
 	unsigned short lengthInclusive;
@@ -61,21 +54,19 @@ class fldformat
 	int addLength;
 	unsigned int dataFormat;
 	unsigned int tagFormat;
-	char *description;
 	char *data;
 	unsigned int maxFields;
 	unsigned int fields;
 	fldformat **fld;
 	fldformat *altformat;
+	fldformat *parent;
 
 	void fill_default(void);
 
-	friend field;
-	friend fldformat *findFrmParent(rootlink**, int*, char*, int*, fldformat*);
-	friend int parseFormat(fldformat*, char*, rootlink**, int*);
-	friend int linkFrmChild(fldformat*, unsigned int, fldformat*, rootlink*);
-	friend int findLinkNumber(rootlink**, int*, const char*, int, fldformat*);
+	int parseFormat(char*, map<string,fldformat> &orphans);
+	fldformat* get_by_number(const char *number, map<string,fldformat> &orphans);
 
+	friend field;
 	friend int parse_field(char*, unsigned int, field*);
 	friend int parse_field_alt(char*, unsigned int, field*);
 	friend int parse_field_length(char*, unsigned int, fldformat*);
@@ -87,13 +78,15 @@ class fldformat
 
 	public:
 	fldformat(void);
+	fldformat(const fldformat&);
 	~fldformat(void);
 	void clear(void);
 	int is_empty(void);
 	int load_format(char *filename);
-	void copyFrom(fldformat *from);
+	void copyFrom(const fldformat *from);
 	void moveFrom(fldformat *from);
-	fldformat *get_altformat(void);
+	inline fldformat *get_altformat(void);
+	inline fldformat *get_lastaltformat(void);
 	const char *get_description(void);
 	inline const unsigned int get_lengthLength() {return this->lengthLength;};
 	inline const unsigned int get_maxLength() {return this->maxLength;};
@@ -125,12 +118,13 @@ class field
 
 	public:
 	field(void);
+	field(const field&);
 	~field(void);
 	void print_message(void);
 	void clear(void);
 	int is_empty(void);
 	int change_format(fldformat*);
-	void copyFrom(field *from);
+	void copyFrom(const field *from);
 	void moveFrom(field *from);
 
 	int parse_message(char*, unsigned int, fldformat*);

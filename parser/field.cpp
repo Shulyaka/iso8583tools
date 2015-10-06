@@ -9,6 +9,13 @@ field::field(void)
 	this->fill_default();
 }
 
+//copy constructor
+field::field(const field &from)
+{
+	this->fill_default();
+	this->copyFrom(&from);
+}
+
 field::~field(void)
 {
 	this->clear();
@@ -51,7 +58,7 @@ void field::clear(void)
 }
 
 //forks the field. All data and subfields are also copied so that all pointers except frm will have new values to newly copied data but non-pointers will have same values
-void field::copyFrom(field *from)
+void field::copyFrom(const field *from)
 {
 	unsigned int i;
 
@@ -60,6 +67,9 @@ void field::copyFrom(field *from)
 		printf("Error: Field not provided\n");
 		return;
 	}
+
+	if(this==from)
+		return;
 
 	this->clear();
 
@@ -94,13 +104,14 @@ void field::copyFrom(field *from)
 //relink data from another format. The old format will become empty
 void field::moveFrom(field *from)
 {
-	unsigned int i;
-
 	if(!from)
 	{
 		printf("Error: Field not provided\n");
 		return;
 	}
+
+	if(this==from)
+		return;
 
 	this->clear();
 
@@ -124,7 +135,7 @@ void field::moveFrom(field *from)
 
 void field::print_message(void)
 {
-	unsigned int i,j;
+	unsigned int i;
 
 	fldformat *frm;
 
