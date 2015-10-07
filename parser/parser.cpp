@@ -13,10 +13,11 @@ int parse_bcdl(char*, char*, unsigned int);
 // >0: successfully parsed, the value is the length
 // <0: Parse failed but you could try a greater maxlength of at least the negated returned value
 // =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
-int field::parse_message(char *msgbuf, unsigned int length, fldformat *frm)
+int field::parse_message(char *msgbuf, unsigned int length)
 {
 	field *message;
 	int parsedlength;
+	fldformat *frm=this->frm;
 
 	if(!msgbuf)
 	{

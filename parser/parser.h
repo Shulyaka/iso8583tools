@@ -33,12 +33,6 @@ extern int debug;
 class fldformat;
 class field;
 
-unsigned int get_length(field*);
-unsigned int build_field(char*, unsigned int, field*);
-unsigned int build_field_alt(char*, unsigned int, field*);
-unsigned int build_isobitmap(char*, unsigned int, field*, unsigned int);
-unsigned int build_bitmap(char*, unsigned int, field*, unsigned int);
-
 class fldformat
 {
 	private:
@@ -63,11 +57,6 @@ class fldformat
 	fldformat* get_by_number(const char *number, map<string,fldformat> &orphans);
 
 	friend field;
-	friend unsigned int get_length(field*);
-	friend unsigned int build_field(char*, unsigned int, field*);
-	friend unsigned int build_field_alt(char*, unsigned int, field*);
-	friend unsigned int build_isobitmap(char*, unsigned int, field*, unsigned int);
-	friend unsigned int build_bitmap(char*, unsigned int, field*, unsigned int);
 
 	public:
 	fldformat(void);
@@ -103,11 +92,10 @@ class field
 	int parse_field(char*, unsigned int);
 	int parse_field_alt(char*, unsigned int);
 	int parse_field_length(char*, unsigned int, fldformat*);
-	friend unsigned int get_length(field*);
-	friend unsigned int build_field(char*, unsigned int, field*);
-	friend unsigned int build_field_alt(char*, unsigned int, field*);
-	friend unsigned int build_isobitmap(char*, unsigned int, field*, unsigned int);
-	friend unsigned int build_bitmap(char*, unsigned int, field*, unsigned int);
+	unsigned int build_field(char*, unsigned int);
+	unsigned int build_field_alt(char*, unsigned int);
+	unsigned int build_isobitmap(char*, unsigned int, unsigned int);
+	unsigned int build_bitmap(char*, unsigned int, unsigned int);
 
 	public:
 	field(void);
@@ -120,8 +108,9 @@ class field
 	void copyFrom(const field *from);
 	void moveFrom(field *from);
 
-	int parse_message(char*, unsigned int, fldformat*);
-	unsigned int build_message(char*, unsigned int);
+	int parse_message(char*, unsigned int);
+	inline unsigned int build_message(char *buf, unsigned int len) {return this->build_field(buf, len);};
+	unsigned int estimate_length(void);
 
 	const char *get_description(void);
 	inline const int get_parsed_blength() {return this->blength;};

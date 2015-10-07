@@ -4,18 +4,12 @@
 
 #include "parser.h"
 
-//unsigned int build_message(char*, unsigned int, field*, fldformat*);
 unsigned int build_ebcdic(char*, char*, unsigned int);
 unsigned int build_hex(char*, char*, unsigned int);
 unsigned int build_bcdl(char*, char*, unsigned int);
 unsigned int build_bcdr(char*, char*, unsigned int);
 
-unsigned int field::build_message(char *buf, unsigned int maxlength)
-{
-	return build_field(buf, maxlength, this);
-}
-
-unsigned int get_length(field *fld)
+unsigned int field::estimate_length(void)
 {
 	unsigned int lenlen=0;
 	unsigned int blength=0;
@@ -25,12 +19,7 @@ unsigned int get_length(field *fld)
 	fldformat *frm;
 	fldformat tmpfrm;
 
-	if(!fld)
-	{
-		if(debug)
-			printf("Error: No fld\n");
-		return 0;
-	}
+	field *fld=this;
 
 	frm=fld->frm;
 
@@ -87,7 +76,7 @@ unsigned int get_length(field *fld)
 					else if(fld->fld[i]->is_empty())
 						continue;
 					else
-						sflen=get_length(fld->fld[i]);
+						sflen=fld->fld[i]->estimate_length();
 					
 					if(!sflen)
 						return 0;
@@ -107,7 +96,7 @@ unsigned int get_length(field *fld)
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
 			fld->change_format(&tmpfrm);
 
-			flength=get_length(fld);
+			flength=fld->estimate_length();
 
 			fld->change_format(frm);
 
@@ -151,7 +140,7 @@ unsigned int get_length(field *fld)
 			
 				pos+=taglength;
 				
-				sflen=get_length(fld->fld[i]);
+				sflen=fld->fld[i]->estimate_length();
 				if(!sflen)
 					return 0;
 				pos+=sflen;
@@ -181,7 +170,7 @@ unsigned int get_length(field *fld)
 
 				pos+=taglength;
 				
-				sflen=get_length(fld->fld[i]);
+				sflen=fld->fld[i]->estimate_length();
 
 				if(!sflen)
 					return 0;
@@ -219,12 +208,12 @@ unsigned int get_length(field *fld)
 
 	blength+=frm->addLength;
 
-	//printf("get_length: %s length %d\n", frm->description, lenlen+blength);
+	//printf("estimate_length: %s length %d\n", frm->description, lenlen+blength);
 
 	return lenlen+blength;
 }
 
-unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
+unsigned int field::build_field(char *buf, unsigned int maxlength)
 {
 	fldformat *frm;
 	unsigned int length;
@@ -236,13 +225,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 		return 0;
 	}
 
-	if(!fld)
-	{
-		if(debug)
-			printf("Error: No fld\n");
-		return 0;
-	}
-
+	field *fld=this;
 	frm=fld->frm;
 
 	if(!frm)
@@ -253,10 +236,10 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 	}
 
 	if(fld->altformat)   //if altformat is forced by field_format()
-		return build_field_alt(buf, maxlength, fld);  //then trying to build the field with it
+		return fld->build_field_alt(buf, maxlength);  //then trying to build the field with it
 
 	fld->altformat=1;            //if not,
-	length=build_field_alt(buf, maxlength, fld);   //then try the first format
+	length=fld->build_field_alt(buf, maxlength);   //then try the first format
 	if(length)
 		return length;
 
@@ -268,7 +251,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 		fld->altformat++;            //then iterate through remaining altformats
 		if(fld->change_format(frm->altformat))  //that we are able to change to
 		{
-			length=build_field_alt(buf, maxlength, fld);
+			length=fld->build_field_alt(buf, maxlength);
 			if(length)
 				return length;
 		}
@@ -277,7 +260,7 @@ unsigned int build_field(char *buf, unsigned int maxlength, field *fld)
 	return 0;
 }
 
-unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
+unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 {
 	unsigned int lenlen=0;
 	unsigned int blength=0;
@@ -296,13 +279,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 		return 0;
 	}
 
-	if(!fld)
-	{
-		if(debug)
-			printf("Error: No fld\n");
-		return 0;
-	}
-
+	field *fld=this;
 	frm=fld->frm;
 
 	if(!frm)
@@ -364,12 +341,12 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 					if(frm->fld[i]->dataFormat==FRM_ISOBITMAP)
 					{
 						bitmap_found=i;
-						sflen=build_isobitmap(buf+pos, maxlength-pos, fld, i);
+						sflen=fld->build_isobitmap(buf+pos, maxlength-pos, i);
 					}
 					else if(frm->fld[i]->dataFormat==FRM_BITMAP)
 					{
 						bitmap_found=i;
-						sflen=build_bitmap(buf+pos, maxlength-pos, fld, i);
+						sflen=fld->build_bitmap(buf+pos, maxlength-pos, i);
 					}
 					else if(fld->fld[i]->is_empty())
 					{
@@ -378,7 +355,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 						continue;
 					}
 					else
-						sflen=build_field(buf+pos, maxlength-pos, fld->fld[i]);
+						sflen=fld->fld[i]->build_field(buf+pos, maxlength-pos);
 					
 					if(!sflen)
 					{
@@ -406,7 +383,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 			fld->change_format(&tmpfrm);
 
-			flength=build_field(fld->data, maxlength*2, fld);
+			flength=fld->build_field(fld->data, maxlength*2);
 
 			fld->change_format(frm);
 
@@ -519,7 +496,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				pos+=taglength;
 
-				sflen=build_field(buf+pos, maxlength-pos, fld->fld[i]);
+				sflen=fld->fld[i]->build_field(buf+pos, maxlength-pos);
 				if(!sflen)
 				{
 					if(debug)
@@ -628,7 +605,7 @@ unsigned int build_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				pos+=taglength;
 
-				sflen=build_field(buf+pos, maxlength-pos, fld->fld[i]);
+				sflen=fld->fld[i]->build_field(buf+pos, maxlength-pos);
 				if(!sflen)
 				{
 					if(debug)
@@ -968,9 +945,10 @@ unsigned int build_hex(char *from, char *to, unsigned int len)
 	return (len+1)/2;
 }
 
-unsigned int build_isobitmap(char *buf, unsigned int maxlength, field *fld, unsigned int index)
+unsigned int field::build_isobitmap(char *buf, unsigned int maxlength, unsigned int index)
 {
 	unsigned int i, j;
+	field *fld=this;
 
 	//printf("ISOBITMAP: %d %d %d\n", fld->fields, index, (fld->fields-index-1)/64+1);
 
@@ -992,9 +970,10 @@ unsigned int build_isobitmap(char *buf, unsigned int maxlength, field *fld, unsi
 	return i*8;
 }
 
-unsigned int build_bitmap(char *buf, unsigned int maxlength, field *fld, unsigned int index)
+unsigned int field::build_bitmap(char *buf, unsigned int maxlength, unsigned int index)
 {
 	unsigned int i, blength, flength;
+	field *fld=this;
 
 	flength=fld->frm->fld[index]->maxLength;
 

@@ -27,26 +27,26 @@ int loadNetFormat(fldformat &frm)
 	return frm.load_format((char*)"../parser/formats/fields_visa.frm");
 }
 
-int parseNetMsg(field &message, char *buf, unsigned int length, fldformat *frm)
+int parseNetMsg(field &message, char *buf, unsigned int length)
 {
+	int i;
+
 	if(!buf)
 	{
 		printf("Error: no buf\n");
 		return NULL;
 	}
 
-	if(!frm)
-	{
-		printf("Error: no frm\n");
-		return NULL;
-	}
-	
+	i=message.parse_message(buf, length);   //TODO: For Visa, parse header (frm->fld[0]) and message(frm->fld[2]) separately to handle reject header properly.
+	if(i<0)
+		return i;
+
 	printf("\nMessage received, length %d\n", length);
 
-	if(message.parse_message(buf, length, frm)<=0)   //TODO: For Visa, parse header (frm->fld[0]) and message(frm->fld[2]) separately to handle reject header properly.
+	if(i==0)
 		printf("Error: Unable to parse\n");
 
-	return 1;
+	return i;
 }
 
 unsigned int buildNetMsg(char *buf, unsigned int maxlength, field *message)
@@ -67,7 +67,7 @@ unsigned int buildNetMsg(char *buf, unsigned int maxlength, field *message)
 
 	strcpy(message->add_field(1,4 ), "0000");
 
-	length=get_length(message);
+	length=message->estimate_length();
 
 	if(length==0 || snprintf(message->add_field(1,4), 5, "%04X", length - message->get_lengthLength()) > 4)
 	{

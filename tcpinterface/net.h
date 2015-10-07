@@ -7,7 +7,7 @@
 int isRequest(isomessage*);
 int isDomestic(isomessage*);
 
-int parseNetMsg(field&, char*, unsigned int, fldformat*);
+int parseNetMsg(field&, char*, unsigned int);
 unsigned int buildNetMsg(char*, unsigned int, field*);
 int translateNetToSwitch(isomessage*, field*);
 int translateSwitchToNet(field*, isomessage*, fldformat*);

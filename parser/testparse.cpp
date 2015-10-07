@@ -7,7 +7,7 @@
 
 #include "parser.h"
 
-int debug=1;
+int debug=0;
 
 int main(int argc, char **argv)
 {
@@ -68,6 +68,8 @@ int main(int argc, char **argv)
 		return 3;
 	}
 
+	message.change_format(&frm);
+
 	if(debug)
 		printf("Info: Loaded %d formats\n", frmcounter);
 
@@ -103,7 +105,7 @@ int main(int argc, char **argv)
 
 	msglen1=msglen;
 
-	if(message.parse_message(msgbuf, msglen, &frm)<=0)
+	if(message.parse_message(msgbuf, msglen)<=0)
 	{
 		printf("Error: Unable to parse message\n");
 
@@ -123,7 +125,7 @@ int main(int argc, char **argv)
 	message.print_message();
 
 	if(debug)
-		printf("Building %s, estimated length: %d\n", message.get_description(), get_length(&message));
+		printf("Building %s, estimated length: %d\n", message.get_description(), message.estimate_length());
 
 	msglen2=message.build_message(msgbuf2, sizeof(msgbuf2));
 

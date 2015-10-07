@@ -40,6 +40,8 @@ int main(void)
 		return 1;
 	}
 
+	pmessage.change_format(&frm);
+
 	printf("Message format loaded\n");
 
 	sfd[2].fd=tcpinit();
@@ -125,14 +127,14 @@ int main(void)
 			{
 				printf("Receiving message from net\n");
 
-				size=tcprecvmsg(sfd[1].fd, pmessage, &frm);
+				size=tcprecv(sfd[1].fd, pmessage);
 
-				if(size==-1)
+				if(size==-2 || size==-3)
 				{
 					printf("Closing connection\n");
 					break;
 				}
-				else if(size==0)
+				else if(size==0 || size==-1)
 					continue;
 
 				pmessage.print_message();
@@ -149,7 +151,7 @@ int main(void)
 
 						pmessage.print_message();
 
-						size=tcpsendmsg(sfd[1].fd, &pmessage);
+						size=tcpsend(sfd[1].fd, pmessage);
 
 						if(size==-1)
 						{
@@ -179,7 +181,7 @@ int main(void)
 
 						pmessage.print_message();
 
-						size=tcpsendmsg(sfd[1].fd, &pmessage);
+						size=tcpsend(sfd[1].fd, pmessage);
 
 						if(size==-1)
 						{
@@ -214,7 +216,7 @@ int main(void)
 
 						pmessage.print_message();
 
-						size=tcpsendmsg(sfd[1].fd, &pmessage);
+						size=tcpsend(sfd[1].fd, pmessage);
 
 						if(size==-1)
 						{
@@ -273,7 +275,7 @@ int main(void)
 
 				pmessage.print_message();
 
-				size=tcpsendmsg(sfd[1].fd, &pmessage);
+				size=tcpsend(sfd[1].fd, pmessage);
 
 				if(size==-1)
 				{

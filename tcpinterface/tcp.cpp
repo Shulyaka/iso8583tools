@@ -73,182 +73,101 @@ int tcpconnect(int sct) //blocking
 //-2: Connection is broken
 //-3: Other error (see errno)
 //>0: Valid message received
-int tcprecv(int sfd, char *buf, unsigned int maxlen, fldformat *frm)
+int tcprecv(int sfd, field &message)
 {
-	int i;
+	static char buf[10000];
+	unsigned int maxlen=sizeof(buf);
+	static unsigned int toread=1;
 	static unsigned int numread=0;
-	static unsigned int length;
-	static unsigned int timeoutcnt;
+	int i;
 
-	if(numread==0)
+	while(true)
 	{
-		length=0;
-		timeoutcnt=10;
-	}
-	else if(timeoutcnt--==0)
-	{
-		numread=0;
-		return -1;
-	}
-
-	if(length==0)
-	{
-		if(numread>=frm->get_lengthLength() || frm->get_lengthLength() > maxlen)
-		{
-			numread=0;
-			return -1;
-		}
-
 		errno=0;
-
-		i=read(sfd, buf + numread, frm->get_lengthLength() - numread);
-
-		if(errno==EAGAIN || errno==EWOULDBLOCK)
+		i=read(sfd, buf+numread, toread);
+		if(i==-1 && (errno==EAGAIN || errno==EWOULDBLOCK))
 			return 0;
 		if(i==0)
 		{
 			numread=0;
+			toread=1;
+			printf("Error: Unable to receive a net message: Connection closed by the remote host\n");
 			return -2;
 		}
-		else if(i==-1)
+		if(i==-1)
 		{
 			numread=0;
+			toread=1;
+			i=errno;
+			printf("Error: Unable to receive a net message: %s\n", strerror(errno));
+			errno=i;
 			return -3;
 		}
 
 		numread+=i;
+		toread-=i;
 
-		if(numread < frm->get_lengthLength())
-			return 0;
-
-		length=parse_field_length(buf, numread, frm);
-
-		if(length==0)
+		if(toread==0)
 		{
+			i=parseNetMsg(message, buf, numread);
+			if(i==0)
+			{
+				numread=0;
+				toread=1;
+				read(sfd, buf, maxlen); //parse error. We don't know where in the message we are. Try to consume all available data in hope to be on message boundaries again. Another approach would be to disconnect and reconnect again
+				printf("Error: a corrupted message received\n");
+				return -1;
+			}
+			if(i<0)
+			{
+				toread=-i;
+				if(numread+toread>maxlen)
+				{
+					numread=0;
+					toread=1;
+					read(sfd, buf, maxlen); //see above
+					printf("Error: a corrupted message received\n");
+					return -1;
+				}
+				return 0;
+			}
+
 			numread=0;
-			return -1;
+			toread=1;
+
+			return i;
 		}
-
-		if(length>frm->get_maxLength())
-		{
-			numread=0;
-			return -1;
-		}
-
-		//printf("Message length is %d\n", length);
 	}
-
-	errno=0;
-
-	if(numread>=frm->get_lengthLength() + length || frm->get_lengthLength() + length > maxlen)
-	{
-		numread=0;
-		return -1;
-	}
-
-	errno=0;
-
-	i=read(sfd, buf + numread, frm->get_lengthLength() + length - numread);
-
-	if(errno==EAGAIN || errno==EWOULDBLOCK)
-		return 0;
-	if(i==0)
-	{
-		numread=0;
-		return -2;
-	}
-	else if(i==-1)
-	{
-		numread=0;
-		return -3;
-	}
-
-	numread+=i;
-
-	if(numread < frm->get_lengthLength() + length)
-		return 0;
-
-	numread=0;
-	return frm->get_lengthLength() + length;
-}
-
-int tcpsend(int sfd, char *buf, unsigned int length)
-{
-	return write(sfd, buf, length);
-}
-
-int tcpclose(int sfd)
-{
-	return close(sfd);
-}
-
-
-//returns:
-//-1: TCP error
-//0: Message error
-//Otherwise, the message size is returned
-int tcprecvmsg(int sfd, field &message, fldformat *frm)
-{
-	int size;
-	static char buf[10000];
-
-	errno=0;
-
-	size=tcprecv(sfd, buf, sizeof(buf), frm);
-
-	if(size==-2)
-	{
-		printf("Error: Unable to receive a net message: Connection closed by the remote host\n");
-		return -1;
-	} 
-	else if(size==-3)
-	{
-		printf("Error: Unable to receive a net message: %s\n", strerror(errno));
-		return -1;
-	}
-	else if(size==-1)
-	{
-		printf("Error: a corrupted message received\n");
-		return 0;
-	}
-	else if(size==0)
-	{
-		return 0;
-	}
-
-	parseNetMsg(message, buf, size, frm);
-
-	return size;
 }
 
 //returns:
 //0: Message error
 //-1: Tcp error
 //otherwise, message size is returned
-int tcpsendmsg(int sfd, field* message)
+int tcpsend(int sfd, field &message)
 {
 	unsigned int length;
-	int size;
+	int numwritten=0;
 	static char buf[10000];
+	int i;
 
-	length=buildNetMsg(buf, sizeof(buf), message);
+	length=buildNetMsg(buf, sizeof(buf), &message);
 
-	if(!length)
-		return 0;
-
-	size=tcpsend(sfd, buf, length);
-
-	if(size==-1 || size==0)
+	while(length!=numwritten)
 	{
-		printf("Error: Unable to send the message to network: %s\n", strerror(errno));
-		return -1;
+		i=write(sfd, buf+numwritten, length-numwritten);
+
+		if(i==-1 || i==0)
+		{
+			printf("Error: %d of %d bytes sent: Unable to send the message to network: %s\n", numwritten, length, strerror(errno));
+			return -1;
+		}
 	}
 
-	if(size<length)
-	{
-		printf("Warning: A partial message is sent (%d/%d)\n", size, length);
-		return -1;
-	}
+	return numwritten;
+}
 
-	return size;
+int tcpclose(int sfd)
+{
+	return close(sfd);
 }
