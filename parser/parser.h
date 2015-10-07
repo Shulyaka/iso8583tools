@@ -33,10 +33,6 @@ extern int debug;
 class fldformat;
 class field;
 
-int parse_field_length(char*, unsigned int, fldformat*);
-int parse_field(char*, unsigned int, field*);
-int parse_field_alt(char*, unsigned int, field*);
-
 unsigned int get_length(field*);
 unsigned int build_field(char*, unsigned int, field*);
 unsigned int build_field_alt(char*, unsigned int, field*);
@@ -67,9 +63,6 @@ class fldformat
 	fldformat* get_by_number(const char *number, map<string,fldformat> &orphans);
 
 	friend field;
-	friend int parse_field(char*, unsigned int, field*);
-	friend int parse_field_alt(char*, unsigned int, field*);
-	friend int parse_field_length(char*, unsigned int, fldformat*);
 	friend unsigned int get_length(field*);
 	friend unsigned int build_field(char*, unsigned int, field*);
 	friend unsigned int build_field_alt(char*, unsigned int, field*);
@@ -107,9 +100,9 @@ class field
 
 	void fill_default(void);
 
-	friend int parse_field(char*, unsigned int, field*);
-	friend int parse_field_alt(char*, unsigned int, field*);
-	friend int parse_field_length(char*, unsigned int, fldformat*);
+	int parse_field(char*, unsigned int);
+	int parse_field_alt(char*, unsigned int);
+	int parse_field_length(char*, unsigned int, fldformat*);
 	friend unsigned int get_length(field*);
 	friend unsigned int build_field(char*, unsigned int, field*);
 	friend unsigned int build_field_alt(char*, unsigned int, field*);

@@ -36,7 +36,7 @@ int field::parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 
 	message->frm=frm;
 
-	parsedlength=parse_field(msgbuf, length, message);
+	parsedlength=message->parse_field(msgbuf, length);
 
 	if(parsedlength>0)
 		this->moveFrom(message);
@@ -48,10 +48,10 @@ int field::parse_message(char *msgbuf, unsigned int length, fldformat *frm)
 	return parsedlength;
 }
 
-int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
+int field::parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 {
 	unsigned int lenlen=0;
-	unsigned int length=0;
+	unsigned int newlength=0;
 	char lengthbuf[7];
 	unsigned char tmpc;
 	unsigned int i;
@@ -98,7 +98,7 @@ int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 						return 0;
 					}
 			for(i=0; i<(lenlen>4?4:lenlen); i++)
-				((char *)(&length))[i]=buf[(lenlen>4?4:lenlen)-i-1];
+				((char *)(&newlength))[i]=buf[(lenlen>4?4:lenlen)-i-1];
 			break;
 
 		case FRM_EMVL:
@@ -115,7 +115,7 @@ int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 			else
 				lenlen=1;
 				
-			((char *)(&length))[0]=buf[lenlen-1];	
+			((char *)(&newlength))[0]=buf[lenlen-1];	
 			break;
 		
 		case FRM_BCD:
@@ -134,7 +134,7 @@ int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 			else
 				parse_hex(buf, lengthbuf, lenlen*2);
 
-			length=atoi(lengthbuf);
+			newlength=atoi(lengthbuf);
 			break;
 
 		case FRM_ASCII:
@@ -149,7 +149,7 @@ int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 
 			tmpc=buf[lenlen];
 			buf[lenlen]='\0';
-			length=atoi(buf);
+			newlength=atoi(buf);
 			buf[lenlen]=tmpc;
 			break;
 		
@@ -168,15 +168,15 @@ int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 			else
 				parse_ebcdic(buf, lengthbuf, lenlen);
 
-			length=atoi(lengthbuf);
+			newlength=atoi(lengthbuf);
 			break;
 
 		case FRM_UNKNOWN:
-			length=maxlength;
+			newlength=maxlength;
 			break;
 
 		case FRM_FIXED:
-			length=frm->maxLength;
+			newlength=frm->maxLength;
 			break;
 
 		default:
@@ -188,26 +188,28 @@ int parse_field_length(char *buf, unsigned int maxlength, fldformat *frm)
 			}
 	}
 
-	length-=frm->addLength;
+	newlength-=frm->addLength;
 
 	if(frm->dataFormat==FRM_BCDSF && frm->lengthFormat!=FRM_FIXED)
-		length*=2;
+		newlength*=2;
 
-	if(frm->lengthInclusive && length<=lenlen)
+	if(frm->lengthInclusive && newlength<=lenlen)
 	{
 		if(debug)
 			printf("Error: Wrong length (%s)\n", frm->description);
 		return 0;
 	}
 
-	return length;
+	this->length=newlength;
+
+	return newlength;
 }
 
 // return value:
 // >0: successfully parsed, the value is the length
 // <0: Parse failed but you could try a greater maxlength of at least the negated returned value
 // =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
-int parse_field(char *buf, unsigned int maxlength, field *fld)
+int field::parse_field(char *buf, unsigned int maxlength)
 {
 	fldformat *frm;
 	int length;
@@ -221,12 +223,7 @@ int parse_field(char *buf, unsigned int maxlength, field *fld)
 		return 0;
 	}
 
-	if(!fld)
-	{
-		if(debug)
-			printf("Error: No fld\n");
-		return 0;
-	}
+	field *fld=this;
 
 	if(fld->blength && fld->frm && fld->frm->altformat)
 	{
@@ -243,7 +240,7 @@ int parse_field(char *buf, unsigned int maxlength, field *fld)
 		fld->frm=frm;
 		fld->altformat=i++;
 
-		length=parse_field_alt(buf, maxlength, fld);
+		length=fld->parse_field_alt(buf, maxlength);
 		if(length>0)
 			return length;
 
@@ -265,7 +262,7 @@ int parse_field(char *buf, unsigned int maxlength, field *fld)
 	return minlength;
 }
 
-int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
+int field::parse_field_alt(char *buf, unsigned int maxlength)
 {
 	unsigned int lenlen=0;
 	unsigned int blength=0;
@@ -289,12 +286,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 		return 0;
 	}
 
-	if(!fld)
-	{
-		if(debug)
-			printf("Error: No fld\n");
-		return 0;
-	}
+	field *fld=this;
 
 	frm=fld->frm;
 
@@ -317,10 +309,10 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 	if(frm->dataFormat!=FRM_ISOBITMAP)
 	{
-		fld->length=parse_field_length(buf, maxlength, frm);
+		sflen=fld->parse_field_length(buf, maxlength, frm);
 
-		if(fld->length<=0)
-			return fld->length;
+		if(sflen<=0)
+			return sflen;
 
 		if(frm->maxLength < fld->length)
 		{
@@ -417,7 +409,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 								if(debug)
 									printf("trying pos %d length %d/%d for %s\n", pos, i, fld->length+lenlen-pos, fld->fld[cursf]->frm->description);
 								fld->fld[cursf]->blength=0;
-								sflen=parse_field(buf+pos, i, fld->fld[cursf]);
+								sflen=fld->fld[cursf]->parse_field(buf+pos, i);
 
 								if(sflen>=0)
 									break;
@@ -429,7 +421,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 							}
 						}
 						else
-							sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[cursf]);
+							sflen=fld->fld[cursf]->parse_field(buf+pos, fld->length+lenlen-pos);
 
 						if(sflen==0 && fld->fld[cursf]->frm->maxLength==0)
 						{
@@ -535,7 +527,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 			fld->change_format(&tmpfrm);
 
-			sflen=parse_field(fld->data, fld->length, fld);
+			sflen=fld->parse_field(fld->data, fld->length);
 			
 			free(fld->data);
 			fld->data=0;
@@ -613,7 +605,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				fld->fld[i]->frm=frm->fld[0];
 
-				sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[i]);
+				sflen=fld->fld[i]->parse_field(buf+pos, fld->length+lenlen-pos);
 
 				if(sflen<=0)
 				{
@@ -696,7 +688,7 @@ int parse_field_alt(char *buf, unsigned int maxlength, field *fld)
 
 				fld->fld[j]->frm=frm->fld[j];
 
-				sflen=parse_field(buf+pos, fld->length+lenlen-pos, fld->fld[j]);
+				sflen=fld->fld[j]->parse_field(buf+pos, fld->length+lenlen-pos);
 
 				if(sflen<=0)
 				{
