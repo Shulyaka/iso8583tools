@@ -4,24 +4,19 @@
 
 #include "parser.h"
 
-unsigned int build_ebcdic(char*, char*, unsigned int);
-unsigned int build_hex(char*, char*, unsigned int);
-unsigned int build_bcdl(char*, char*, unsigned int);
-unsigned int build_bcdr(char*, char*, unsigned int);
+unsigned int build_ebcdic(const char*, char*, unsigned int);
+unsigned int build_hex(const char*, char*, unsigned int);
+unsigned int build_bcdl(const char*, char*, unsigned int);
+unsigned int build_bcdr(const char*, char*, unsigned int);
 
 unsigned int field::estimate_length(void)
 {
 	unsigned int lenlen=0;
-	unsigned int blength=0;
+	unsigned int newblength=0;
 	unsigned int flength=0;
 	unsigned int i, j, pos, sflen, taglength;
 	int bitmap_found=-1;
-	fldformat *frm;
 	fldformat tmpfrm;
-
-	field *fld=this;
-
-	frm=fld->frm;
 
 	if(!frm)
 	{
@@ -30,8 +25,8 @@ unsigned int field::estimate_length(void)
 		return 0;
 	}
 
-	if(fld->data)
-		flength=strlen(fld->data);
+	if(data)
+		flength=strlen(data);
 //	else if(frm->lengthFormat==FRM_FIXED)
 //		flength=frm->maxLength;
 
@@ -47,7 +42,7 @@ unsigned int field::estimate_length(void)
 	{
 		case FRM_SUBFIELDS:
 			pos=lenlen;
-			for(i=0; i < fld->fields; i++)
+			for(i=0; i < fields; i++)
 			{
 				if(pos==frm->maxLength+lenlen)
 					break;
@@ -55,28 +50,28 @@ unsigned int field::estimate_length(void)
 				if(bitmap_found!=-1 && frm->fld[bitmap_found]->dataFormat!=FRM_ISOBITMAP && frm->fld[bitmap_found]->maxLength < i-bitmap_found)
 					break;
 
-				if(fld->fld[i] && !frm->fld[i])
+				if(fld[i] && !frm->fld[i])
 					return 0;
 
 				if(!frm->fld[i])
 					continue;
 
-				if((fld->fld[i] || frm->fld[i]->dataFormat==FRM_ISOBITMAP || frm->fld[i]->dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
+				if((fld[i] || frm->fld[i]->dataFormat==FRM_ISOBITMAP || frm->fld[i]->dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
 				{
 					if(frm->fld[i]->dataFormat==FRM_ISOBITMAP)
 					{
 						bitmap_found=i;
-						sflen=((fld->fields-i-1)/64+1)*8;
+						sflen=((fields-i-1)/64+1)*8;
 					}
 					else if(frm->fld[i]->dataFormat==FRM_BITMAP)
 					{
 						bitmap_found=i;
 						sflen=(frm->fld[i]->maxLength+7)/8;
 					}
-					else if(fld->fld[i]->is_empty())
+					else if(fld[i]->is_empty())
 						continue;
 					else
-						sflen=fld->fld[i]->estimate_length();
+						sflen=fld[i]->estimate_length();
 					
 					if(!sflen)
 						return 0;
@@ -85,25 +80,25 @@ unsigned int field::estimate_length(void)
 			}
 
 			flength=pos-lenlen;
-			blength=pos-lenlen;
+			newblength=pos-lenlen;
 			
 			break;
 
 		case FRM_BCDSF:
-			tmpfrm.copyFrom(frm);
+			tmpfrm.copyFrom(*frm);
 			tmpfrm.lengthFormat=FRM_UNKNOWN;
 			tmpfrm.lengthLength=0;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
-			fld->change_format(&tmpfrm);
+			change_format(&tmpfrm);
 
-			flength=fld->estimate_length();
+			flength=estimate_length();
 
-			fld->change_format(frm);
+			change_format(frm);
 
 			if(!flength)
 				return 0;
 
-			blength=(flength+1)/2;
+			newblength=(flength+1)/2;
 
 			break;
 
@@ -121,32 +116,32 @@ unsigned int field::estimate_length(void)
 
 			for(i=0; i<frm->maxFields; i++)
 			{
-				if(!fld->fld[i])
+				if(!fld[i])
 					break;
 
-				if(!fld->fld[i]->tag)
+				if(!fld[i]->tag)
 					return 0;
 
-				if(fld->fld[i]->is_empty())
+				if(fld[i]->is_empty())
 					continue;
 
 				if(frm->dataFormat==FRM_TLVEMV)
 				{
-					if(strlen(fld->fld[i]->tag)!=2 && strlen(fld->fld[i]->tag)!=4)
+					if(strlen(fld[i]->tag)!=2 && strlen(fld[i]->tag)!=4)
 						return 0;
 
-					taglength=strlen(fld->fld[i]->tag)/2;
+					taglength=strlen(fld[i]->tag)/2;
 				}
 			
 				pos+=taglength;
 				
-				sflen=fld->fld[i]->estimate_length();
+				sflen=fld[i]->estimate_length();
 				if(!sflen)
 					return 0;
 				pos+=sflen;
 			}
 
-			blength=pos-lenlen;
+			newblength=pos-lenlen;
 
 			break;
 
@@ -159,45 +154,45 @@ unsigned int field::estimate_length(void)
 
 			for(i=0; i<frm->fields; i++)
 			{
-				if(!fld->fld[i])
+				if(!fld[i])
 					continue;
 
 				if(!frm->fld[i])
 					return 0;
 
-				if(fld->fld[i]->is_empty())
+				if(fld[i]->is_empty())
 					continue;
 
 				pos+=taglength;
 				
-				sflen=fld->fld[i]->estimate_length();
+				sflen=fld[i]->estimate_length();
 
 				if(!sflen)
 					return 0;
 				pos+=sflen;
 			}
 
-			blength=pos-lenlen;
+			newblength=pos-lenlen;
 			break;
 
 		case FRM_ISOBITMAP:
-			blength=(flength/64)*8;
+			newblength=(flength/64)*8;
 			break;
 
 		case FRM_BITMAP:
 		case FRM_BITSTR:
-			blength=(flength+7)/8;
+			newblength=(flength+7)/8;
 			break;
 
 		case FRM_HEX:
 		case FRM_BCD:
-			blength=(flength+1)/2;
+			newblength=(flength+1)/2;
 			break;
 
 		case FRM_BIN:
 		case FRM_ASCII:
 		case FRM_EBCDIC:
-			blength=flength;
+			newblength=flength;
 			break;
 
 		default:
@@ -206,17 +201,17 @@ unsigned int field::estimate_length(void)
 			return 0;
 	}
 
-	blength+=frm->addLength;
+	newblength+=frm->addLength;
 
-	//printf("estimate_length: %s length %d\n", frm->description, lenlen+blength);
+	//printf("estimate_length: %s length %d\n", frm->description, lenlen+newblength);
 
-	return lenlen+blength;
+	return lenlen+newblength;
 }
 
 unsigned int field::build_field(char *buf, unsigned int maxlength)
 {
-	fldformat *frm;
-	unsigned int length;
+	fldformat *tmpfrm=frm;
+	unsigned int newlength;
 
 	if(!buf)
 	{
@@ -225,35 +220,32 @@ unsigned int field::build_field(char *buf, unsigned int maxlength)
 		return 0;
 	}
 
-	field *fld=this;
-	frm=fld->frm;
-
-	if(!frm)
+	if(!tmpfrm)
 	{
 		if(debug)
 			printf("Error: No frm\n");
 		return 0;
 	}
 
-	if(fld->altformat)   //if altformat is forced by field_format()
-		return fld->build_field_alt(buf, maxlength);  //then trying to build the field with it
+	if(altformat)   //if altformat is forced by field_format()
+		return build_field_alt(buf, maxlength);  //then trying to build the field with it
 
-	fld->altformat=1;            //if not,
-	length=fld->build_field_alt(buf, maxlength);   //then try the first format
-	if(length)
-		return length;
+	altformat=1;            //if not,
+	newlength=build_field_alt(buf, maxlength);   //then try the first format
+	if(newlength)
+		return newlength;
 
 	if(debug)
 		printf("Info: Retrying with an alternate format\n");
 
-	for(; frm->altformat; frm=frm->altformat)   //if that failed,
+	for(; tmpfrm->altformat; tmpfrm=tmpfrm->altformat)   //if that failed,
 	{
-		fld->altformat++;            //then iterate through remaining altformats
-		if(fld->change_format(frm->altformat))  //that we are able to change to
+		altformat++;            //then iterate through remaining altformats
+		if(change_format(tmpfrm->altformat))  //that we are able to change to
 		{
-			length=fld->build_field_alt(buf, maxlength);
-			if(length)
-				return length;
+			newlength=build_field_alt(buf, maxlength);
+			if(newlength)
+				return newlength;
 		}
 	}
 
@@ -263,13 +255,12 @@ unsigned int field::build_field(char *buf, unsigned int maxlength)
 unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 {
 	unsigned int lenlen=0;
-	unsigned int blength=0;
+	unsigned int newblength=0;
 	unsigned int flength=0;
 	unsigned int mlength=0;
 	char lengthbuf[7];
 	unsigned int i, j, pos, sflen, taglength;
 	int bitmap_found=-1;
-	fldformat *frm;
 	fldformat tmpfrm;
 
 	if(!buf)
@@ -278,9 +269,6 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 			printf("Error: No buf\n");
 		return 0;
 	}
-
-	field *fld=this;
-	frm=fld->frm;
 
 	if(!frm)
 	{
@@ -291,15 +279,15 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 
 //	printf("Building %s\n", frm->description);
 
-	if(frm->data && fld->data && strcmp(frm->data, fld->data))
+	if(frm->data && data && strcmp(frm->data, data))
 	{
 		if(debug)
-			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data, fld->data, frm->description);
+			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data, data, frm->description);
 		return 0;
 	}
 
-	if(fld->data)
-		flength=strlen(fld->data);
+	if(data)
+		flength=strlen(data);
 //	else if(frm->lengthFormat==FRM_FIXED)
 //		flength=frm->maxLength;
 
@@ -315,7 +303,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 	{
 		case FRM_SUBFIELDS:
 			pos=lenlen;
-			for(i=0; i < fld->fields; i++)
+			for(i=0; i < fields; i++)
 			{
 				if(pos==frm->maxLength+lenlen)
 					break;
@@ -323,7 +311,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 				if(bitmap_found!=-1 && frm->fld[bitmap_found]->dataFormat!=FRM_ISOBITMAP && frm->fld[bitmap_found]->maxLength < i-bitmap_found)
 					break;
 
-				if(fld->fld[i] && !frm->fld[i])
+				if(fld[i] && !frm->fld[i])
 				{
 					if(debug)
 						printf("Error: No format for subfield %d\n", i);
@@ -333,7 +321,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 				if(!frm->fld[i])
 					continue;
 
-				if((fld->fld[i] || frm->fld[i]->dataFormat==FRM_ISOBITMAP || frm->fld[i]->dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
+				if((fld[i] || frm->fld[i]->dataFormat==FRM_ISOBITMAP || frm->fld[i]->dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
 				{
 					if(pos>maxlength)
 						return 0;
@@ -341,21 +329,21 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 					if(frm->fld[i]->dataFormat==FRM_ISOBITMAP)
 					{
 						bitmap_found=i;
-						sflen=fld->build_isobitmap(buf+pos, maxlength-pos, i);
+						sflen=build_isobitmap(buf+pos, maxlength-pos, i);
 					}
 					else if(frm->fld[i]->dataFormat==FRM_BITMAP)
 					{
 						bitmap_found=i;
-						sflen=fld->build_bitmap(buf+pos, maxlength-pos, i);
+						sflen=build_bitmap(buf+pos, maxlength-pos, i);
 					}
-					else if(fld->fld[i]->is_empty())
+					else if(fld[i]->is_empty())
 					{
 						if(debug)
 							printf("Warning: No subfields for subfield %d\n", i);
 						continue;
 					}
 					else
-						sflen=fld->fld[i]->build_field(buf+pos, maxlength-pos);
+						sflen=fld[i]->build_field(buf+pos, maxlength-pos);
 					
 					if(!sflen)
 					{
@@ -368,57 +356,57 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 			}
 
 			flength=pos-lenlen;
-			blength=pos-lenlen;
-			mlength=blength;
+			newblength=pos-lenlen;
+			mlength=newblength;
 
 			break;
 
 		case FRM_BCDSF:
-			fld->data=(char*)malloc(maxlength*2+1);
+			data=(char*)malloc(maxlength*2+1);
 
-			tmpfrm.copyFrom(frm);
+			tmpfrm.copyFrom(*frm);
 			tmpfrm.lengthFormat=FRM_UNKNOWN;
 			tmpfrm.lengthLength=0;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
 
-			fld->change_format(&tmpfrm);
+			change_format(&tmpfrm);
 
-			flength=fld->build_field(fld->data, maxlength*2);
+			flength=build_field(data, maxlength*2);
 
-			fld->change_format(frm);
+			change_format(frm);
 
 			if(!flength)
 			{
-				free(fld->data);
-				fld->data=0;
+				free(data);
+				data=0;
 				return 0;
 			}
 
-			blength=(flength+1)/2;
+			newblength=(flength+1)/2;
 			
 			if(frm->lengthFormat==FRM_FIXED)
 				mlength=flength;
 			else
-				mlength=blength;
+				mlength=newblength;
 
-			if(lenlen+blength>maxlength)
+			if(lenlen+newblength>maxlength)
 			{
-				free(fld->data);
-				fld->data=0;
+				free(data);
+				data=0;
 				return 0;
 			}
 			
-			if(!build_bcdl(fld->data, buf+lenlen, flength))
+			if(!build_bcdl(data, buf+lenlen, flength))
 			{
-				free(fld->data);
-				fld->data=0;
+				free(data);
+				data=0;
 				if(debug)
 					printf("Error: Not BCD subfield\n");
 				return 0;
 			}
 
-			free(fld->data);
-			fld->data=0;
+			free(data);
+			data=0;
 			
 			break;
 
@@ -440,20 +428,20 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 
 			for(i=0; i<frm->maxFields && pos<maxlength; i++)
 			{
-				if(!fld->fld[i])
+				if(!fld[i])
 					break;
 
-				if(!fld->fld[i]->tag)
+				if(!fld[i]->tag)
 				{
 					if(debug)
 						printf("Error: Tag length is too small\n");
 					return 0;
 				}
 
-				if(fld->fld[i]->is_empty())
+				if(fld[i]->is_empty())
 					continue;
 
-				sflen=strlen(fld->fld[i]->tag);
+				sflen=strlen(fld[i]->tag);
 
 				if(frm->dataFormat==FRM_TLVEMV)
 				{
@@ -475,28 +463,28 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 					case FRM_EBCDIC:
 						if(sflen<taglength)
 							return 0;
-						build_ebcdic(fld->fld[i]->tag, buf+pos, sflen);
+						build_ebcdic(fld[i]->tag, buf+pos, sflen);
 						break;
 					case FRM_HEX:
 						if(sflen<taglength*2)
 							return 0;
-						build_hex(fld->fld[i]->tag, buf+pos, sflen);
+						build_hex(fld[i]->tag, buf+pos, sflen);
 						break;
 					case FRM_BCD:
 						if(sflen<taglength*2)
 							return 0;
-						build_bcdl(fld->fld[i]->tag, buf+pos, sflen);
+						build_bcdl(fld[i]->tag, buf+pos, sflen);
 						break;
 					case FRM_ASCII:
 					default:
 						if(sflen<taglength)
 							return 0;
-						memcpy(buf+pos, fld->fld[i]->tag, sflen);
+						memcpy(buf+pos, fld[i]->tag, sflen);
 				}
 
 				pos+=taglength;
 
-				sflen=fld->fld[i]->build_field(buf+pos, maxlength-pos);
+				sflen=fld[i]->build_field(buf+pos, maxlength-pos);
 				if(!sflen)
 				{
 					if(debug)
@@ -507,7 +495,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 			}
 
 			mlength=pos-lenlen;
-			blength=pos-lenlen;
+			newblength=pos-lenlen;
 
 			break;
 
@@ -521,7 +509,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 
 			for(i=0; i<frm->fields && pos<maxlength; i++)
 			{
-				if(!fld->fld[i])
+				if(!fld[i])
 					continue;
 
 				if(!frm->fld[i])
@@ -538,7 +526,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 					return 0;
 				}
 
-				if(fld->fld[i]->is_empty())
+				if(fld[i]->is_empty())
 					continue;
 
 				switch(frm->tagFormat)
@@ -605,7 +593,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 
 				pos+=taglength;
 
-				sflen=fld->fld[i]->build_field(buf+pos, maxlength-pos);
+				sflen=fld[i]->build_field(buf+pos, maxlength-pos);
 				if(!sflen)
 				{
 					if(debug)
@@ -616,7 +604,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 			}
 
 			mlength=pos-lenlen;
-			blength=pos-lenlen;
+			newblength=pos-lenlen;
 
 			break;
 
@@ -636,65 +624,65 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 				memset(buf+i*8, '\0', 8);
 
 				for(j=1; j<64; j++)
-					if(fld->data[j-1]=='1')
+					if(data[j-1]=='1')
 						buf[i*8+j/8]|=1<<(7-j%8);
 			}
 
-			blength=i*8;
+			newblength=i*8;
 			mlength=0;
 
 			break;
 
 		case FRM_BITMAP:
 		case FRM_BITSTR:
-			blength=(flength+7)/8;
+			newblength=(flength+7)/8;
 			mlength=flength;
 
-			if(lenlen+blength>maxlength)
+			if(lenlen+newblength>maxlength)
 				return 0;
 
-			memset(buf+lenlen, '\0', blength);
+			memset(buf+lenlen, '\0', newblength);
 			for(i=0; i<flength;i++)
-				if(fld->data[i]=='1')
+				if(data[i]=='1')
 					buf[lenlen + i/8]|=1<<(7-i%8);
 
 			break;
 
 		case FRM_BIN:
 		case FRM_ASCII:
-			blength=flength;
+			newblength=flength;
 			mlength=flength;
-			if(lenlen+blength>maxlength)
+			if(lenlen+newblength>maxlength)
 				return 0;
-			memcpy(buf+lenlen, fld->data, blength);
+			memcpy(buf+lenlen, data, newblength);
 			break;
 
 		case FRM_HEX:
-			blength=(flength+1)/2;
-			mlength=blength;
-			if(lenlen+blength>maxlength)
+			newblength=(flength+1)/2;
+			mlength=newblength;
+			if(lenlen+newblength>maxlength)
 				return 0;
-			if(!build_hex(fld->data, buf+lenlen, flength))
+			if(!build_hex(data, buf+lenlen, flength))
 				return 0;
 
 			break;
 
 		case FRM_BCD:
-			blength=(flength+1)/2;
+			newblength=(flength+1)/2;
 			mlength=flength;
-			if(lenlen+blength>maxlength)
+			if(lenlen+newblength>maxlength)
 				return 0;
-			if(!build_bcdr(fld->data, buf+lenlen, flength))
+			if(!build_bcdr(data, buf+lenlen, flength))
 				return 0;
 
 			break;
 
 		case FRM_EBCDIC:
-			blength=flength;
+			newblength=flength;
 			mlength=flength;
-			if(lenlen+blength>maxlength)
+			if(lenlen+newblength>maxlength)
 				return 0;
-			build_ebcdic(fld->data, buf+lenlen, blength);
+			build_ebcdic(data, buf+lenlen, newblength);
 			break;
 
 		default:
@@ -794,31 +782,29 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 			}
 	}
 
-	//printf("build_field: %s , length %d\n", frm->description, lenlen +blength);
+	//printf("build_field: %s , length %d\n", frm->description, lenlen +newblength);
 
-	return lenlen+blength;
+	return lenlen+newblength;
 }
 
-unsigned int build_ebcdic(char *from, char *to, unsigned int len)
+unsigned int build_ebcdic(const char *from, char *to, unsigned int len)
 {
-	unsigned int i;
 	const unsigned char ascii2ebcdic[257]="\0\x001\x002\x003\x037\x02D\x02E\x02F\x016\x005\x025\x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013\x03C\x03D\x032\x026\x018\x019\x03F\x027\x022\x01D\x01E\x01F\x040\x05A\x07F\x07B\x05B\x06C\x050\x07D\x04D\x05D\x05C\x04E\x06B\x060\x04B\x061\x0F0\x0F1\x0F2\x0F3\x0F4\x0F5\x0F6\x0F7\x0F8\x0F9\x07A\x05E\x04C\x07E\x06E\x06F\x07C\x0C1\x0C2\x0C3\x0C4\x0C5\x0C6\x0C7\x0C8\x0C9\x0D1\x0D2\x0D3\x0D4\x0D5\x0D6\x0D7\x0D8\x0D9\x0E2\x0E3\x0E4\x0E5\x0E6\x0E7\x0E8\x0E9\x0BA\x0E0\x0BB\x0B0\x06D\x079\x081\x082\x083\x084\x085\x086\x087\x088\x089\x091\x092\x093\x094\x095\x096\x097\x098\x099\x0A2\x0A3\x0A4\x0A5\x0A6\x0A7\x0A8\x0A9\x0C0\x04F\x0D0\x0A1\x007\x020\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x0FF\x040\x040\x04A\x0B1\x040\x0B2\x06A\x040\x040\x0C3\x040\x040\x05F\x040\x0D9\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x07F\x040\x040\x040\x040\x064\x065\x062\x066\x063\x067\x09C\x068\x074\x071\x072\x073\x078\x075\x076\x077\x040\x069\x0ED\x0EE\x0EB\x0EF\x0EC\x040\x080\x0FD\x0FE\x0FB\x0FC\x0AD\x040\x059\x044\x045\x042\x046\x043\x047\x09E\x048\x054\x051\x052\x053\x058\x055\x056\x057\x040\x049\x0CD\x0CE\x0CF\x0CB\x0CC\x040\x070\x0DD\x0DE\x0DB\x0DC\x08D\x040\x0DF";
 
-	for(i=0; i<len; i++)
+	for(unsigned int i=0; i<len; i++)
 		to[i]=ascii2ebcdic[(unsigned char)from[i]];
 	
 	return len;
 }
 
-unsigned int build_bcdr(char *from, char *to, unsigned int len)
+unsigned int build_bcdr(const char *from, char *to, unsigned int len)
 {
-	unsigned int i;
-	unsigned int u=len/2*2==len?0:1;
 	unsigned char t;
+	unsigned int u=len/2*2==len?0:1;
 	unsigned int separator_found=0;
 
 	to[0]='\0';
-	for(i=0; i<(len+1)/2; i++)
+	for(unsigned int i=0; i<(len+1)/2; i++)
 	{
 		if(i!=0 || u==0)
 		{
@@ -856,15 +842,14 @@ unsigned int build_bcdr(char *from, char *to, unsigned int len)
 	return (len+1)/2;
 }
 
-unsigned int build_bcdl(char *from, char *to, unsigned int len)
+unsigned int build_bcdl(const char *from, char *to, unsigned int len)
 {
-	unsigned int i;
-	unsigned int u=len/2*2==len?0:1;
 	unsigned char t;
+	unsigned int u=len/2*2==len?0:1;
 	unsigned int separator_found=0;
 
 	to[0]='\0';
-	for(i=0; i<(len+1)/2; i++)
+	for(unsigned int i=0; i<(len+1)/2; i++)
 	{
 		t=(unsigned char)from[i*2];
 		if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
@@ -902,14 +887,13 @@ unsigned int build_bcdl(char *from, char *to, unsigned int len)
 	return (len+1)/2;
 }
 
-unsigned int build_hex(char *from, char *to, unsigned int len)
+unsigned int build_hex(const char *from, char *to, unsigned int len)
 {
-	unsigned int i;
 	unsigned char t;
 	unsigned int u=len/2*2==len?0:1;
 
 	to[0]='\0';
-	for(i=0; i<(len+1)/2; i++)
+	for(unsigned int i=0; i<(len+1)/2; i++)
 	{
 		if(i!=0 || u==0)
 		{
@@ -947,23 +931,22 @@ unsigned int build_hex(char *from, char *to, unsigned int len)
 
 unsigned int field::build_isobitmap(char *buf, unsigned int maxlength, unsigned int index)
 {
-	unsigned int i, j;
-	field *fld=this;
+	unsigned int i;
 
-	//printf("ISOBITMAP: %d %d %d\n", fld->fields, index, (fld->fields-index-1)/64+1);
+	//printf("ISOBITMAP: %d %d %d\n", fields, index, (fields-index-1)/64+1);
 
-	for(i=0; i<(fld->fields-index-1)/64+1; i++)
+	for(i=0; i<(fields-index-1)/64+1; i++)
 	{
 		if((i+1)*8>maxlength)
 			return 0;
 
 		memset(buf+i*8, '\0', 8);
 
-		if(i!=(fld->fields-index-1)/64)
+		if(i!=(fields-index-1)/64)
 			buf[i*64]=0x80;
 
-		for(j=1; j<64; j++)
-			if(fld->fld[i*64+j+index] && !fld->fld[i*64+j+index]->is_empty())
+		for(unsigned int j=1; j<64; j++)
+			if(fld[i*64+j+index] && !fld[i*64+j+index]->is_empty())
 				buf[i*8+j/8]|=1<<(7-j%8);
 	}
 	
@@ -972,22 +955,21 @@ unsigned int field::build_isobitmap(char *buf, unsigned int maxlength, unsigned 
 
 unsigned int field::build_bitmap(char *buf, unsigned int maxlength, unsigned int index)
 {
-	unsigned int i, blength, flength;
-	field *fld=this;
+	unsigned int newblength, flength;
 
-	flength=fld->frm->fld[index]->maxLength;
+	flength=frm->fld[index]->maxLength;
 
-	blength=(flength+7)/8;
+	newblength=(flength+7)/8;
 
-	if(blength>maxlength)
+	if(newblength>maxlength)
 		return 0;
 
-	memset(buf, '\0', blength);
+	memset(buf, '\0', newblength);
 
-	for(i=0; i<flength && i<fld->fields-index-1; i++)
-		if(fld->fld[index+1+i] && !fld->fld[index+1+i]->is_empty())
+	for(unsigned int i=0; i<flength && i<fields-index-1; i++)
+		if(fld[index+1+i] && !fld[index+1+i]->is_empty())
 			buf[i/8]|=1<<(7-i%8);
 
-	return blength;
+	return newblength;
 }
 

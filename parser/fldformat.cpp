@@ -7,32 +7,32 @@
 //constructor
 fldformat::fldformat(void)
 {
-	this->fill_default();
+	fill_default();
 }
 
 //copy constructor
 fldformat::fldformat(const fldformat &from)
 {
-	this->fill_default();
-	this->copyFrom(&from);
+	fill_default();
+	copyFrom(from);
 }
 
 //destructor
 fldformat::~fldformat(void)
 {
-	this->clear();
-	if(this->parent)
+	clear();
+	if(parent)
 	{
-		if(this->parent->altformat==this)
+		if(parent->altformat==this)
 		{
-			this->parent->altformat=NULL;
+			parent->altformat=NULL;
 			return;
 		}
 
-		for(unsigned int i=0; i<this->parent->fields; i++)
-			if(this->parent->fld[i]==this)
+		for(unsigned int i=0; i<parent->fields; i++)
+			if(parent->fld[i]==this)
 			{
-				this->parent->fld[i]=NULL;
+				parent->fld[i]=NULL;
 				return;
 			}
 	}
@@ -41,159 +41,145 @@ fldformat::~fldformat(void)
 //default format
 void fldformat::fill_default(void)
 {
-	this->lengthFormat=FRM_UNKNOWN;
-	this->lengthLength=0;
-	this->lengthInclusive=0;
-	this->maxLength=1024;
-	this->addLength=0;
-	this->dataFormat=FRM_SUBFIELDS;
-	this->tagFormat=0;
-	this->description=NULL;
-	this->data=NULL;
-	this->maxFields=196;
-	this->fields=0;
-	this->fld=NULL;
-	this->altformat=NULL;
-	this->parent=NULL;
+	lengthFormat=FRM_UNKNOWN;
+	lengthLength=0;
+	lengthInclusive=0;
+	maxLength=1024;
+	addLength=0;
+	dataFormat=FRM_SUBFIELDS;
+	tagFormat=0;
+	description=NULL;
+	data=NULL;
+	maxFields=196;
+	fields=0;
+	fld=NULL;
+	altformat=NULL;
+	parent=NULL;
 }
 
 //empty to default
 void fldformat::clear(void)
 {
 	unsigned int i;
-	fldformat *tmpfrm=this->parent;
+	fldformat *tmpfrm=parent;
 
-	if(this->fields!=0)
+	if(fields!=0)
 	{      
-		for(i=0; i<this->fields; i++)
-			if(this->fld[i]!=NULL)
-				delete this->fld[i];
-		free(this->fld);
+		for(i=0; i<fields; i++)
+			if(fld[i]!=NULL)
+				delete fld[i];
+		free(fld);
 	}
 
-	if(this->description!=NULL)
-		free(this->description);
+	if(description!=NULL)
+		free(description);
 
-	if(this->data!=NULL)
-		free(this->data);
+	if(data!=NULL)
+		free(data);
 
-	if(this->altformat!=NULL)
-		delete this->altformat;
+	if(altformat!=NULL)
+		delete altformat;
 
-	this->fill_default();
-	this->parent=tmpfrm; //make parent immune to clear
+	fill_default();
+	parent=tmpfrm; //make parent immune to clear
 }
 
 int fldformat::is_empty(void)
 {
-	return this->lengthFormat==FRM_UNKNOWN
-	    && this->lengthLength==0
-	    && this->lengthInclusive==0
-	    && this->maxLength==1024
-	    && this->addLength==0
-	    && this->dataFormat==FRM_SUBFIELDS
-	    && this->tagFormat==0
-	    && this->description==NULL
-	    && this->data==NULL
-	    && this->maxFields==196
-	    && this->fields==0
-	    && this->fld==NULL
-	    && this->altformat==NULL;
+	return lengthFormat==FRM_UNKNOWN
+	    && lengthLength==0
+	    && lengthInclusive==0
+	    && maxLength==1024
+	    && addLength==0
+	    && dataFormat==FRM_SUBFIELDS
+	    && tagFormat==0
+	    && description==NULL
+	    && data==NULL
+	    && maxFields==196
+	    && fields==0
+	    && fld==NULL
+	    && altformat==NULL;
 }
 
 //forks the format. All data and subformat are also copied so that all pointers will have new values to newly copied data but non-pointers will have same values
-void fldformat::copyFrom(const fldformat *from)
+void fldformat::copyFrom(const fldformat &from)
 {
-	unsigned int i;
-
-	if(!from)
-	{
-		printf("Error: Field not provided\n");
-		return;
-	}
-
-	if(this==from)
+	if(this==&from)
 		return;
 
-	this->clear();
+	clear();
 
-	this->lengthFormat=from->lengthFormat;
-	this->lengthLength=from->lengthLength;
-	this->lengthInclusive=from->lengthInclusive;
-	this->maxLength=from->maxLength;
-	this->addLength=from->addLength;
-	this->dataFormat=from->dataFormat;
-	this->tagFormat=from->tagFormat;
-	if(from->description)
+	lengthFormat=from.lengthFormat;
+	lengthLength=from.lengthLength;
+	lengthInclusive=from.lengthInclusive;
+	maxLength=from.maxLength;
+	addLength=from.addLength;
+	dataFormat=from.dataFormat;
+	tagFormat=from.tagFormat;
+	if(from.description)
 	{
-		this->description=(char *)malloc((strlen(from->description)+1)*sizeof(char));
-		strcpy(this->description, from->description);
+		description=(char *)malloc((strlen(from.description)+1)*sizeof(char));
+		strcpy(description, from.description);
 	}
-	if(from->data)
+	if(from.data)
 	{
-		this->data=(char *)malloc((strlen(from->data)+1)*sizeof(char));
-		strcpy(this->data, from->data);
+		data=(char *)malloc((strlen(from.data)+1)*sizeof(char));
+		strcpy(data, from.data);
 	}
-	this->maxFields=from->maxFields;
-	this->fields=from->fields;
-	if(from->fld)
+	maxFields=from.maxFields;
+	fields=from.fields;
+	if(from.fld)
 	{
-		this->fld=(fldformat**)calloc(from->maxFields,sizeof(fldformat*));
-		for(i=0; i < from->fields; i++)
-			if(from->fld[i])
+		fld=(fldformat**)calloc(from.maxFields,sizeof(fldformat*));
+		for(unsigned int i=0; i < from.fields; i++)
+			if(from.fld[i])
 			{
-				this->fld[i]=new fldformat;
-				this->fld[i]->copyFrom(from->fld[i]);
+				fld[i]=new fldformat;
+				fld[i]->copyFrom(*from.fld[i]);
 			}
 	}
-	if(from->altformat)
+	if(from.altformat)
 	{
-		this->altformat=new fldformat;
-		this->altformat->copyFrom(from->altformat);
+		altformat=new fldformat;
+		altformat->copyFrom(*from.altformat);
 	}
 }
 
 //relink data from another format. The old format will become empty
-void fldformat::moveFrom(fldformat *from)
+void fldformat::moveFrom(fldformat &from)
 {
-	if(!from)
-	{
-		printf("Error: Field not provided\n");
-		return;
-	}
-
-	if(this==from)
+	if(this==&from)
 		return;
 
-	this->clear();
+	clear();
 
-	this->lengthFormat=from->lengthFormat;
-	this->lengthLength=from->lengthLength;
-	this->lengthInclusive=from->lengthInclusive;
-	this->maxLength=from->maxLength;
-	this->addLength=from->addLength;
-	this->dataFormat=from->dataFormat;
-	this->tagFormat=from->tagFormat;
-	this->description=from->description;
-	this->data=from->data;
-	this->maxFields=from->maxFields;
-	this->fields=from->fields;
-	this->fld=from->fld;
-	this->altformat=from->altformat;
+	lengthFormat=from.lengthFormat;
+	lengthLength=from.lengthLength;
+	lengthInclusive=from.lengthInclusive;
+	maxLength=from.maxLength;
+	addLength=from.addLength;
+	dataFormat=from.dataFormat;
+	tagFormat=from.tagFormat;
+	description=from.description;
+	data=from.data;
+	maxFields=from.maxFields;
+	fields=from.fields;
+	fld=from.fld;
+	altformat=from.altformat;
 
-	from->description=NULL;
-	from->data=NULL;
-	from->fld=NULL;
-	from->altformat=NULL;
-	from->fields=0;
+	from.description=NULL;
+	from.data=NULL;
+	from.fld=NULL;
+	from.altformat=NULL;
+	from.fields=0;
 
-	from->clear();
+	from.clear();
 }
 
 // load format from file
 // returns 0 on failure, 1 on success
 // if already loaded, adds new as altformat
-int fldformat::load_format(char *filename)
+int fldformat::load_format(const char *filename)
 {
 	char line[256];
 	char number[sizeof(line)];
@@ -270,7 +256,7 @@ int fldformat::load_format(char *filename)
 			}
 			else
 			{
-				frmnew->moveFrom(frmtmp);
+				frmnew->moveFrom(*frmtmp);
 				delete frmtmp;
 			}
 		}
@@ -287,7 +273,7 @@ int fldformat::load_format(char *filename)
 			}
 			else
 			{
-				orphans[number].moveFrom(frmtmp);
+				orphans[number].moveFrom(*frmtmp);
 				delete frmtmp;
 			}
 		}
@@ -305,15 +291,15 @@ int fldformat::load_format(char *filename)
 			strcpy(orphans["message"].description, "No description");
 		}
 
-		if(!this->is_empty())
+		if(!is_empty())
 		{
-			frmtmp=this->get_lastaltformat();
+			frmtmp=get_lastaltformat();
 			frmtmp->altformat=new fldformat;
 			frmtmp->altformat->parent=frmtmp;
-			frmtmp->altformat->moveFrom(&orphans["message"]);
+			frmtmp->altformat->moveFrom(orphans["message"]);
 		}
 		else
-			this->moveFrom(&orphans["message"]);
+			moveFrom(orphans["message"]);
 	}
 	else
 	{
@@ -330,15 +316,15 @@ int fldformat::load_format(char *filename)
 
 inline fldformat* fldformat::get_altformat(void)
 {
-	return this->altformat;
+	return altformat;
 }
 
 inline fldformat* fldformat::get_lastaltformat(void)
 {
-	fldformat *altformat;
-	for(altformat=this; altformat->altformat!=NULL; )
-		altformat=altformat->altformat;
-	return altformat;
+	fldformat *last;
+	for(last=this; last->altformat!=NULL; )
+		last=last->altformat;
+	return last;
 }
 
 // parses a string and returns a pointer to format by its number.
@@ -349,10 +335,10 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 {
 	unsigned int i, l, n;
 	string key;
-	fldformat *altformat;
+	fldformat *frmtmp;
 
-	if(this->altformat)
-		return this->get_lastaltformat()->get_by_number(number, orphans);
+	if(altformat)
+		return get_lastaltformat()->get_by_number(number, orphans);
 
 	if(!number)
 	{
@@ -374,22 +360,22 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 		else	
 			n=atoi(number);
 
-		altformat=this->get_lastaltformat();
+		frmtmp=get_lastaltformat();
 
-		if(altformat->fields==0)
-			altformat->fld=(fldformat**)calloc(altformat->maxFields, sizeof(fldformat*));
+		if(frmtmp->fields==0)
+			frmtmp->fld=(fldformat**)calloc(frmtmp->maxFields, sizeof(fldformat*));
 	
-		if(altformat->fields < n+1)
-			altformat->fields=n+1;
+		if(frmtmp->fields < n+1)
+			frmtmp->fields=n+1;
 
-		if(altformat->fld[n]==NULL)
+		if(frmtmp->fld[n]==NULL)
 		{
-			altformat->fld[n]=new fldformat;
-			altformat->fld[n]->parent=altformat;
-			return altformat->fld[n];
+			frmtmp->fld[n]=new fldformat;
+			frmtmp->fld[n]->parent=frmtmp;
+			return frmtmp->fld[n];
 		}
 		else
-			return altformat->fld[n]->get_lastaltformat();
+			return frmtmp->fld[n]->get_lastaltformat();
 	}
 
 	if(i==0 || number[i]!='.') //if has non-numeric characters, then search the orphans
@@ -417,14 +403,14 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 		n=atoi(number);
 	}
 
-	if(this->fields < n + 1)
+	if(fields < n + 1)
 	{
 		if(debug)
-			printf("Warning: Parent format not loaded yet [%s][%d][%d] %s\n", number, n, this->fields, this->description);
+			printf("Warning: Parent format not loaded yet [%s][%d][%d] %s\n", number, n, fields, description);
 		return NULL;
 	}
 
-	return this->fld[n]->get_lastaltformat()->get_by_number(number+i+1, orphans);
+	return fld[n]->get_lastaltformat()->get_by_number(number+i+1, orphans);
 }
 
 //parses format string
@@ -443,75 +429,75 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 
 	if(!strcmp(format, "ISOBITMAP"))
 	{
-		this->dataFormat=FRM_ISOBITMAP;
-		this->maxLength=192;
+		dataFormat=FRM_ISOBITMAP;
+		maxLength=192;
 		return 1;
 	}
 
 	switch (format[0])
 	{
 		case 'F':
-			this->lengthFormat=FRM_FIXED;
+			lengthFormat=FRM_FIXED;
 
-			this->lengthLength=0;
+			lengthLength=0;
 
 			j=1;
 
 			break;
 
 		case 'L':
-			this->lengthFormat=FRM_ASCII;
+			lengthFormat=FRM_ASCII;
 
 			for(j=1; j<strlen(format); j++)
 				if(format[j]!='L')
 					break;
 
-			this->lengthLength=j;
+			lengthLength=j;
 
 			break;
 
 		case 'B':
-			this->lengthFormat=FRM_BIN;
+			lengthFormat=FRM_BIN;
 
 			for(j=1; j<strlen(format); j++)
 				if(format[j]!='B')
 					break;
 
-			this->lengthLength=j;
+			lengthLength=j;
 
 			break;
 
 		case 'C':
-			this->lengthFormat=FRM_BCD;
+			lengthFormat=FRM_BCD;
 
 			for(j=1; j<strlen(format); j++)
 				if(format[j]!='C')
 					break;
 
-			this->lengthLength=j;
+			lengthLength=j;
 
 			break;
 
 		case 'E':
-			this->lengthFormat=FRM_EBCDIC;
+			lengthFormat=FRM_EBCDIC;
 
 			for(j=1; j<strlen(format); j++)
 				if(format[j]!='E')
 					break;
 
-			this->lengthLength=j;
+			lengthLength=j;
 
 			break;
 
 		case 'U':
-			this->lengthFormat=FRM_UNKNOWN;
-			this->lengthLength=0;
+			lengthFormat=FRM_UNKNOWN;
+			lengthLength=0;
 			j=1;
 			break;
 
 		case 'M':
-			this->lengthFormat=FRM_EMVL;
-			this->lengthLength=1;
+			lengthFormat=FRM_EMVL;
+			lengthLength=1;
 			j=1;
 			break;
 
@@ -521,7 +507,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			{
 				if(orphans.count(format+1))
 				{
-					this->copyFrom(orphans[format+1].get_lastaltformat());
+					copyFrom(*orphans[format+1].get_lastaltformat());
 				}
 				else
 				{
@@ -536,12 +522,12 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 				return 0;
 			}
 			else
-				this->copyFrom(tmpfrm);
+				copyFrom(*tmpfrm);
 
-			if(this->description)
+			if(description)
 			{
-				free(this->description);
-				this->description=NULL;
+				free(description);
+				description=NULL;
 			}
 
 			return 1;
@@ -555,11 +541,11 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 
 	if(format[j]=='I')
 	{
-		this->lengthInclusive=1;
+		lengthInclusive=1;
 		j++;
 	}
 	else
-		this->lengthInclusive=0;
+		lengthInclusive=0;
 
 	for(i=j; i<strlen(format); i++)
 		if (format[i]<'0' || format[i]>'9')
@@ -571,7 +557,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 		return 0;
 	}
 
-	this->maxLength=atoi(format+j);
+	maxLength=atoi(format+j);
 
 	if(format[i]=='+' || format[i]=='-')
 	{
@@ -586,13 +572,13 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			return 0;
 		}
 
-		this->addLength=(format[i]=='+')? atoi(format+i+1) : -atoi(format+i+1);
+		addLength=(format[i]=='+')? atoi(format+i+1) : -atoi(format+i+1);
 		i=j;
 	}
 	else
-		this->addLength=0;
+		addLength=0;
 
-	if(!this->maxLength)
+	if(!maxLength)
 		return 1; //allow zero length fields
 
 	p=strstr(format+i, "=");
@@ -600,77 +586,77 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	{
 		if(p[1])
 		{
-			this->data=(char *)malloc((strlen(p+1)+1)*sizeof(char));
-			strcpy(this->data, p+1);
+			data=(char *)malloc((strlen(p+1)+1)*sizeof(char));
+			strcpy(data, p+1);
 		}
 		else
 		{
-			this->data=(char *)malloc(2*sizeof(char));
-			strcpy(this->data, " "); //replacing empty string with a space character. It is a feature, not bug.
+			data=(char *)malloc(2*sizeof(char));
+			strcpy(data, " "); //replacing empty string with a space character. It is a feature, not bug.
 		}
 		*p='\0';
 	}
 
 	if(!strcmp(format+i, "SF"))
 	{
-		this->dataFormat=FRM_SUBFIELDS;
-		this->maxFields=196;
+		dataFormat=FRM_SUBFIELDS;
+		maxFields=196;
 	}
 	else if(!strncmp(format+i, "TLV1", 4))
 	{
-		this->dataFormat=FRM_TLV1;
-		this->maxFields=16;
+		dataFormat=FRM_TLV1;
+		maxFields=16;
 		i+=4;
 	}
 	else if(!strncmp(format+i, "TLV2",4))
 	{
-		this->dataFormat=FRM_TLV2;
-		this->maxFields=16;
+		dataFormat=FRM_TLV2;
+		maxFields=16;
 		i+=4;
 	}
 	else if(!strncmp(format+i, "TLV3",4))
 	{
-		this->dataFormat=FRM_TLV3;
-		this->maxFields=16;
+		dataFormat=FRM_TLV3;
+		maxFields=16;
 		i+=4;
 	}
 	else if(!strncmp(format+i, "TLV4",4))
 	{
-		this->dataFormat=FRM_TLV4;
-		this->maxFields=16;
+		dataFormat=FRM_TLV4;
+		maxFields=16;
 		i+=4;
 	}
 	else if(!strcmp(format+i, "TLVEMV"))
 	{
-		this->dataFormat=FRM_TLVEMV;
-		this->tagFormat=FRM_HEX;
-		this->maxFields=16;
+		dataFormat=FRM_TLVEMV;
+		tagFormat=FRM_HEX;
+		maxFields=16;
 	}
 	else if(!strncmp(format+i, "TLVDS", 5))
 	{
-		this->dataFormat=FRM_TLVDS;
-		this->maxFields=100;
+		dataFormat=FRM_TLVDS;
+		maxFields=100;
 		i+=5;
 	}
 	else if(!strcmp(format+i, "BCDSF"))
 	{
-		this->dataFormat=FRM_BCDSF;
-		this->maxFields=16;
+		dataFormat=FRM_BCDSF;
+		maxFields=16;
 	}
 	else if(!strcmp(format+i, "BITMAP"))
-		this->dataFormat=FRM_BITMAP;
+		dataFormat=FRM_BITMAP;
 	else if(!strcmp(format+i, "BITSTR"))
-		this->dataFormat=FRM_BITSTR;
+		dataFormat=FRM_BITSTR;
 	else if(!strcmp(format+i, "EBCDIC") || !strcmp(format+i, "EBC"))
-		this->dataFormat=FRM_EBCDIC;
+		dataFormat=FRM_EBCDIC;
 	else if(!strcmp(format+i, "BCD"))
-		this->dataFormat=FRM_BCD;
+		dataFormat=FRM_BCD;
 	else if(!strcmp(format+i, "BIN"))
-		this->dataFormat=FRM_BIN;
+		dataFormat=FRM_BIN;
 	else if(!strcmp(format+i, "HEX"))
-		this->dataFormat=FRM_HEX;
+		dataFormat=FRM_HEX;
 	else if(!strcmp(format+i, "ASCII") || !strcmp(format+i, "ASC"))
-		this->dataFormat=FRM_ASCII;
+		dataFormat=FRM_ASCII;
 	else
 	{
 		if(debug)
@@ -680,16 +666,16 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 		return 0;
 	}
 
-	if(this->dataFormat==FRM_TLV1 || this->dataFormat==FRM_TLV2 || this->dataFormat==FRM_TLV3 || this->dataFormat==FRM_TLV4 || this->dataFormat==FRM_TLVDS)
+	if(dataFormat==FRM_TLV1 || dataFormat==FRM_TLV2 || dataFormat==FRM_TLV3 || dataFormat==FRM_TLV4 || dataFormat==FRM_TLVDS)
 	{
 		if(!strcmp(format+i, "EBCDIC") || !strcmp(format+i, "EBC"))
-			this->tagFormat=FRM_EBCDIC;
+			tagFormat=FRM_EBCDIC;
 		else if(!strcmp(format+i, "BCD"))
-			this->tagFormat=FRM_BCD;
+			tagFormat=FRM_BCD;
 		else if(!strcmp(format+i, "HEX"))
-			this->tagFormat=FRM_HEX;
+			tagFormat=FRM_HEX;
 		else if(!strcmp(format+i, "ASCII") || !strcmp(format+i, "ASC") || format[i]=='\0')
-			this->tagFormat=FRM_ASCII;
+			tagFormat=FRM_ASCII;
 		else
 		{
 			if(debug)
@@ -703,14 +689,14 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	if(p)
 		*p='=';
 
-	if(p && this->dataFormat!=FRM_BITSTR && this->dataFormat!=FRM_EBCDIC && this->dataFormat!=FRM_BCD && this->dataFormat!=FRM_BIN && this->dataFormat!=FRM_HEX && this->dataFormat!=FRM_ASCII)
+	if(p && dataFormat!=FRM_BITSTR && dataFormat!=FRM_EBCDIC && dataFormat!=FRM_BCD && dataFormat!=FRM_BIN && dataFormat!=FRM_HEX && dataFormat!=FRM_ASCII)
 	{
 		if(debug)
 			printf("Error: Mandatory data specified for subfield format\n");
 		return 0;
 	}
 
-	//printf("Field: %s, Length type: %d, LengthLength: %d, Max Length: %d, Data format: %d, Mandatory data: %s\n", this->description, this->lengthFormat, this->lengthLength, this->maxLength, this->dataFormat, this->data);
+	//printf("Field: %s, Length type: %d, LengthLength: %d, Max Length: %d, Data format: %d, Mandatory data: %s\n", description, lengthFormat, lengthLength, maxLength, dataFormat, data);
 
 	return 1;
 }
@@ -719,8 +705,9 @@ const char *fldformat::get_description(void)
 {
 	static const char dummy[]="";
 	
-	if(!this->description)
+	if(!description)
 		return dummy;
 	else
-		return this->description;
+		return description;
 }
+

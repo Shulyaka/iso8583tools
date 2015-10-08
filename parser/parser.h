@@ -1,5 +1,5 @@
-#ifndef _PARSE_H_
-#define _PARSE_H_
+#ifndef _PARSER_H_
+#define _PARSER_H_
 
 //TODO: switch to enum
 #define FRM_UNKNOWN 0    //unknown format    U
@@ -64,14 +64,14 @@ class fldformat
 	~fldformat(void);
 	void clear(void);
 	int is_empty(void);
-	int load_format(char *filename);
-	void copyFrom(const fldformat *from);
-	void moveFrom(fldformat *from);
+	int load_format(const char *filename);
+	void copyFrom(const fldformat &from);
+	void moveFrom(fldformat &from);
 	inline fldformat *get_altformat(void);
 	inline fldformat *get_lastaltformat(void);
 	const char *get_description(void);
-	inline const unsigned int get_lengthLength() {return this->lengthLength;};
-	inline const unsigned int get_maxLength() {return this->maxLength;};
+	inline const unsigned int get_lengthLength() {return lengthLength;};
+	inline const unsigned int get_maxLength() {return maxLength;};
 };
 
 class field
@@ -89,9 +89,9 @@ class field
 
 	void fill_default(void);
 
-	int parse_field(char*, unsigned int);
-	int parse_field_alt(char*, unsigned int);
-	int parse_field_length(char*, unsigned int, fldformat*);
+	int parse_field(const char*, unsigned int);
+	int parse_field_alt(const char*, unsigned int);
+	int parse_field_length(const char*, unsigned int);
 	unsigned int build_field(char*, unsigned int);
 	unsigned int build_field_alt(char*, unsigned int);
 	unsigned int build_isobitmap(char*, unsigned int, unsigned int);
@@ -105,17 +105,18 @@ class field
 	void clear(void);
 	int is_empty(void);
 	int change_format(fldformat*);
-	void copyFrom(const field *from);
-	void moveFrom(field *from);
+	void copyFrom(const field &from);
+	void moveFrom(field &from);
 
 	int parse_message(char*, unsigned int);
-	inline unsigned int build_message(char *buf, unsigned int len) {return this->build_field(buf, len);};
+	inline unsigned int build_message(char *buf, unsigned int len) {return build_field(buf, len);};
 	unsigned int estimate_length(void);
 
 	const char *get_description(void);
-	inline const int get_parsed_blength() {return this->blength;};
-	inline const int get_lengthLength() {return this->frm?this->frm->get_lengthLength():0;};
-	inline field* sf(int n) {return this->fld[n];};
+	inline const int get_parsed_blength() {return blength;};
+	inline const int get_lengthLength() {return frm?frm->get_lengthLength():0;};
+	inline const int get_maxLength() {return frm?frm->get_maxLength():0;};
+	inline field* sf(int n) {return fld[n];};
 
 	const char* get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	char* add_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
