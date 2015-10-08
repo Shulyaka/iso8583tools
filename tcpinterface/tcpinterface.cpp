@@ -21,6 +21,8 @@ int main(void)
 {
 	struct pollfd sfd[3];
 	const long timeout=500; //connection timeout in seconds
+	std::string host;
+	std::string port;
 
 	struct timespec ts_timeout;
 
@@ -44,7 +46,7 @@ int main(void)
 
 	printf("Message format loaded\n");
 
-	sfd[2].fd=tcpinit();
+	sfd[2].fd=tcpserverinit("12345");
 
 	if(sfd[2].fd==-1)
 	{
@@ -72,7 +74,7 @@ int main(void)
 		printf("Waiting for a connection...\n");
 
 		errno=0;
-		sfd[1].fd=tcpconnect(sfd[2].fd);
+		sfd[1].fd=tcpserverconnect(sfd[2].fd, host, port);
 		if(sfd[1].fd==-1)
 		{
 			if(sigint_caught)
@@ -86,7 +88,7 @@ int main(void)
 			continue;
 		}
 
-		printf("Connected.\n");
+		printf("Connected from %s:%s.\n", host.c_str(), port.c_str());
 
 		while (1)
 		{

@@ -7,63 +7,127 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <netdb.h>
 #include "net.h"
 #include "tcp.h"
 
-int tcpinit(void)
+int tcpserverinit(const std::string &port)
 {
-	int i, sct;
-	struct sockaddr_in addr;
+	struct addrinfo hints;
+	struct addrinfo *result, *rp;
+	int sfd, s;
 
-	sct=socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_protocol = 0;
+	hints.ai_canonname = NULL;
+	hints.ai_addr = NULL;
+	hints.ai_next = NULL;
 
-	if(sct==-1)
+	s = getaddrinfo(NULL, port.c_str(), &hints, &result);
+	if (s != 0)
 	{
-		printf("Error: Unable to create a socket: %s\n", strerror(errno));
+		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
 		return -1;
 	}
 
-	i=1;
-
-	if(setsockopt(sct, SOL_SOCKET, SO_REUSEADDR, &i, sizeof(i)))
+	for (rp = result; rp != NULL; rp = rp->ai_next)
 	{
-		printf("Warning: setsockopt failed: %s\n", strerror(errno));
+		sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+		if (sfd == -1)
+			continue;
+
+		s=1;
+		setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &s, sizeof(s));
+
+		if(bind(sfd, rp->ai_addr, rp->ai_addrlen)!=0)
+		{
+			close(sfd);
+			continue;
+		}
+
+		if(listen(sfd, 1)==0)
+			break;
+
+		close(sfd);
 	}
 
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family=AF_INET;
-	addr.sin_addr.s_addr=INADDR_ANY;
-	addr.sin_port=htons(12345);
+	freeaddrinfo(result);
 
-	if(bind(sct, (struct sockaddr*)&addr, sizeof(struct sockaddr_in)))
+	if (rp == NULL)
 	{
-		printf("Error: Unable to bind a socket: %s\n", strerror(errno));
-		close(sct);
+		fprintf(stderr, "Could not bind\n");
 		return -1;
 	}
 
-	if(listen(sct, 1)==-1)
-	{
-		printf("Error: listen failed: %s\n", strerror(errno));
-		close(sct);
-		return -1;
-	}
-
-	return sct;
+	return sfd;
 }
 
-int tcpconnect(int sct) //blocking
+int tcpclientconnect(const std::string &host, const std::string &port)
+{
+	struct addrinfo hints;
+	struct addrinfo *result, *rp;
+	int sfd, s;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = 0;
+	hints.ai_protocol = 0;
+
+	s = getaddrinfo(host.c_str(), port.c_str(), &hints, &result);
+	if (s != 0)
+	{
+	    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+	    return -1;
+	}
+
+	for (rp = result; rp != NULL; rp = rp->ai_next)
+	{
+		sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+		if (sfd == -1)
+			continue;
+
+		if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
+			break;
+
+		close(sfd);
+	}
+
+	freeaddrinfo(result);
+
+	if (rp == NULL)
+	{
+		//fprintf(stderr, "Could not connect\n");
+		return -1;
+	}
+
+	return sfd;
+}
+
+int tcpserverconnect(int sct, std::string &host, std::string &port) //blocking
 {
 	struct pollfd sfd;
+	struct sockaddr addr;
+	socklen_t addrlen=sizeof(addr);
+	char c_host[100];
+	char c_port[10];
 
 	sfd.fd=sct;
 	sfd.events=POLLIN;
 
-	if(ppoll(&sfd, 1, NULL, NULL)==-1)
+	if(poll(&sfd, 1, -1)==-1)
 		return -1;
 
-	sfd.fd=accept(sct, NULL, NULL);
-//	fcntl(sfd.fd, F_SETFL, O_NONBLOCK);
+	sfd.fd=accept(sct, &addr, &addrlen);
+	//fcntl(sfd.fd, F_SETFL, O_NONBLOCK);
+
+	getnameinfo(&addr, addrlen, c_host, sizeof(c_host), c_port, sizeof(c_port), 0);
+
+	host.assign(c_host);
+	port.assign(c_port);
 	return sfd.fd;
 }
 
@@ -120,8 +184,8 @@ int tcprecv(int sfd, field &message)
 			}
 			if(i<0)
 			{
-				toread=-i;
-				if(numread+toread>maxlen)
+				toread=-i-numread;
+				if(-i>maxlen) //shouldn't happen, parseNetMsg() should return reasonable values
 				{
 					numread=0;
 					toread=1;

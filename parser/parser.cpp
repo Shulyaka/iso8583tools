@@ -70,7 +70,7 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 	{
 		if(debug)
 			printf("Error: Zero length\n");
-		return -2;
+		return -1;
 	}
 
 	lenlen=frm->lengthLength;
@@ -167,7 +167,7 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 			break;
 
 		case FRM_UNKNOWN:
-			newlength=maxlength;
+			newlength=maxlength<frm->maxLength?maxlength:frm->maxLength;
 			break;
 
 		case FRM_FIXED:
@@ -302,12 +302,11 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 		if(sflen<=0)
 			return sflen;
 
-		if(frm->maxLength < length)
+		if(length > frm->maxLength)
 		{
-			if(frm->lengthFormat!=FRM_UNKNOWN)
-				if(debug)
-					printf("Warning: field length exceeds max\n");
-			return -length;
+			if(debug)
+				printf("Warning: field length exceeds max\n");
+			return 0;
 //			length=frm->maxLength;
 		}
 
