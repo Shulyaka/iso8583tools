@@ -30,7 +30,7 @@ fldformat::~fldformat(void)
 		}
 
 		for(unsigned int i=0; i<parent->fields; i++)
-			if(parent->fld[i]==this)
+			if(parent->sfexist(i) && &parent->sf(i)==this)
 			{
 				parent->fld[i]=NULL;
 				return;
@@ -66,7 +66,7 @@ void fldformat::clear(void)
 	if(fields!=0)
 	{      
 		for(i=0; i<fields; i++)
-			if(fld[i]!=NULL)
+			if(sfexist(i))
 				delete fld[i];
 		free(fld);
 	}
@@ -132,7 +132,7 @@ void fldformat::copyFrom(const fldformat &from)
 	{
 		fld=(fldformat**)calloc(from.maxFields,sizeof(fldformat*));
 		for(unsigned int i=0; i < from.fields; i++)
-			if(from.fld[i])
+			if(from.sfexist(i))
 			{
 				fld[i]=new fldformat;
 				fld[i]->copyFrom(*from.fld[i]);
@@ -360,22 +360,7 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 		else	
 			n=atoi(number);
 
-		frmtmp=get_lastaltformat();
-
-		if(frmtmp->fields==0)
-			frmtmp->fld=(fldformat**)calloc(frmtmp->maxFields, sizeof(fldformat*));
-	
-		if(frmtmp->fields < n+1)
-			frmtmp->fields=n+1;
-
-		if(frmtmp->fld[n]==NULL)
-		{
-			frmtmp->fld[n]=new fldformat;
-			frmtmp->fld[n]->parent=frmtmp;
-			return frmtmp->fld[n];
-		}
-		else
-			return frmtmp->fld[n]->get_lastaltformat();
+		return get_lastaltformat()->sf(n).get_lastaltformat();
 	}
 
 	if(i==0 || number[i]!='.') //if has non-numeric characters, then search the orphans
@@ -384,12 +369,12 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 			if(number[i]=='.')
 				break;
 
-		if(i==l || i+1==l) //no parent, last element
+		if(i==l || i+1==l) //last iteration, no parent
 			return NULL;
 
 		key=string(number,i);
 
-		if(!orphans.count(key)) //no parent, not last element.
+		if(!orphans.count(key)) //no parent, not last iteration.
 			return NULL;
 
 		return orphans[key].get_lastaltformat()->get_by_number(number+i+1, orphans);
@@ -410,7 +395,7 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 		return NULL;
 	}
 
-	return fld[n]->get_lastaltformat()->get_by_number(number+i+1, orphans);
+	return sf(n).get_lastaltformat()->get_by_number(number+i+1, orphans);
 }
 
 //parses format string
@@ -711,3 +696,59 @@ const char *fldformat::get_description(void)
 		return description;
 }
 
+//returns reference to subformat. If it does not exists, it will be added.
+fldformat& fldformat::sf(int n)
+{
+	switch(dataFormat)
+	{
+		case FRM_TLV1:
+		case FRM_TLV2:
+		case FRM_TLV3:
+		case FRM_TLV4:
+		case FRM_TLVEMV:
+			n=0;
+	}
+
+	if(n < 0 || n > maxFields)
+	{
+		printf("Error: Wrong subfield number: %d/%d\n", n, maxFields);
+		exit(1);
+	}
+
+	if(fields==0)
+		fld=(fldformat**)calloc(maxFields, sizeof(fldformat*));
+	
+	if(fields < n+1)
+		fields=n+1;
+
+	if(fld[n]==NULL)
+	{
+		fld[n]=new fldformat;
+		fld[n]->parent=this;
+	}
+	return *fld[n];
+}
+
+bool fldformat::sfexist(int n) const
+{
+	switch(dataFormat)
+	{
+		case FRM_TLV1:
+		case FRM_TLV2:
+		case FRM_TLV3:
+		case FRM_TLV4:
+		case FRM_TLVEMV:
+			n=0;
+	}
+
+	if(n < 0 || n > maxFields)
+		return false;
+
+	if(fields==0)
+		return false;
+
+	if(fld[n]==NULL)
+		return false;
+
+	return true;
+}

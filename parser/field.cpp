@@ -41,7 +41,7 @@ void field::clear(void)
 	if(fields!=0)
 	{
 		for(unsigned int i=0; i<fields; i++)
-			if(fld[i]!=NULL)
+			if(sfexist(i))
 				delete fld[i];
 		free(fld);
 	}
@@ -79,16 +79,9 @@ void field::copyFrom(const field &from)
 	length=from.length;
 	fields=from.fields;
 	frm=from.frm;
-	if(from.fld)
-	{
-		fld=(field**)calloc(from.frm->maxFields,sizeof(field*));
-		for(unsigned int i=0; i < from.fields; i++)
-			if(from.fld[i])
-			{
-				fld[i]=new field;
-				fld[i]->copyFrom(*from.fld[i]);
-			}
-	}
+	for(unsigned int i=0; i < from.fields; i++)
+		if(from.sfexist(i))
+			sf(i).copyFrom(*from.fld[i]);
 	altformat=from.altformat;
 }
 
@@ -146,8 +139,8 @@ void field::print_message(void)
 		case FRM_TLV4:
 		case FRM_TLVEMV:
 			for(unsigned int i=0; i<fields; i++)
-				if(fld[i])
-					fld[i]->print_message();
+				if(sfexist(i))
+					sf(i).print_message();
 			break;
 	}
 }
@@ -182,7 +175,7 @@ int field::is_empty(void)
 		return 1;
 
 	for(unsigned int i=0; i<fields; i++)
-		if(fld[i] && fld[i]->frm && fld[i]->frm->dataFormat!=FRM_ISOBITMAP && fld[i]->frm->dataFormat!=FRM_BITMAP && !fld[i]->is_empty())
+		if(sfexist(i) && sf(i).frm && sf(i).frm->dataFormat!=FRM_ISOBITMAP && sf(i).frm->dataFormat!=FRM_BITMAP && !sf(i).is_empty())
 			return 0;
 
 	return 1;
@@ -204,8 +197,8 @@ int field::change_format(fldformat *frmnew)
 	frm=frmnew;
 
 	for(i=0; i<fields; i++)
-		if(fld[i]!=NULL)
-			if(frmnew->fields<=i || !frmnew->fld[i] || !fld[i]->change_format(frmnew->fld[i]))
+		if(sfexist(i))
+			if(frmnew->fields<=i || !frmnew->sfexist(i) || !sf(i).change_format(&frmnew->sf(i)))
 				break;
 
 	if(i!=fields)
@@ -214,13 +207,13 @@ int field::change_format(fldformat *frmnew)
 			printf("Error: Unable to change field format (%d). Reverting.\n", i);
 
 		for(frm=frmold; i!=0; i--)
-			if(fld[i]!=NULL)
-				if(frmold->fields<=i || !frmold->fld[i] || !fld[i]->change_format(frmold->fld[i]))
+			if(sfexist(i))
+				if(frmold->fields<=i || !frmold->sfexist(i) || !sf(i).change_format(&frmold->sf(i)))
 					if(debug)
 						printf("Error: Unable to revert\n");
 
-		if(fld[0]!=NULL)
-			if(frmold->fields==0 || !frmold->fld[0] || !fld[0]->change_format(frmold->fld[0]))
+		if(sfexist(0))
+			if(frmold->fields==0 || !frmold->sfexist(0) || !sf(0).change_format(&frmold->sf(0)))
 				if(debug)
 					printf("Error: Unable to revert\n");
 
@@ -246,37 +239,10 @@ char* field::add_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, i
 		if(!curfld || !curfld->frm)
 			return def;
 
-		if(!curfld->fld)
-		{
-			if(curfld->frm->maxFields)
-				curfld->fld=(field**)calloc(curfld->frm->maxFields, sizeof(field*));
-			else
-				return def;
-		}
-
 		if(n[i] >= curfld->frm->maxFields)
 			return def;
 
-		if(!curfld->fld[n[i]])
-		{
-			curfld->fld[n[i]]=(field*)calloc(1, sizeof(field));
-			switch(curfld->frm->dataFormat)
-			{
-				case FRM_TLV1:
-				case FRM_TLV2:
-				case FRM_TLV3:
-				case FRM_TLV4:
-				case FRM_TLVEMV:
-					curfld->fld[n[i]]->frm=curfld->frm->fld[0];
-				default:
-					curfld->fld[n[i]]->frm=curfld->frm->fld[n[i]];
-			}
-		}
-
-		if(curfld->fields <= n[i])
-			curfld->fields=n[i]+1;
-
-		curfld=curfld->fld[n[i]];
+		curfld=&curfld->sf(n[i]);
 	}
 
 	if(!curfld || !curfld->frm)
@@ -306,7 +272,7 @@ char* field::add_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, i
 	return curfld->data;
 }
 
-int field::field_format(int altformat, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+int field::field_format(int newaltformat, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
@@ -321,39 +287,12 @@ int field::field_format(int altformat, int n0, int n1, int n2, int n3, int n4, i
 		if(!curfld || !curfld->frm)
 			return 2;
 
-		if(!curfld->fld)
-		{
-			if(curfld->frm->maxFields)
-				curfld->fld=(field**)calloc(curfld->frm->maxFields, sizeof(field*));
-			else
-				return 2;
-		}
-
 		if(n[i] >= curfld->frm->maxFields)
 			return 2;
 
-		if(!curfld->fld[n[i]])
-		{
-			curfld->fld[n[i]]=(field*)calloc(1, sizeof(field));
-			switch(curfld->frm->dataFormat)
-			{
-				case FRM_TLV1:
-				case FRM_TLV2:
-				case FRM_TLV3:
-				case FRM_TLV4:
-				case FRM_TLVEMV:
-					curfld->fld[n[i]]->frm=curfld->frm->fld[0];
-				default:
-					curfld->fld[n[i]]->frm=curfld->frm->fld[n[i]];
-			}
-		}
-
-		if(curfld->fields <= n[i])
-			curfld->fields=n[i]+1;
-
 		tmpfrm=curfld->frm;
 
-		curfld=curfld->fld[n[i]];
+		curfld=&curfld->sf(n[i]);
 	}
 
 	if(!curfld || !curfld->frm)
@@ -361,15 +300,15 @@ int field::field_format(int altformat, int n0, int n1, int n2, int n3, int n4, i
 
 	if(i==0)
 	{
-		if(curfld->altformat>=altformat || altformat==0) //no need or unable to go back in the list
+		if(curfld->altformat>=newaltformat || newaltformat==0) //no need or unable to go back in the list
 		{
-			if(altformat==0 && curfld->altformat==1)
+			if(newaltformat==0 && curfld->altformat==1)
 				curfld->altformat=0;
 
 			return 3;
 		}
 
-		if(altformat==1 && curfld->altformat==0)
+		if(newaltformat==1 && curfld->altformat==0)
 		{
 			curfld->altformat=1;
 			return 0;
@@ -377,31 +316,21 @@ int field::field_format(int altformat, int n0, int n1, int n2, int n3, int n4, i
 
 		tmpfrm=curfld->frm;
 
-		for(i=curfld->altformat==0?1:curfld->altformat; i<altformat; i++)
+		for(i=curfld->altformat==0?1:curfld->altformat; i<newaltformat; i++)
 			if(!tmpfrm->altformat)
 				return 4;
 			else
 				tmpfrm=tmpfrm->altformat;
 
 		if(curfld->change_format(tmpfrm))
-			curfld->altformat=altformat;
+			curfld->altformat=newaltformat;
 		else
 			return 1;
 
 		return 0;
 	}
 
-	switch(tmpfrm->dataFormat)
-	{
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
-		case FRM_TLVEMV:
-			tmpfrm=tmpfrm->fld[0];
-		default:
-			tmpfrm=tmpfrm->fld[n[i-1]];
-	}
+	tmpfrm=&tmpfrm->sf(n[i-1]);
 
 	for(i=1; i<altformat; i++)
 		if(!tmpfrm->altformat)
@@ -410,7 +339,7 @@ int field::field_format(int altformat, int n0, int n1, int n2, int n3, int n4, i
 			tmpfrm=tmpfrm->altformat;
 
 	if(curfld->change_format(tmpfrm))
-		curfld->altformat=altformat;
+		curfld->altformat=newaltformat;
 	else
 		return 1;
 
@@ -432,78 +361,24 @@ char* field::add_tag(const char *tag, int n0, int n1, int n2, int n3, int n4, in
 		if(!curfld || !curfld->frm)
 			return def;
 
-		if(!curfld->fld)
-		{
-			if(curfld->frm->maxFields)
-				curfld->fld=(field**)calloc(curfld->frm->maxFields, sizeof(field*));
-			else
-				return def;
-		}
-
 		if(n[i] >= curfld->frm->maxFields)
 			return def;
 
-		if(!curfld->fld[n[i]])
-		{
-			curfld->fld[n[i]]=(field*)calloc(1, sizeof(field));
-			switch(curfld->frm->dataFormat)
-			{
-				case FRM_TLV1:
-				case FRM_TLV2:
-				case FRM_TLV3:
-				case FRM_TLV4:
-				case FRM_TLVEMV:
-					curfld->fld[n[i]]->frm=curfld->frm->fld[0];
-				default:
-					curfld->fld[n[i]]->frm=curfld->frm->fld[n[i]];
-			}
-		}
-
-		if(curfld->fields <= n[i])
-			curfld->fields=n[i]+1;
-
-		curfld=curfld->fld[n[i]];
+		curfld=&curfld->sf(n[i]);
 	}
 
 	if(!curfld || !curfld->frm)
 		return def;
 
-	if(!curfld->fld)
-	{
-		if(curfld->frm->maxFields)
-			curfld->fld=(field**)calloc(curfld->frm->maxFields, sizeof(field*));
-		else
-			return def;
-	}
-
 	if(curfld->fields >= curfld->frm->maxFields)
 		return def;
-
-	for(i=0; i<curfld->frm->maxFields; i++)
-		if(curfld->fld[i]==NULL)
-			break;
 
 	if(i==curfld->frm->maxFields)
 		return def;
 
-	curfld->fld[i]=(field*)calloc(1, sizeof(field));
-	switch(curfld->frm->dataFormat)
-	{
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
-		case FRM_TLVEMV:
-			curfld->fld[i]->frm=curfld->frm->fld[0];
-			break;
-		default:
-			curfld->fld[i]->frm=curfld->frm->fld[i];
-	}
-	
-	if(curfld->fields <= i)
-		curfld->fields=i+1;
+	curfld=&curfld->sf(i);
 
-	switch(curfld->fld[i]->frm->dataFormat)
+	switch(curfld->frm->dataFormat)
 	{
 		case FRM_ISOBITMAP:
 		case FRM_BITMAP:
@@ -512,20 +387,20 @@ char* field::add_tag(const char *tag, int n0, int n1, int n2, int n3, int n4, in
 		case FRM_ASCII:
 		case FRM_BCD:
 		case FRM_EBCDIC:
-			curfld->fld[i]->data=(char*)calloc(curfld->fld[i]->frm->maxLength+1, 1);
+			curfld->data=(char*)calloc(curfld->frm->maxLength+1, 1);
 			break;
 		case FRM_HEX:
-			curfld->fld[i]->data=(char*)calloc(curfld->fld[i]->frm->maxLength*2 + 1, 1);
+			curfld->data=(char*)calloc(curfld->frm->maxLength*2 + 1, 1);
 			break;
 		default:
 			return def;
 	}
 
-	curfld->fld[i]->tag=(char*)malloc(strlen(tag)+1);
+	curfld->tag=(char*)malloc(strlen(tag)+1);
 
-	strcpy(curfld->fld[i]->tag, tag);
+	strcpy(curfld->tag, tag);
 
-	return curfld->fld[i]->data;
+	return curfld->data;
 }
 
 //a segfault-safe accessor function. Return a pointer to the fields contents. If the field does not exist, returns a valid pointer to an empty string. The field structure is not modified.
@@ -541,10 +416,10 @@ const char* field::get_field(int n0, int n1, int n2, int n3, int n4, int n5, int
 		if(n[i]==-1)
 			break;
 
-		if(!curfld || !curfld->fld)
+		if(!curfld || !curfld->sfexist(n[i]))
 			return def;
 
-		curfld=curfld->fld[n[i]];
+		curfld=&curfld->sf(n[i]);
 	}
 
 	if(!curfld || !curfld->data)
@@ -565,10 +440,10 @@ const char* field::get_tag(int n0, int n1, int n2, int n3, int n4, int n5, int n
 		if(n[i]==-1)
 			break;
 
-		if(!curfld || !curfld->fld)
+		if(!curfld || !curfld->sfexist(n[i]))
 			return def;
 
-		curfld=curfld->fld[n[i]];
+		curfld=&curfld->sf(n[i]);
 	}
 
 	if(!curfld || !curfld->tag)
@@ -588,13 +463,13 @@ void field::remove_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6,
 		if(n[i+1]==-1)
 			break;
 
-		if(!curfld || !curfld->fld)
+		if(!curfld || !curfld->sfexist(n[i]))
 			return;
 
-		curfld=curfld->fld[n[i]];
+		curfld=&curfld->sf(n[i]);
 	}
 
-	if(!curfld || !curfld->fld || !curfld->fld[n[i]])
+	if(!curfld || !curfld->sfexist(n[i]))
 		return;
 
 	delete curfld->fld[n[i]];
@@ -615,10 +490,10 @@ int field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int
 		if(n[i]==-1)
 			break;
 
-		if(!curfld || !curfld->fld)
+		if(!curfld || !curfld->sfexist(n[i]))
 			return 0;
 
-		curfld=curfld->fld[n[i]];
+		curfld=&curfld->sf(n[i]);
 	}
 
 	if(!curfld)
@@ -637,10 +512,9 @@ int field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int
 			if(curfld->fields)
 				return curfld->fields;
 			else
-				if(curfld->fld)
-					for(i=0; i<curfld->frm->maxFields; i++)
-						if(!curfld->fld[i])
-							return i+1;
+				for(i=0; i<curfld->frm->maxFields; i++)
+					if(!curfld->sfexist(i))
+						return i+1;
 				return 0;
 		default:
 			if(curfld->length || !curfld->data)
@@ -660,3 +534,46 @@ const char *field::get_description(void)
 		return frm->get_description();
 }
 
+//returns reference to subformat. If it does not exists, it will be added.
+field& field::sf(int n)
+{
+	if(n < 0 || !frm || n > frm->maxFields)
+	{
+		printf("Error: Wrong subfield number: %d/%d\n", n, frm->maxFields);
+		exit(1);
+	}
+
+	if(fields==0)
+		fld=(field**)calloc(frm->maxFields, sizeof(field*));
+	
+	if(fields < n+1)
+		fields=n+1;
+
+	if(fld[n]==NULL)
+	{
+		if(n > frm->fields || !frm->sfexist(n))
+		{
+			printf("Error: Wrong format for subfield number: %d/%d\n", n, frm->maxFields);
+			exit(1);
+		}
+
+		fld[n]=new field;
+		fld[n]->frm=&frm->sf(n);
+	}
+
+	return *fld[n];
+}
+
+bool field::sfexist(int n) const
+{
+	if(n < 0 || !frm || n > frm->maxFields)
+		return false;
+
+	if(fields==0)
+		return false;
+
+	if(fld[n]==NULL)
+		return false;
+
+	return true;
+}

@@ -48,31 +48,31 @@ unsigned int field::estimate_length(void)
 				if(pos==frm->maxLength+lenlen)
 					break;
 
-				if(bitmap_found!=-1 && frm->fld[bitmap_found]->dataFormat!=FRM_ISOBITMAP && frm->fld[bitmap_found]->maxLength < i-bitmap_found)
+				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=FRM_ISOBITMAP && frm->sf(bitmap_found).maxLength < i-bitmap_found)
 					break;
 
-				if(fld[i] && !frm->fld[i])
+				if(sfexist(i) && !frm->sfexist(i))
 					return 0;
 
-				if(!frm->fld[i])
+				if(!frm->sfexist(i))
 					continue;
 
-				if((fld[i] || frm->fld[i]->dataFormat==FRM_ISOBITMAP || frm->fld[i]->dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
+				if((sfexist(i) || frm->sf(i).dataFormat==FRM_ISOBITMAP || frm->sf(i).dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==FRM_ISOBITMAP || frm->sf(bitmap_found).maxLength > i-bitmap_found-1))
 				{
-					if(frm->fld[i]->dataFormat==FRM_ISOBITMAP)
+					if(frm->sf(i).dataFormat==FRM_ISOBITMAP)
 					{
 						bitmap_found=i;
 						sflen=((fields-i-1)/64+1)*8;
 					}
-					else if(frm->fld[i]->dataFormat==FRM_BITMAP)
+					else if(frm->sf(i).dataFormat==FRM_BITMAP)
 					{
 						bitmap_found=i;
-						sflen=(frm->fld[i]->maxLength+7)/8;
+						sflen=(frm->sf(i).maxLength+7)/8;
 					}
-					else if(fld[i]->is_empty())
+					else if(sf(i).is_empty())
 						continue;
 					else
-						sflen=fld[i]->estimate_length();
+						sflen=sf(i).estimate_length();
 					
 					if(!sflen)
 						return 0;
@@ -110,7 +110,7 @@ unsigned int field::estimate_length(void)
 		case FRM_TLV4:
 		case FRM_TLVEMV:
 
-			if(!frm->fld[0])
+			if(!frm->sfexist(0))
 				return 0;
 
 			pos=lenlen;
@@ -118,26 +118,26 @@ unsigned int field::estimate_length(void)
 
 			for(i=0; i<frm->maxFields; i++)
 			{
-				if(!fld[i])
+				if(!sfexist(i))
 					break;
 
-				if(!fld[i]->tag)
+				if(!sf(i).tag)
 					return 0;
 
-				if(fld[i]->is_empty())
+				if(sf(i).is_empty())
 					continue;
 
 				if(frm->dataFormat==FRM_TLVEMV)
 				{
-					if(strlen(fld[i]->tag)!=2 && strlen(fld[i]->tag)!=4)
+					if(strlen(sf(i).tag)!=2 && strlen(sf(i).tag)!=4)
 						return 0;
 
-					taglength=strlen(fld[i]->tag)/2;
+					taglength=strlen(sf(i).tag)/2;
 				}
 			
 				pos+=taglength;
 				
-				sflen=fld[i]->estimate_length();
+				sflen=sf(i).estimate_length();
 				if(!sflen)
 					return 0;
 				pos+=sflen;
@@ -156,18 +156,18 @@ unsigned int field::estimate_length(void)
 
 			for(i=0; i<frm->fields; i++)
 			{
-				if(!fld[i])
+				if(!sfexist(i))
 					continue;
 
-				if(!frm->fld[i])
+				if(!frm->sfexist(i))
 					return 0;
 
-				if(fld[i]->is_empty())
+				if(sf(i).is_empty())
 					continue;
 
 				pos+=taglength;
 				
-				sflen=fld[i]->estimate_length();
+				sflen=sf(i).estimate_length();
 
 				if(!sflen)
 					return 0;
@@ -311,47 +311,47 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 				if(pos==frm->maxLength+lenlen)
 					break;
 
-				if(bitmap_found!=-1 && frm->fld[bitmap_found]->dataFormat!=FRM_ISOBITMAP && frm->fld[bitmap_found]->maxLength < i-bitmap_found)
+				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=FRM_ISOBITMAP && frm->sf(bitmap_found).maxLength < i-bitmap_found)
 					break;
 
-				if(fld[i] && !frm->fld[i])
+				if(sfexist(i) && !frm->sfexist(i))
 				{
 					if(debug)
 						printf("Error: No format for subfield %d\n", i);
 					return 0;
 				}
 
-				if(!frm->fld[i])
+				if(!frm->sfexist(i))
 					continue;
 
-				if((fld[i] || frm->fld[i]->dataFormat==FRM_ISOBITMAP || frm->fld[i]->dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->fld[bitmap_found]->dataFormat==FRM_ISOBITMAP || frm->fld[bitmap_found]->maxLength > i-bitmap_found-1))
+				if((sfexist(i) || frm->sf(i).dataFormat==FRM_ISOBITMAP || frm->sf(i).dataFormat==FRM_BITMAP) && (bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==FRM_ISOBITMAP || frm->sf(bitmap_found).maxLength > i-bitmap_found-1))
 				{
 					if(pos>maxlength)
 						return 0;
 
-					if(frm->fld[i]->dataFormat==FRM_ISOBITMAP)
+					if(frm->sf(i).dataFormat==FRM_ISOBITMAP)
 					{
 						bitmap_found=i;
 						sflen=build_isobitmap(buf+pos, maxlength-pos, i);
 					}
-					else if(frm->fld[i]->dataFormat==FRM_BITMAP)
+					else if(frm->sf(i).dataFormat==FRM_BITMAP)
 					{
 						bitmap_found=i;
 						sflen=build_bitmap(buf+pos, maxlength-pos, i);
 					}
-					else if(fld[i]->is_empty())
+					else if(sf(i).is_empty())
 					{
 						if(debug)
 							printf("Warning: No subfields for subfield %d\n", i);
 						continue;
 					}
 					else
-						sflen=fld[i]->build_field(buf+pos, maxlength-pos);
+						sflen=sf(i).build_field(buf+pos, maxlength-pos);
 					
 					if(!sflen)
 					{
 						if(debug)
-							printf("Error: unable to build subfield %d: %s\n", i, frm->fld[i]->description);
+							printf("Error: unable to build subfield %d: %s\n", i, frm->sf(i).description);
 						return 0;
 					}
 					pos+=sflen;
@@ -419,7 +419,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 		case FRM_TLV4:
 		case FRM_TLVEMV:
 
-			if(!frm->fld[0])
+			if(!frm->sfexist(0))
 			{
 				if(debug)
 					printf("Error: No tlv subfield format\n");
@@ -431,20 +431,20 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 
 			for(i=0; i<frm->maxFields && pos<maxlength; i++)
 			{
-				if(!fld[i])
+				if(!sfexist(i))
 					break;
 
-				if(!fld[i]->tag)
+				if(!sf(i).tag)
 				{
 					if(debug)
 						printf("Error: Tag length is too small\n");
 					return 0;
 				}
 
-				if(fld[i]->is_empty())
+				if(sf(i).is_empty())
 					continue;
 
-				sflen=strlen(fld[i]->tag);
+				sflen=strlen(sf(i).tag);
 
 				if(frm->dataFormat==FRM_TLVEMV)
 				{
@@ -466,28 +466,28 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 					case FRM_EBCDIC:
 						if(sflen<taglength)
 							return 0;
-						build_ebcdic(fld[i]->tag, buf+pos, sflen);
+						build_ebcdic(sf(i).tag, buf+pos, sflen);
 						break;
 					case FRM_HEX:
 						if(sflen<taglength*2)
 							return 0;
-						build_hex(fld[i]->tag, buf+pos, sflen);
+						build_hex(sf(i).tag, buf+pos, sflen);
 						break;
 					case FRM_BCD:
 						if(sflen<taglength*2)
 							return 0;
-						build_bcdl(fld[i]->tag, buf+pos, sflen);
+						build_bcdl(sf(i).tag, buf+pos, sflen);
 						break;
 					case FRM_ASCII:
 					default:
 						if(sflen<taglength)
 							return 0;
-						memcpy(buf+pos, fld[i]->tag, sflen);
+						memcpy(buf+pos, sf(i).tag, sflen);
 				}
 
 				pos+=taglength;
 
-				sflen=fld[i]->build_field(buf+pos, maxlength-pos);
+				sflen=sf(i).build_field(buf+pos, maxlength-pos);
 				if(!sflen)
 				{
 					if(debug)
@@ -512,10 +512,10 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 
 			for(i=0; i<frm->fields && pos<maxlength; i++)
 			{
-				if(!fld[i])
+				if(!sfexist(i))
 					continue;
 
-				if(!frm->fld[i])
+				if(!frm->sfexist(i))
 				{
 					if(debug)
 						printf("Error: No format for tag %d.\n", i);
@@ -529,7 +529,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 					return 0;
 				}
 
-				if(fld[i]->is_empty())
+				if(sf(i).is_empty())
 					continue;
 
 				switch(frm->tagFormat)
@@ -596,7 +596,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 
 				pos+=taglength;
 
-				sflen=fld[i]->build_field(buf+pos, maxlength-pos);
+				sflen=sf(i).build_field(buf+pos, maxlength-pos);
 				if(!sflen)
 				{
 					if(debug)
@@ -949,7 +949,7 @@ unsigned int field::build_isobitmap(char *buf, unsigned int maxlength, unsigned 
 			buf[i*64]=0x80;
 
 		for(unsigned int j=1; j<64; j++)
-			if(fld[i*64+j+index] && !fld[i*64+j+index]->is_empty())
+			if(sfexist(i*64+j+index) && !sf(i*64+j+index).is_empty())
 				buf[i*8+j/8]|=1<<(7-j%8);
 	}
 	
@@ -960,7 +960,7 @@ unsigned int field::build_bitmap(char *buf, unsigned int maxlength, unsigned int
 {
 	unsigned int newblength, flength;
 
-	flength=frm->fld[index]->maxLength;
+	flength=frm->sf(index).maxLength;
 
 	newblength=(flength+7)/8;
 
@@ -970,7 +970,7 @@ unsigned int field::build_bitmap(char *buf, unsigned int maxlength, unsigned int
 	memset(buf, '\0', newblength);
 
 	for(unsigned int i=0; i<flength && i<fields-index-1; i++)
-		if(fld[index+1+i] && !fld[index+1+i]->is_empty())
+		if(sfexist(index+1+i) && !sf(index+1+i).is_empty())
 			buf[i/8]|=1<<(7-i%8);
 
 	return newblength;

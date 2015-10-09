@@ -169,8 +169,8 @@ int processIncoming(isomessage *visamsg, field *fullmessage, VisaContext *contex
 		return 1;
 	}
 
-	header=fullmessage->sf(1);
-	message=fullmessage->sf(2);
+	header=&fullmessage->sf(1);
+	message=&fullmessage->sf(2);
 
 	context->set_sourcestationid(header->get_field(6));
 	context->set_visaroundtripinf(header->get_field(7));
@@ -1115,8 +1115,8 @@ int processOutgoing(field *fullmessage, isomessage *visamsg, fldformat *frm, Vis
 	fullmessage->add_field(1);
 	fullmessage->add_field(2);
 
-	header=fullmessage->sf(1);
-	message=fullmessage->sf(2);
+	header=&fullmessage->sf(1);
+	message=&fullmessage->sf(2);
 
 	strcpy(header->add_field(2), "01");
 
@@ -1940,8 +1940,8 @@ int processNetMgmt(field *message)
 	if(!message->has_field(1) || !message->has_field(2))
 		return 0;
 
-	header=message->sf(1);
-	mbody=message->sf(2);
+	header=&message->sf(1);
+	mbody=&message->sf(2);
 
 	strncpy(header->add_field(5), header->get_field(6), 6);
 	strncpy(header->add_field(6), stationid, 6);
@@ -1965,8 +1965,8 @@ int declineNetMsg(field *message)
 	if(!message->has_field(1) || !message->has_field(2))
 		return 0;
 
-	header=message->sf(1);
-	mbody=message->sf(2);
+	header=&message->sf(1);
+	mbody=&message->sf(2);
 
 	strncpy(header->add_field(5), header->get_field(6), 6);
 	strncpy(header->add_field(6), stationid, 6);

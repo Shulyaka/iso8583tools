@@ -71,7 +71,8 @@ class fldformat
 	inline fldformat *get_lastaltformat(void);
 	const char *get_description(void);
 	inline const unsigned int get_lengthLength() {return lengthLength;};
-	inline const unsigned int get_maxLength() {return maxLength;};
+	fldformat& sf(int n);
+	bool sfexist(int n) const;
 };
 
 class field
@@ -108,15 +109,15 @@ class field
 	void copyFrom(const field &from);
 	void moveFrom(field &from);
 
-	int parse_message(char*, unsigned int);
+	int parse_message(const char*, unsigned int);
 	inline unsigned int build_message(char *buf, unsigned int len) {return build_field(buf, len);};
 	unsigned int estimate_length(void);
 
 	const char *get_description(void);
 	inline const int get_parsed_blength() {return blength;};
 	inline const int get_lengthLength() {return frm?frm->get_lengthLength():0;};
-	inline const int get_maxLength() {return frm?frm->get_maxLength():0;};
-	inline field* sf(int n) {return fld[n];};
+	field& sf(int n);
+	bool sfexist(int n) const;
 
 	const char* get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	char* add_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
