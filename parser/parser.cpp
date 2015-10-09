@@ -270,6 +270,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 	int minlength=0;
 	unsigned int taglength;
 	fldformat tmpfrm;
+	fldformat *frmold;
 
 	if(!buf)
 	{
@@ -511,14 +512,14 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 			tmpfrm.maxLength=length;
 			tmpfrm.addLength=0;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
-
+			frmold=frm;
 			change_format(&tmpfrm);
 
 			sflen=parse_field(data, length);
 			
 			free(data);
 			data=0;
-			change_format(frm);
+			change_format(frmold);
 
 			if(sflen<=0)
 			{

@@ -17,6 +17,7 @@ unsigned int field::estimate_length(void)
 	unsigned int i, j, pos, sflen, taglength;
 	int bitmap_found=-1;
 	fldformat tmpfrm;
+	fldformat *frmold;
 
 	if(!frm)
 	{
@@ -89,11 +90,12 @@ unsigned int field::estimate_length(void)
 			tmpfrm.lengthFormat=FRM_UNKNOWN;
 			tmpfrm.lengthLength=0;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
+			frmold=frm;
 			change_format(&tmpfrm);
 
 			flength=estimate_length();
 
-			change_format(frm);
+			change_format(frmold);
 
 			if(!flength)
 				return 0;
@@ -262,6 +264,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 	unsigned int i, j, pos, sflen, taglength;
 	int bitmap_found=-1;
 	fldformat tmpfrm;
+	fldformat *frmold;
 
 	if(!buf)
 	{
@@ -368,12 +371,12 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 			tmpfrm.lengthFormat=FRM_UNKNOWN;
 			tmpfrm.lengthLength=0;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
-
+			frmold=frm;
 			change_format(&tmpfrm);
 
 			flength=build_field(data, maxlength*2);
 
-			change_format(frm);
+			change_format(frmold);
 
 			if(!flength)
 			{

@@ -34,7 +34,7 @@ int parseNetMsg(field &message, char *buf, unsigned int length)
 	if(!buf)
 	{
 		printf("Error: no buf\n");
-		return NULL;
+		return 0;
 	}
 
 	i=message.parse_message(buf, length);   //TODO: For Visa, parse header (frm->fld[0]) and message(frm->fld[2]) separately to handle reject header properly.
