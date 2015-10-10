@@ -198,7 +198,7 @@ int field::change_format(fldformat *frmnew)
 
 	for(i=0; i<fields; i++)
 		if(sfexist(i))
-			if(frmnew->fields<=i || !frmnew->sfexist(i) || !sf(i).change_format(&frmnew->sf(i)))
+			if(!frmnew->sfexist(i) || !sf(i).change_format(&frmnew->sf(i)))
 				break;
 
 	if(i!=fields)
@@ -208,12 +208,12 @@ int field::change_format(fldformat *frmnew)
 
 		for(frm=frmold; i!=0; i--)
 			if(sfexist(i))
-				if(frmold->fields<=i || !frmold->sfexist(i) || !sf(i).change_format(&frmold->sf(i)))
+				if(!frmold->sfexist(i) || !sf(i).change_format(&frmold->sf(i)))
 					if(debug)
 						printf("Error: Unable to revert\n");
 
 		if(sfexist(0))
-			if(frmold->fields==0 || !frmold->sfexist(0) || !sf(0).change_format(&frmold->sf(0)))
+			if(!frmold->sfexist(0) || !sf(0).change_format(&frmold->sf(0)))
 				if(debug)
 					printf("Error: Unable to revert\n");
 
@@ -551,7 +551,7 @@ field& field::sf(int n)
 
 	if(fld[n]==NULL)
 	{
-		if(n > frm->fields || !frm->sfexist(n))
+		if(!frm->sfexist(n))
 		{
 			printf("Error: Wrong format for subfield number: %d/%d\n", n, frm->maxFields);
 			exit(1);

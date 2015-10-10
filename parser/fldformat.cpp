@@ -28,13 +28,6 @@ fldformat::~fldformat(void)
 			parent->altformat=NULL;
 			return;
 		}
-
-		for(unsigned int i=0; i<parent->fields; i++)
-			if(parent->sfexist(i) && &parent->sf(i)==this)
-			{
-				parent->fld[i]=NULL;
-				return;
-			}
 	}
 }
 
@@ -51,8 +44,7 @@ void fldformat::fill_default(void)
 	description=NULL;
 	data=NULL;
 	maxFields=196;
-	fields=0;
-	fld=NULL;
+	subfields.clear();
 	altformat=NULL;
 	parent=NULL;
 }
@@ -62,14 +54,6 @@ void fldformat::clear(void)
 {
 	unsigned int i;
 	fldformat *tmpfrm=parent;
-
-	if(fields!=0)
-	{      
-		for(i=0; i<fields; i++)
-			if(sfexist(i))
-				delete fld[i];
-		free(fld);
-	}
 
 	if(description!=NULL)
 		free(description);
@@ -96,8 +80,7 @@ int fldformat::is_empty(void)
 	    && description==NULL
 	    && data==NULL
 	    && maxFields==196
-	    && fields==0
-	    && fld==NULL
+	    && subfields.empty()
 	    && altformat==NULL;
 }
 
@@ -127,17 +110,11 @@ void fldformat::copyFrom(const fldformat &from)
 		strcpy(data, from.data);
 	}
 	maxFields=from.maxFields;
-	fields=from.fields;
-	if(from.fld)
-	{
-		fld=(fldformat**)calloc(from.maxFields,sizeof(fldformat*));
-		for(unsigned int i=0; i < from.fields; i++)
-			if(from.sfexist(i))
-			{
-				fld[i]=new fldformat;
-				fld[i]->copyFrom(*from.fld[i]);
-			}
-	}
+
+	subfields=from.subfields;
+	for(map<int,fldformat>::iterator it=subfields.begin(); it!=subfields.end(); it++)
+		it->second.parent=this;
+
 	if(from.altformat)
 	{
 		altformat=new fldformat;
@@ -163,15 +140,15 @@ void fldformat::moveFrom(fldformat &from)
 	description=from.description;
 	data=from.data;
 	maxFields=from.maxFields;
-	fields=from.fields;
-	fld=from.fld;
+	subfields=from.subfields;
+	for(map<int,fldformat>::iterator it=subfields.begin(); it!=subfields.end(); it++)
+		it->second.parent=this;
+
 	altformat=from.altformat;
 
 	from.description=NULL;
 	from.data=NULL;
-	from.fld=NULL;
 	from.altformat=NULL;
-	from.fields=0;
 
 	from.clear();
 }
@@ -388,10 +365,10 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 		n=atoi(number);
 	}
 
-	if(fields < n + 1)
+	if(!sfexist(n))
 	{
 		if(debug)
-			printf("Warning: Parent format not loaded yet [%s][%d][%d] %s\n", number, n, fields, description);
+			printf("Warning: Parent format not loaded yet [%s][%d] %s\n", number, n, description);
 		return NULL;
 	}
 
@@ -496,14 +473,16 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 				}
 				else
 				{
-					printf("Error: Unable to find referenced format (%s) (no parent loaded)\n", format+1);
+					if(debug)
+						printf("Error: Unable to find referenced format (%s) (no parent loaded)\n", format+1);
 					return 0;
 				}
 			}
 			else if(tmpfrm->is_empty())
 			{
-				printf("Error: Unable to find referenced format (%s) (no parent loaded)\n", format+1);
-				delete tmpfrm;
+				if(debug)
+					printf("Error: Unable to find referenced format (%s) (parent loaded)\n", format+1);
+				tmpfrm->erase();
 				return 0;
 			}
 			else
@@ -715,18 +694,7 @@ fldformat& fldformat::sf(int n)
 		exit(1);
 	}
 
-	if(fields==0)
-		fld=(fldformat**)calloc(maxFields, sizeof(fldformat*));
-	
-	if(fields < n+1)
-		fields=n+1;
-
-	if(fld[n]==NULL)
-	{
-		fld[n]=new fldformat;
-		fld[n]->parent=this;
-	}
-	return *fld[n];
+	return subfields[n];
 }
 
 bool fldformat::sfexist(int n) const
@@ -744,11 +712,21 @@ bool fldformat::sfexist(int n) const
 	if(n < 0 || n > maxFields)
 		return false;
 
-	if(fields==0)
-		return false;
+	return subfields.count(n);
+}
 
-	if(fld[n]==NULL)
-		return false;
+void fldformat::erase(void)
+{
+	if(!parent)
+	{
+		printf("Error: Cannot remove field without parent\n");
+		exit(1);
+	}
 
-	return true;
+	for(map<int,fldformat>::iterator it=parent->subfields.begin(); it!=parent->subfields.end(); it++)
+		if(&it->second==this)
+		{
+			parent->subfields.erase(it);
+			break;
+		}
 }

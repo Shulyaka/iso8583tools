@@ -154,7 +154,7 @@ unsigned int field::estimate_length(void)
 			else
 				taglength=2;
 
-			for(i=0; i<frm->fields; i++)
+			for(i=0; i<fields; i++)
 			{
 				if(!sfexist(i))
 					continue;
@@ -510,7 +510,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 			else
 				taglength=2;
 
-			for(i=0; i<frm->fields && pos<maxlength; i++)
+			for(i=0; i<fields && pos<maxlength; i++)
 			{
 				if(!sfexist(i))
 					continue;

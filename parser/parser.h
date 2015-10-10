@@ -46,8 +46,7 @@ class fldformat
 	unsigned int tagFormat;
 	char *data;
 	unsigned int maxFields;
-	unsigned int fields;
-	fldformat **fld;
+	map<int,fldformat> subfields;
 	fldformat *altformat;
 	fldformat *parent;
 
@@ -73,6 +72,7 @@ class fldformat
 	inline const unsigned int get_lengthLength() {return lengthLength;};
 	fldformat& sf(int n);
 	bool sfexist(int n) const;
+	void erase(void);
 };
 
 class field
