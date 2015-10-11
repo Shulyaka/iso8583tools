@@ -13,15 +13,15 @@ int parse_bcdl(const char*, char*, unsigned int);
 // >0: successfully parsed, the value is the length
 // <0: Parse failed but you could try a greater maxlength of at least the negated returned value
 // =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
-int field::parse_message(const char *msgbuf, unsigned int length)
+int field::parse_message(const string &msgbuf)
 {
 	field message;
 	int parsedlength;
 
-	if(!msgbuf)
+	if(msgbuf.empty())
 	{
 		if(debug)
-			printf("Error: No buffer\n");
+			printf("Error: Empty input\n");
 		return 0;
 	}
 
@@ -34,7 +34,7 @@ int field::parse_message(const char *msgbuf, unsigned int length)
 
 	message.frm=frm;
 
-	parsedlength=message.parse_field(msgbuf, length);
+	parsedlength=message.parse_field(msgbuf.data(), msgbuf.length());
 
 	if(parsedlength>0)
 		moveFrom(message);

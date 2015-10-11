@@ -107,7 +107,7 @@ class field
 	void copyFrom(const field &from);
 	void moveFrom(field &from);
 
-	int parse_message(const char*, unsigned int);
+	int parse_message(const string&);
 	inline unsigned int build_message(char *buf, unsigned int len) {return build_field(buf, len);};
 	unsigned int estimate_length(void);
 

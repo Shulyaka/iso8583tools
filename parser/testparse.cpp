@@ -4,6 +4,9 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <iostream>
+#include <fstream>
+#include <string>
 
 #include "parser.h"
 
@@ -18,12 +21,13 @@ int main(int argc, char **argv)
 	DIR *frmdir;
 	struct dirent *de;
 	int frmcounter=0;
-	char msgbuf[1000];
+	string msgbuf;
 	char msgbuf2[1000];
 	unsigned int msglen=0;
 	unsigned int msglen1=0;
 	unsigned int msglen2=0;
-	FILE *infile=stdin, *outfile;
+	FILE *outfile;
+	
 
 	if(argc>2)
 	{
@@ -75,7 +79,7 @@ int main(int argc, char **argv)
 
 	if(argc>1)
 	{
-		infile=fopen(argv[1], "r");
+		std::ifstream infile(argv[1]);
 		if(!infile)
 		{
 			printf("Error: Cannot open file %s: %s\n", argv[1], strerror(errno));
@@ -84,28 +88,23 @@ int main(int argc, char **argv)
 
 		if(debug)
 			printf("Reading from %s\n", argv[1]);
+
+		msgbuf.assign(std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
+
+		infile.close();
 	}
 	else
+	{
 		if(debug)
 			printf("Reading from stdin\n");
+		msgbuf.assign(std::istreambuf_iterator<char>(cin), std::istreambuf_iterator<char>());
+	}
 
-	while ((msgbuf[msglen++]=fgetc(infile))!=EOF)
-		if(msglen>sizeof(msgbuf))
-		{
-			printf("Message is too big\n");
-			if(infile!=stdin)
-				fclose(infile);
-			return 5;
-		}
-
-	if(infile!=stdin)
-		fclose(infile);
-
-	msglen--;
+	msglen=msgbuf.length();
 
 	msglen1=msglen;
 
-	if(message.parse_message(msgbuf, msglen)<=0)
+	if(message.parse_message(msgbuf)<=0)
 	{
 		printf("Error: Unable to parse message\n");
 
