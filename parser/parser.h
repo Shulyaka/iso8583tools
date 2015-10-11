@@ -83,9 +83,8 @@ class field
 	unsigned int start;  //start position inside the message binary data relative to the parent field
 	unsigned int blength;  //length of the field inside the message binary data (including length length)
 	unsigned int length;  //parsed data length
-	unsigned int fields;  //number of subfields
 	fldformat *frm;  //field format
-	struct field **fld;  //array of subfields
+	map<int,field> subfields;
 	unsigned int altformat;  //altformat number
 
 	void fill_default(void);
@@ -102,9 +101,9 @@ class field
 	field(void);
 	field(const field&);
 	~field(void);
-	void print_message(void);
+	void print_message(void) const;
 	void clear(void);
-	int is_empty(void);
+	int is_empty(void) const;
 	int change_format(fldformat*);
 	void copyFrom(const field &from);
 	void moveFrom(field &from);

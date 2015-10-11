@@ -28,23 +28,14 @@ void field::fill_default(void)
 	start=0;
 	blength=0;
 	length=0;
-	fields=0;
 	frm=NULL;
-	fld=NULL;
+	subfields.clear();
 	altformat=0;
 }
 
 void field::clear(void)
 {
 	fldformat *tmpfrm=frm;
-
-	if(fields!=0)
-	{
-		for(unsigned int i=0; i<fields; i++)
-			if(sfexist(i))
-				delete fld[i];
-		free(fld);
-	}
 
 	if(data!=NULL)
 		free(data);
@@ -77,11 +68,8 @@ void field::copyFrom(const field &from)
 	start=from.start;
 	blength=from.blength;
 	length=from.length;
-	fields=from.fields;
 	frm=from.frm;
-	for(unsigned int i=0; i < from.fields; i++)
-		if(from.sfexist(i))
-			sf(i).copyFrom(*from.fld[i]);
+	subfields=from.subfields;
 	altformat=from.altformat;
 }
 
@@ -98,20 +86,17 @@ void field::moveFrom(field &from)
 	start=from.start;
 	blength=from.blength;
 	length=from.length;
-	fields=from.fields;
 	frm=from.frm;
-	fld=from.fld;
+	subfields=from.subfields;
 	altformat=from.altformat;
 
 	from.data=NULL;
 	from.tag=NULL;
-	from.fld=NULL;
-	from.fields=0;
 
 	from.clear();
 }
 
-void field::print_message(void)
+void field::print_message(void) const
 {
 	if(!frm)
 	{
@@ -138,14 +123,13 @@ void field::print_message(void)
 		case FRM_TLV3:
 		case FRM_TLV4:
 		case FRM_TLVEMV:
-			for(unsigned int i=0; i<fields; i++)
-				if(sfexist(i))
-					sf(i).print_message();
+			for(map<int,field>::const_iterator i=subfields.begin(); i!=subfields.end(); i++)
+				i->second.print_message();
 			break;
 	}
 }
 
-int field::is_empty(void)
+int field::is_empty(void) const
 {
 	if(!frm)
 		return 1;
@@ -171,11 +155,11 @@ int field::is_empty(void)
 				return 0;
 	}
 
-	if(!fields)
+	if(subfields.empty())
 		return 1;
 
-	for(unsigned int i=0; i<fields; i++)
-		if(sfexist(i) && sf(i).frm && sf(i).frm->dataFormat!=FRM_ISOBITMAP && sf(i).frm->dataFormat!=FRM_BITMAP && !sf(i).is_empty())
+	for(map<int,field>::const_iterator i=subfields.begin(); i!=subfields.end(); i++)
+		if(i->second.frm && i->second.frm->dataFormat!=FRM_ISOBITMAP && i->second.frm->dataFormat!=FRM_BITMAP && !i->second.is_empty())
 			return 0;
 
 	return 1;
@@ -183,7 +167,7 @@ int field::is_empty(void)
 
 int field::change_format(fldformat *frmnew)
 {
-	unsigned int i;
+	map<int,field>::iterator i;
 	fldformat *frmold;
 
 	if(!frmnew)
@@ -196,26 +180,23 @@ int field::change_format(fldformat *frmnew)
 
 	frm=frmnew;
 
-	for(i=0; i<fields; i++)
-		if(sfexist(i))
-			if(!frmnew->sfexist(i) || !sf(i).change_format(&frmnew->sf(i)))
-				break;
+	for(i=subfields.begin(); i!=subfields.end(); i++)
+		if(!frmnew->sfexist(i->first) || !i->second.change_format(&frmnew->sf(i->first)))
+			break;
 
-	if(i!=fields)
+	if(i!=subfields.end())
 	{
 		if(debug)
-			printf("Error: Unable to change field format (%d). Reverting.\n", i);
+			printf("Error: Unable to change field format (%d). Reverting.\n", i->first);
 
-		for(frm=frmold; i!=0; i--)
-			if(sfexist(i))
-				if(!frmold->sfexist(i) || !sf(i).change_format(&frmold->sf(i)))
-					if(debug)
-						printf("Error: Unable to revert\n");
-
-		if(sfexist(0))
-			if(!frmold->sfexist(0) || !sf(0).change_format(&frmold->sf(0)))
+		for(frm=frmold; i!=subfields.begin(); i--)
+			if(!frmold->sfexist(i->first) || !i->second.change_format(&frmold->sf(i->first)))
 				if(debug)
 					printf("Error: Unable to revert\n");
+
+		if(!frmold->sfexist(i->first) || !i->second.change_format(&frmold->sf(i->first)))
+			if(debug)
+				printf("Error: Unable to revert\n");
 
 		return 0;
 	}
@@ -370,9 +351,6 @@ char* field::add_tag(const char *tag, int n0, int n1, int n2, int n3, int n4, in
 	if(!curfld || !curfld->frm)
 		return def;
 
-	if(curfld->fields >= curfld->frm->maxFields)
-		return def;
-
 	if(i==curfld->frm->maxFields)
 		return def;
 
@@ -472,8 +450,7 @@ void field::remove_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6,
 	if(!curfld || !curfld->sfexist(n[i]))
 		return;
 
-	delete curfld->fld[n[i]];
-	curfld->fld[n[i]]=NULL;
+	subfields.erase(n[i]);
 	return;
 }
 
@@ -509,13 +486,7 @@ int field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int
 		case FRM_TLVEMV:
 		case FRM_BCDSF:
 		case FRM_TLVDS:
-			if(curfld->fields)
-				return curfld->fields;
-			else
-				for(i=0; i<curfld->frm->maxFields; i++)
-					if(!curfld->sfexist(i))
-						return i+1;
-				return 0;
+			return subfields.empty();
 		default:
 			if(curfld->length || !curfld->data)
 				return curfld->length;
@@ -543,13 +514,7 @@ field& field::sf(int n)
 		exit(1);
 	}
 
-	if(fields==0)
-		fld=(field**)calloc(frm->maxFields, sizeof(field*));
-	
-	if(fields < n+1)
-		fields=n+1;
-
-	if(fld[n]==NULL)
+	if(!sfexist(n))
 	{
 		if(!frm->sfexist(n))
 		{
@@ -557,11 +522,10 @@ field& field::sf(int n)
 			exit(1);
 		}
 
-		fld[n]=new field;
-		fld[n]->frm=&frm->sf(n);
+		subfields[n].change_format(&frm->sf(n));
 	}
 
-	return *fld[n];
+	return subfields[n];
 }
 
 bool field::sfexist(int n) const
@@ -569,11 +533,5 @@ bool field::sfexist(int n) const
 	if(n < 0 || !frm || n > frm->maxFields)
 		return false;
 
-	if(fields==0)
-		return false;
-
-	if(fld[n]==NULL)
-		return false;
-
-	return true;
+	return subfields.count(n);
 }

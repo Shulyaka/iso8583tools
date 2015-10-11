@@ -406,7 +406,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 						{
 							if(debug)
 								printf("Optional subfield %d (%s) skipped\n", cursf->first, sf(cursf->first).frm->description);
-							fld[cursf->first]=NULL; //???
+							subfields.erase(cursf->first);
 							continue;
 						}
 
@@ -414,7 +414,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 						{
 							if(debug)
 								printf("Error: unable to parse subfield (%d)\n", sflen);
-							fld[cursf->first]=NULL;
+							subfields.erase(cursf->first);
 							parse_failed=1;
 							break;
 						}
@@ -431,8 +431,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 								{
 									if(debug)
 										printf("Error: No format for subfield %d which is present in bitmap\n", bitmap_start+1+i);
-									delete &sf(cursf->first);
-									fld[cursf->first]=NULL;
+									subfields.erase(cursf->first);
 									bitmap_start=-1;
 									parse_failed=1;
 									break;
@@ -470,10 +469,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 							break;
 						}
 						else if(sfexist(cursf->first))
-						{
-							delete &sf(cursf->first);
-							fld[cursf->first]=NULL;
-						}
+							subfields.erase(cursf->first);
 					}
 
 					if(cursf==frm->subfields.begin())
@@ -490,10 +486,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 						else
 						{
 							if(sfexist(cursf->first))
-							{
-								delete &sf(cursf->first);
-								fld[cursf->first]=NULL;
-							}
+								subfields.erase(cursf->first);
 
 							if(debug)
 								printf("Not comming back (%s)\n", frm->description);
@@ -628,7 +621,6 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 
 		case FRM_TLVDS:
 
-			fields=0;
 			pos=lenlen;
 
 			if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
