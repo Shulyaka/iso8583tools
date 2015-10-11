@@ -50,7 +50,6 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 	unsigned int lenlen=0;
 	unsigned int newlength=0;
 	char lengthbuf[7];
-	unsigned int i;
 
 	if(!buf)
 	{
@@ -86,14 +85,14 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 	{
 		case FRM_BIN:
 			if(lenlen>4)
-				for(i=0; i < lenlen-4; i++)
+				for(unsigned int i=0; i < lenlen-4; i++)
 					if(buf[i]!='\0')
 					{
 						if(debug)
 							printf("Error: Length is too big\n");
 						return 0;
 					}
-			for(i=0; i<(lenlen>4?4:lenlen); i++)
+			for(unsigned int i=0; i<(lenlen>4?4:lenlen); i++)
 				((char *)(&newlength))[i]=buf[(lenlen>4?4:lenlen)-i-1];
 			break;
 
@@ -117,7 +116,7 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 		case FRM_BCD:
 			if(lenlen>3)
 			{
-				for(i=0; i < lenlen-3; i++)
+				for(unsigned int i=0; i < lenlen-3; i++)
 					if(buf[i]!='\0')
 					{
 						if(debug)
@@ -135,7 +134,7 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 
 		case FRM_ASCII:
 			if(lenlen>6)
-				for(i=0; i < lenlen-6; i++)
+				for(unsigned int i=0; i < lenlen-6; i++)
 					if(buf[i]!='0')
 					{
 						if(debug)
@@ -150,7 +149,7 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 		
 		case FRM_EBCDIC:
 			if(lenlen>6)
-				for(i=0; i < lenlen-6; i++)
+				for(unsigned int i=0; i < lenlen-6; i++)
 					if(buf[i]!=(char)0xF0)
 					{
 						if(debug)
@@ -209,7 +208,6 @@ int field::parse_field(const char *buf, unsigned int maxlength)
 	fldformat *tmpfrm;
 	int newlength;
 	int minlength=0;
-	unsigned int i;
 
 	if(!buf)
 	{
@@ -228,7 +226,10 @@ int field::parse_field(const char *buf, unsigned int maxlength)
 	else
 		tmpfrm=frm;
 
-	for(i=0; tmpfrm!=NULL; tmpfrm=frm->altformat)
+	if(debug && tmpfrm==NULL)
+		printf("Error: No frm\n");
+
+	for(unsigned int i=0; tmpfrm!=NULL; tmpfrm=frm->altformat)
 	{
 		frm=tmpfrm;
 		altformat=i++;
@@ -249,9 +250,6 @@ int field::parse_field(const char *buf, unsigned int maxlength)
 		altformat=i-1;
 	}
 
-	if(debug && i==0)
-		printf("Error: No frm\n");
-
 	return minlength;
 }
 
@@ -260,7 +258,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 	unsigned int lenlen=0;
 	unsigned int newblength=0;
 	char lengthbuf[7];
-	unsigned int i, j;
+	unsigned int j;
 	int bitmap_start=-1;
 	int bitmap_end=0;
 	int parse_failed;
@@ -383,7 +381,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 						if(cursf->second.lengthFormat==FRM_UNKNOWN && cursf->second.dataFormat!=FRM_ISOBITMAP) //for unknown length, search for the smallest
 						{
 							sflen=-1;
-							for(i=sf(cursf->first).blength+1; i<length+lenlen-pos+1; i=-sflen)
+							for(unsigned int i=sf(cursf->first).blength+1; i<length+lenlen-pos+1; i=-sflen)
 							{
 								if(debug)
 									printf("trying pos %d length %d/%d for %s\n", pos, i, length+lenlen-pos, cursf->second.description);
@@ -426,7 +424,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 							bitmap_start=cursf->first;
 							bitmap_end=bitmap_start+strlen(sf(bitmap_start).data);
 
-							for(i=0; i<bitmap_end-bitmap_start; i++)
+							for(unsigned int i=0; i<bitmap_end-bitmap_start; i++)
 								if(sf(bitmap_start).data[i]=='1' && !frm->sfexist(bitmap_start+1+i))
 								{
 									if(debug)
@@ -552,7 +550,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 			pos=lenlen;
 			taglength=frm->dataFormat-FRM_TLV1+1;
 
-			for(i=0; i<frm->maxFields && pos!=maxlength; i++)
+			for(unsigned int i=0; pos!=maxlength; i++)
 			{
 				if(pos==length+lenlen)
 					break;
@@ -628,7 +626,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 			else
 				taglength=2;
 
-			for(i=0; i<frm->maxFields && pos!=maxlength; i++)
+			for(unsigned int i=0; pos!=maxlength; i++)
 			{
 				if(pos==length+lenlen)
 					break;
@@ -694,7 +692,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 			break;
 
 		case FRM_ISOBITMAP:
-			for(i=0; i==0 || buf[i*8-8]>>7; i++)
+			for(unsigned int i=0; i==0 || buf[i*8-8]>>7; i++)
 			{
 				data=(char*)realloc(data, (i+1)*64);
 				length=i*64+63;
@@ -720,7 +718,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 		case FRM_BITMAP:
 		case FRM_BITSTR:
 			data=(char*)calloc(frm->maxLength+1, 1);
-			for(i=0; i<length;i++)
+			for(unsigned int i=0; i<length;i++)
 				data[i]=buf[lenlen + i/8] & (1<<(7-i%8)) ? '1':'0';
 
 			break;

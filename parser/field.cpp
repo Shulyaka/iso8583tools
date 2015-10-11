@@ -220,9 +220,6 @@ char* field::add_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, i
 		if(!curfld || !curfld->frm)
 			return def;
 
-		if(n[i] >= curfld->frm->maxFields)
-			return def;
-
 		curfld=&curfld->sf(n[i]);
 	}
 
@@ -266,9 +263,6 @@ int field::field_format(int newaltformat, int n0, int n1, int n2, int n3, int n4
 			break;
 
 		if(!curfld || !curfld->frm)
-			return 2;
-
-		if(n[i] >= curfld->frm->maxFields)
 			return 2;
 
 		tmpfrm=curfld->frm;
@@ -342,16 +336,10 @@ char* field::add_tag(const char *tag, int n0, int n1, int n2, int n3, int n4, in
 		if(!curfld || !curfld->frm)
 			return def;
 
-		if(n[i] >= curfld->frm->maxFields)
-			return def;
-
 		curfld=&curfld->sf(n[i]);
 	}
 
 	if(!curfld || !curfld->frm)
-		return def;
-
-	if(i==curfld->frm->maxFields)
 		return def;
 
 	curfld=&curfld->sf(i);
@@ -508,9 +496,9 @@ const char *field::get_description(void)
 //returns reference to subformat. If it does not exists, it will be added.
 field& field::sf(int n)
 {
-	if(n < 0 || !frm || n > frm->maxFields)
+	if(n < 0 || !frm)
 	{
-		printf("Error: Wrong subfield number: %d/%d\n", n, frm->maxFields);
+		printf("Error: Wrong subfield number: %d\n", n);
 		exit(1);
 	}
 
@@ -518,7 +506,7 @@ field& field::sf(int n)
 	{
 		if(!frm->sfexist(n))
 		{
-			printf("Error: Wrong format for subfield number: %d/%d\n", n, frm->maxFields);
+			printf("Error: Wrong format for subfield number: %d\n", n);
 			exit(1);
 		}
 
@@ -530,7 +518,7 @@ field& field::sf(int n)
 
 bool field::sfexist(int n) const
 {
-	if(n < 0 || !frm || n > frm->maxFields)
+	if(n < 0 || !frm)
 		return false;
 
 	return subfields.count(n);

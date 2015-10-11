@@ -43,7 +43,6 @@ void fldformat::fill_default(void)
 	tagFormat=0;
 	description=NULL;
 	data=NULL;
-	maxFields=196;
 	subfields.clear();
 	altformat=NULL;
 	parent=NULL;
@@ -79,7 +78,6 @@ int fldformat::is_empty(void)
 	    && tagFormat==0
 	    && description==NULL
 	    && data==NULL
-	    && maxFields==196
 	    && subfields.empty()
 	    && altformat==NULL;
 }
@@ -109,7 +107,6 @@ void fldformat::copyFrom(const fldformat &from)
 		data=(char *)malloc((strlen(from.data)+1)*sizeof(char));
 		strcpy(data, from.data);
 	}
-	maxFields=from.maxFields;
 
 	subfields=from.subfields;
 	for(map<int,fldformat>::iterator it=subfields.begin(); it!=subfields.end(); it++)
@@ -139,7 +136,6 @@ void fldformat::moveFrom(fldformat &from)
 	tagFormat=from.tagFormat;
 	description=from.description;
 	data=from.data;
-	maxFields=from.maxFields;
 	subfields=from.subfields;
 	for(map<int,fldformat>::iterator it=subfields.begin(); it!=subfields.end(); it++)
 		it->second.parent=this;
@@ -562,51 +558,39 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	}
 
 	if(!strcmp(format+i, "SF"))
-	{
 		dataFormat=FRM_SUBFIELDS;
-		maxFields=196;
-	}
 	else if(!strncmp(format+i, "TLV1", 4))
 	{
 		dataFormat=FRM_TLV1;
-		maxFields=16;
 		i+=4;
 	}
 	else if(!strncmp(format+i, "TLV2",4))
 	{
 		dataFormat=FRM_TLV2;
-		maxFields=16;
 		i+=4;
 	}
 	else if(!strncmp(format+i, "TLV3",4))
 	{
 		dataFormat=FRM_TLV3;
-		maxFields=16;
 		i+=4;
 	}
 	else if(!strncmp(format+i, "TLV4",4))
 	{
 		dataFormat=FRM_TLV4;
-		maxFields=16;
 		i+=4;
 	}
 	else if(!strcmp(format+i, "TLVEMV"))
 	{
 		dataFormat=FRM_TLVEMV;
 		tagFormat=FRM_HEX;
-		maxFields=16;
 	}
 	else if(!strncmp(format+i, "TLVDS", 5))
 	{
 		dataFormat=FRM_TLVDS;
-		maxFields=100;
 		i+=5;
 	}
 	else if(!strcmp(format+i, "BCDSF"))
-	{
 		dataFormat=FRM_BCDSF;
-		maxFields=16;
-	}
 	else if(!strcmp(format+i, "BITMAP"))
 		dataFormat=FRM_BITMAP;
 	else if(!strcmp(format+i, "BITSTR"))
@@ -688,9 +672,9 @@ fldformat& fldformat::sf(int n)
 			n=0;
 	}
 
-	if(n < 0 || n > maxFields)
+	if(n < 0)
 	{
-		printf("Error: Wrong subfield number: %d/%d\n", n, maxFields);
+		printf("Error: Wrong subfield number: %d\n", n);
 		exit(1);
 	}
 
@@ -709,7 +693,7 @@ bool fldformat::sfexist(int n) const
 			n=0;
 	}
 
-	if(n < 0 || n > maxFields)
+	if(n < 0)
 		return false;
 
 	return subfields.count(n);

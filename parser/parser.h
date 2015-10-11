@@ -45,7 +45,6 @@ class fldformat
 	unsigned int dataFormat;
 	unsigned int tagFormat;
 	char *data;
-	unsigned int maxFields;
 	map<int,fldformat> subfields;
 	fldformat *altformat;
 	fldformat *parent;
