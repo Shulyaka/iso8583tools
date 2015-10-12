@@ -44,7 +44,7 @@ class fldformat
 	int addLength;
 	unsigned int dataFormat;
 	unsigned int tagFormat;
-	char *data;
+	string data;
 	map<int,fldformat> subfields;
 	fldformat *altformat;
 	fldformat *parent;

@@ -283,10 +283,10 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 
 //	printf("Building %s\n", frm->get_description().c_str());
 
-	if(frm->data && data && strcmp(frm->data, data))
+	if(!frm->data.empty() && data && data!=frm->data)
 	{
 		if(debug)
-			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data, data, frm->get_description().c_str());
+			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data.c_str(), data, frm->get_description().c_str());
 		return 0;
 	}
 

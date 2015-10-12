@@ -42,7 +42,7 @@ void fldformat::fill_default(void)
 	addLength=0;
 	dataFormat=FRM_SUBFIELDS;
 	tagFormat=0;
-	data=NULL;
+	data.clear();
 	subfields.clear();
 	altformat=NULL;
 	parent=NULL;
@@ -53,9 +53,6 @@ void fldformat::clear(void)
 {
 	unsigned int i;
 	fldformat *tmpfrm=parent;
-
-	if(data!=NULL)
-		free(data);
 
 	if(altformat!=NULL)
 		delete altformat;
@@ -74,7 +71,7 @@ int fldformat::is_empty(void)
 	    && addLength==0
 	    && dataFormat==FRM_SUBFIELDS
 	    && tagFormat==0
-	    && data==NULL
+	    && data==""
 	    && subfields.empty()
 	    && altformat==NULL;
 }
@@ -95,11 +92,7 @@ void fldformat::copyFrom(const fldformat &from)
 	addLength=from.addLength;
 	dataFormat=from.dataFormat;
 	tagFormat=from.tagFormat;
-	if(from.data)
-	{
-		data=(char *)malloc((strlen(from.data)+1)*sizeof(char));
-		strcpy(data, from.data);
-	}
+	data=from.data;
 
 	subfields=from.subfields;
 	for(map<int,fldformat>::iterator it=subfields.begin(); it!=subfields.end(); it++)
@@ -135,7 +128,6 @@ void fldformat::moveFrom(fldformat &from)
 
 	altformat=from.altformat;
 
-	from.data=NULL;
 	from.altformat=NULL;
 
 	from.clear();
@@ -530,15 +522,9 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	if(p)
 	{
 		if(p[1])
-		{
-			data=(char *)malloc((strlen(p+1)+1)*sizeof(char));
-			strcpy(data, p+1);
-		}
+			data.assign(p+1);
 		else
-		{
-			data=(char *)malloc(2*sizeof(char));
-			strcpy(data, " "); //replacing empty string with a space character. It is a feature, not bug.
-		}
+			data.assign(maxLength, ' '); //replacing empty string with a space character. It is a feature, not bug.
 		*p='\0';
 	}
 
@@ -629,7 +615,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 		return 0;
 	}
 
-	//printf("Field: %s, Length type: %d, LengthLength: %d, Max Length: %d, Data format: %d, Mandatory data: %s\n", description.c_str(), lengthFormat, lengthLength, maxLength, dataFormat, data);
+	//printf("Field: %s, Length type: %d, LengthLength: %d, Max Length: %d, Data format: %d, Mandatory data: %s\n", description.c_str(), lengthFormat, lengthLength, maxLength, dataFormat, data.c_str());
 
 	return 1;
 }

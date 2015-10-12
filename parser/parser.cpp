@@ -752,10 +752,10 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 			return 0;
 	}
 
-	if(frm->data && data && strcmp(frm->data, data))
+	if(!frm->data.empty() && data && data!=frm->data)
 	{
 		if(debug)
-			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data, data, frm->get_description().c_str());
+			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data.c_str(), data, frm->get_description().c_str());
 		free(data);
 		data=NULL;
 		return 0;
