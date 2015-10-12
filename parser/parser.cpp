@@ -190,7 +190,7 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 	if(frm->lengthInclusive && newlength<=lenlen)
 	{
 		if(debug)
-			printf("Error: Wrong length (%s)\n", frm->description);
+			printf("Error: Wrong length (%s)\n", frm->get_description().c_str());
 		return 0;
 	}
 
@@ -221,7 +221,7 @@ int field::parse_field(const char *buf, unsigned int maxlength)
 		tmpfrm=frm->altformat;
 		clear();
 		if(debug)
-			printf("Field was already parsed. Retrying with alternate format \"%s\"\n", tmpfrm->description);
+			printf("Field was already parsed. Retrying with alternate format \"%s\"\n", tmpfrm->get_description().c_str());
 	}
 	else
 		tmpfrm=frm;
@@ -242,7 +242,7 @@ int field::parse_field(const char *buf, unsigned int maxlength)
 			minlength=newlength;
 
 		if(debug && tmpfrm->altformat)
-			printf("Info: parse_field: Retrying with alternate format \"%s\"\n", tmpfrm->altformat->description);
+			printf("Info: parse_field: Retrying with alternate format \"%s\"\n", tmpfrm->altformat->get_description().c_str());
 
 		clear();
 
@@ -332,19 +332,19 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 		if(lenlen + newblength > maxlength)
 		{
 			if(debug)
-				printf("Error: Field '%s'(%d) is bigger than buffer %d+%d>%d\n", frm->description, length, lenlen, newblength, maxlength);
+				printf("Error: Field '%s'(%d) is bigger than buffer %d+%d>%d\n", frm->get_description().c_str(), length, lenlen, newblength, maxlength);
 			return -(lenlen+newblength);
 		}
 //		else if(lenlen + newblength < maxlength)
 //		{
 //			if(debug)
-//				printf("Error: Field '%s'(%d) is smaller than buffer %d+%d<%d\n", frm->description, length, lenlen, newblength, maxlength);
+//				printf("Error: Field '%s'(%d) is smaller than buffer %d+%d<%d\n", frm->get_description().c_str(), length, lenlen, newblength, maxlength);
 //			return 0;
 //		}
 	}
 
 	//Now we know the length except for ISOBITMAP
-//	printf("Length is %d for %s\n", length, frm->description);
+//	printf("Length is %d for %s\n", length, frm->get_description().c_str());
 	
 	switch(frm->dataFormat)
 	{
@@ -384,7 +384,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 							for(unsigned int i=sf(cursf->first).blength+1; i<length+lenlen-pos+1; i=-sflen)
 							{
 								if(debug)
-									printf("trying pos %d length %d/%d for %s\n", pos, i, length+lenlen-pos, cursf->second.description);
+									printf("trying pos %d length %d/%d for %s\n", pos, i, length+lenlen-pos, cursf->second.get_description().c_str());
 								sf(cursf->first).blength=0;
 								sflen=sf(cursf->first).parse_field(buf+pos, i);
 
@@ -403,7 +403,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 						if(sflen==0 && sf(cursf->first).frm->maxLength==0)
 						{
 							if(debug)
-								printf("Optional subfield %d (%s) skipped\n", cursf->first, sf(cursf->first).frm->description);
+								printf("Optional subfield %d (%s) skipped\n", cursf->first, sf(cursf->first).frm->get_description().c_str());
 							subfields.erase(cursf->first);
 							continue;
 						}
@@ -445,7 +445,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 				if(!parse_failed && pos!=length+lenlen)
 				{
 					if(debug)
-						printf("Error: Not enough subfield formats (%d, %d) for %s\n", pos, length, frm->description);
+						printf("Error: Not enough subfield formats (%d, %d) for %s\n", pos, length, frm->get_description().c_str());
 					parse_failed=1;
 				}
 
@@ -462,7 +462,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 						if(sfexist(cursf->first) && ((sf(cursf->first).frm->lengthFormat==FRM_UNKNOWN && sf(cursf->first).frm->dataFormat!=FRM_ISOBITMAP && sf(cursf->first).blength < length+lenlen-sf(cursf->first).start) || sf(cursf->first).frm->altformat))
 						{
 							if(debug)
-								printf("Come back to sf %d of %s (%s)\n", cursf->first, frm->description, sf(cursf->first).frm->description);
+								printf("Come back to sf %d of %s (%s)\n", cursf->first, frm->get_description().c_str(), sf(cursf->first).frm->get_description().c_str());
 							pos=sf(cursf->first).start;
 							break;
 						}
@@ -478,7 +478,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 						if(sfexist(cursf->first) && ((sf(cursf->first).frm->lengthFormat==FRM_UNKNOWN && sf(cursf->first).frm->dataFormat!=FRM_ISOBITMAP && sf(cursf->first).blength < length+lenlen-sf(cursf->first).start) || sf(cursf->first).frm->altformat))
 						{
 							if(debug)
-								printf("Come back to sf %d of %s (%s)\n", cursf->first, frm->description, sf(cursf->first).frm->description);
+								printf("Come back to sf %d of %s (%s)\n", cursf->first, frm->get_description().c_str(), sf(cursf->first).frm->get_description().c_str());
 							pos=sf(cursf->first).start;
 						}
 						else
@@ -487,7 +487,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 								subfields.erase(cursf->first);
 
 							if(debug)
-								printf("Not comming back (%s)\n", frm->description);
+								printf("Not comming back (%s)\n", frm->get_description().c_str());
 							break;
 						}
 					}
@@ -755,7 +755,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 	if(frm->data && data && strcmp(frm->data, data))
 	{
 		if(debug)
-			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data, data, frm->description);
+			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data, data, frm->get_description().c_str());
 		free(data);
 		data=NULL;
 		return 0;
@@ -764,7 +764,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 	blength=lenlen+newblength;
 
 	if(debug && data && frm->dataFormat!=FRM_SUBFIELDS)
-		printf("%s \t[%d(%d)] [%s]\n", frm->description, length, blength, data);
+		printf("%s \t[%d(%d)] [%s]\n", frm->get_description().c_str(), length, blength, data);
 
 	return lenlen+newblength;
 }

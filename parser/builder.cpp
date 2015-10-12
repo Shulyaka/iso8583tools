@@ -206,7 +206,7 @@ unsigned int field::estimate_length(void)
 
 	newblength+=frm->addLength;
 
-	//printf("estimate_length: %s length %d\n", frm->description, lenlen+newblength);
+	//printf("estimate_length: %s length %d\n", frm->get_description().c_str(), lenlen+newblength);
 
 	return lenlen+newblength;
 }
@@ -281,12 +281,12 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 		return 0;
 	}
 
-//	printf("Building %s\n", frm->description);
+//	printf("Building %s\n", frm->get_description().c_str());
 
 	if(frm->data && data && strcmp(frm->data, data))
 	{
 		if(debug)
-			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data, data, frm->description);
+			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data, data, frm->get_description().c_str());
 		return 0;
 	}
 
@@ -359,7 +359,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 					if(!sflen)
 					{
 						if(debug)
-							printf("Error: unable to build subfield %d: %s\n", i->first, frm->sf(i->first).description);
+							printf("Error: unable to build subfield %d: %s\n", i->first, frm->sf(i->first).get_description().c_str());
 						return 0;
 					}
 					pos+=sflen;
@@ -707,7 +707,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 			if(frm->maxLength != mlength)
 			{
 				if(debug)
-					printf("Error: Bad length for fixed-length field! %d (field) != %d (format) for %s\n", mlength, frm->maxLength, frm->description);
+					printf("Error: Bad length for fixed-length field! %d (field) != %d (format) for %s\n", mlength, frm->maxLength, frm->get_description().c_str());
 				return 0;
 			}
 			break;
@@ -783,7 +783,7 @@ unsigned int field::build_field_alt(char *buf, unsigned int maxlength)
 			}
 	}
 
-	//printf("build_field: %s , length %d\n", frm->description, lenlen +newblength);
+	//printf("build_field: %s , length %d\n", frm->get_description().c_str(), lenlen +newblength);
 
 	return lenlen+newblength;
 }

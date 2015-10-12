@@ -119,19 +119,19 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s parsed, length: %d\n", message.get_description(), message.get_parsed_blength());
+		printf("%s parsed, length: %d\n", message.get_description().c_str(), message.get_parsed_blength());
 
 	message.print_message();
 
 	if(debug)
-		printf("Building %s, estimated length: %d\n", message.get_description(), message.estimate_length());
+		printf("Building %s, estimated length: %d\n", message.get_description().c_str(), message.estimate_length());
 
 	msglen2=message.build_message(msgbuf2, sizeof(msgbuf2));
 
 	if(!msglen2)
 	{
 		if(debug)
-			printf("Error: Unable to build %s\n", message.get_description());
+			printf("Error: Unable to build %s\n", message.get_description().c_str());
 
 		sprintf(filename, "imessage%ld", time(NULL));
 		outfile=fopen(filename, "w");
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s built. Length: %d\n", message.get_description(), msglen2);
+		printf("%s built. Length: %d\n", message.get_description().c_str(), msglen2);
 
 	if(msglen2!=msglen)
 	{

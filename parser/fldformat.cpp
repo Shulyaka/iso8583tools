@@ -34,6 +34,7 @@ fldformat::~fldformat(void)
 //default format
 void fldformat::fill_default(void)
 {
+	description.clear();
 	lengthFormat=FRM_UNKNOWN;
 	lengthLength=0;
 	lengthInclusive=0;
@@ -41,7 +42,6 @@ void fldformat::fill_default(void)
 	addLength=0;
 	dataFormat=FRM_SUBFIELDS;
 	tagFormat=0;
-	description=NULL;
 	data=NULL;
 	subfields.clear();
 	altformat=NULL;
@@ -53,9 +53,6 @@ void fldformat::clear(void)
 {
 	unsigned int i;
 	fldformat *tmpfrm=parent;
-
-	if(description!=NULL)
-		free(description);
 
 	if(data!=NULL)
 		free(data);
@@ -69,14 +66,14 @@ void fldformat::clear(void)
 
 int fldformat::is_empty(void)
 {
-	return lengthFormat==FRM_UNKNOWN
+	return description==""
+	    && lengthFormat==FRM_UNKNOWN
 	    && lengthLength==0
 	    && lengthInclusive==0
 	    && maxLength==1024
 	    && addLength==0
 	    && dataFormat==FRM_SUBFIELDS
 	    && tagFormat==0
-	    && description==NULL
 	    && data==NULL
 	    && subfields.empty()
 	    && altformat==NULL;
@@ -90,6 +87,7 @@ void fldformat::copyFrom(const fldformat &from)
 
 	clear();
 
+	description=from.description;
 	lengthFormat=from.lengthFormat;
 	lengthLength=from.lengthLength;
 	lengthInclusive=from.lengthInclusive;
@@ -97,11 +95,6 @@ void fldformat::copyFrom(const fldformat &from)
 	addLength=from.addLength;
 	dataFormat=from.dataFormat;
 	tagFormat=from.tagFormat;
-	if(from.description)
-	{
-		description=(char *)malloc((strlen(from.description)+1)*sizeof(char));
-		strcpy(description, from.description);
-	}
 	if(from.data)
 	{
 		data=(char *)malloc((strlen(from.data)+1)*sizeof(char));
@@ -127,6 +120,7 @@ void fldformat::moveFrom(fldformat &from)
 
 	clear();
 
+	description=from.description;
 	lengthFormat=from.lengthFormat;
 	lengthLength=from.lengthLength;
 	lengthInclusive=from.lengthInclusive;
@@ -134,7 +128,6 @@ void fldformat::moveFrom(fldformat &from)
 	addLength=from.addLength;
 	dataFormat=from.dataFormat;
 	tagFormat=from.tagFormat;
-	description=from.description;
 	data=from.data;
 	subfields=from.subfields;
 	for(map<int,fldformat>::iterator it=subfields.begin(); it!=subfields.end(); it++)
@@ -142,7 +135,6 @@ void fldformat::moveFrom(fldformat &from)
 
 	altformat=from.altformat;
 
-	from.description=NULL;
 	from.data=NULL;
 	from.altformat=NULL;
 
@@ -217,10 +209,9 @@ int fldformat::load_format(const char *filename)
 		frmnew=orphans["message"].get_by_number(number, orphans);
 		if(frmnew)
 		{
-			frmtmp->description=(char*)malloc(strlen(number)+2+strlen(descr)+1);
-			strcpy(frmtmp->description, number);
-			strcpy(frmtmp->description+strlen(frmtmp->description), ". ");
-			strcpy(frmtmp->description+strlen(frmtmp->description), descr);
+			frmtmp->description.assign(number);
+			frmtmp->description.append(". ");
+			frmtmp->description.append(descr);
 
 			if(!frmnew->is_empty())
 			{
@@ -235,8 +226,7 @@ int fldformat::load_format(const char *filename)
 		}
 		else
 		{
-			frmtmp->description=(char*)malloc(strlen(descr)+1);
-			strcpy(frmtmp->description, descr);
+			frmtmp->description.assign(descr);
 
 			if(orphans.count(number) && !orphans[number].is_empty())
 			{
@@ -257,11 +247,10 @@ int fldformat::load_format(const char *filename)
 
 	if(k>1)
 	{
-		if(!orphans["message"].description)
+		if(orphans["message"].description.empty())
 		{
 			printf("Warning: No 'message' format, implying default\n");
-			orphans["message"].description=(char*)malloc(strlen("No description")+1);
-			strcpy(orphans["message"].description, "No description");
+			orphans["message"].description.assign("No description");
 		}
 
 		if(!is_empty())
@@ -364,7 +353,7 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 	if(!sfexist(n))
 	{
 		if(debug)
-			printf("Warning: Parent format not loaded yet [%s][%d] %s\n", number, n, description);
+			printf("Warning: Parent format not loaded yet [%s][%d] %s\n", number, n, description.c_str());
 		return NULL;
 	}
 
@@ -484,11 +473,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			else
 				copyFrom(*tmpfrm);
 
-			if(description)
-			{
-				free(description);
-				description=NULL;
-			}
+			description.clear();
 
 			return 1;
 
@@ -644,19 +629,14 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 		return 0;
 	}
 
-	//printf("Field: %s, Length type: %d, LengthLength: %d, Max Length: %d, Data format: %d, Mandatory data: %s\n", description, lengthFormat, lengthLength, maxLength, dataFormat, data);
+	//printf("Field: %s, Length type: %d, LengthLength: %d, Max Length: %d, Data format: %d, Mandatory data: %s\n", description.c_str(), lengthFormat, lengthLength, maxLength, dataFormat, data);
 
 	return 1;
 }
 
-const char *fldformat::get_description(void)
+const string& fldformat::get_description(void)
 {
-	static const char dummy[]="";
-	
-	if(!description)
-		return dummy;
-	else
-		return description;
+	return description;
 }
 
 //returns reference to subformat. If it does not exists, it will be added.

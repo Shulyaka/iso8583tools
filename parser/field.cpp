@@ -105,7 +105,7 @@ void field::print_message(void) const
 		return;
 	}
 
-	printf("%s", frm->description);
+	printf("%s", frm->get_description().c_str());
 	if(tag)
 		printf(" [%s]", tag);
 	if(data)
@@ -483,9 +483,9 @@ int field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int
 	}
 }
 
-const char *field::get_description(void)
+const string& field::get_description(void)
 {
-	static const char dummy[]="";
+	static const string dummy="";
 	
 	if(!frm)
 		return dummy;

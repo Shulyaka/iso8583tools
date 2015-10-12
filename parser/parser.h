@@ -36,7 +36,7 @@ class field;
 class fldformat
 {
 	private:
-	char *description;
+	string description;
 	unsigned int lengthFormat;
 	unsigned int lengthLength;
 	unsigned short lengthInclusive;
@@ -67,7 +67,7 @@ class fldformat
 	void moveFrom(fldformat &from);
 	inline fldformat *get_altformat(void);
 	inline fldformat *get_lastaltformat(void);
-	const char *get_description(void);
+	const string& get_description(void);
 	inline const unsigned int get_lengthLength() {return lengthLength;};
 	fldformat& sf(int n);
 	bool sfexist(int n) const;
@@ -111,7 +111,7 @@ class field
 	inline unsigned int build_message(char *buf, unsigned int len) {return build_field(buf, len);};
 	unsigned int estimate_length(void);
 
-	const char *get_description(void);
+	const string& get_description(void);
 	inline const int get_parsed_blength() {return blength;};
 	inline const int get_lengthLength() {return frm?frm->get_lengthLength():0;};
 	field& sf(int n);
