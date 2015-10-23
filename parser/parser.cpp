@@ -626,9 +626,10 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 					case FRM_BCD:
 						parse_bcdl(buf+pos, lengthbuf, taglength*2);
 						j=atoi(lengthbuf.c_str());
-					case FRM_HEX:
-						parse_hex(buf+pos, lengthbuf, taglength*2);
-						sscanf(lengthbuf.c_str(), "%X", &j);
+					case FRM_BIN:
+						j=0;
+						for(unsigned int k=0; k<taglength; j++)
+							*(((char*)(&j))+3-k)=buf[pos+k];
 						break;
 					case FRM_ASCII:
 					default:

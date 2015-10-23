@@ -753,26 +753,12 @@ unsigned int field::build_field_alt(string &buf)
 							return 0;
 						break;
 
-					case FRM_HEX: //TODO: FRM_BIN
+					case FRM_BIN:
 						if(taglength>4)
 							buf.append(taglength-4, '\0');
 
 						for(unsigned int j=0; j<(taglength>4?4:taglength); j++)
 							buf.push_back(((unsigned char *)(&(i->first)))[(taglength>4?4:taglength)-j-1]);  //TODO: htonl()
-
-						/*if(taglength*2+1<=snprintf(lengthbuf, taglength*2+1, "%X", i->first) || taglength*2<strlen(lengthbuf))
-						{
-							if(debug)
-								printf("Error: TLV tag number is too big (%d)\n", i->first);
-							return 0;
-						}
-
-						for(unsigned int j=0; j < taglength - (strlen(lengthbuf)+1)/2; j++)
-							buf.push_back('\0');
-
-						if(!build_hex(lengthbuf, buf, strlen(lengthbuf)))
-							return 0;
-						*/
 						break;
 
 					case FRM_BCD:
