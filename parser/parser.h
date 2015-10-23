@@ -77,8 +77,8 @@ class fldformat
 class field
 {
 	private:
-	char* data;  //parsed data
-	char* tag;   //parsed TLV tag name
+	string data;  //parsed data
+	string tag;   //parsed TLV tag name
 	unsigned int start;  //start position inside the message binary data relative to the parent field
 	unsigned int blength;  //length of the field inside the message binary data (including length length)
 	unsigned int length;  //parsed data length
@@ -88,13 +88,14 @@ class field
 
 	void fill_default(void);
 
-	int parse_field(const char*, unsigned int);
-	int parse_field_alt(const char*, unsigned int);
-	int parse_field_length(const char*, unsigned int);
-	unsigned int build_field(char*, unsigned int);
-	unsigned int build_field_alt(char*, unsigned int);
-	unsigned int build_isobitmap(char*, unsigned int, unsigned int);
-	unsigned int build_bitmap(char*, unsigned int, unsigned int);
+	int parse_field(const std::string::const_iterator&, const std::string::const_iterator&);
+	int parse_field_alt(const std::string::const_iterator&, const std::string::const_iterator&);
+	int parse_field_length(const std::string::const_iterator&, const std::string::const_iterator&);
+	unsigned int build_field(string&);
+	unsigned int build_field_length(string&);
+	unsigned int build_field_alt(string&);
+	unsigned int build_isobitmap(string&, unsigned int);
+	unsigned int build_bitmap(string&, unsigned int);
 
 	public:
 	field(void);
@@ -108,8 +109,10 @@ class field
 	void moveFrom(field &from);
 
 	int parse_message(const string&);
-	inline unsigned int build_message(char *buf, unsigned int len) {return build_field(buf, len);};
-	unsigned int estimate_length(void);
+	unsigned int build_message(string&);
+	unsigned int get_blength(void);
+	unsigned int get_flength(void);
+	unsigned int get_mlength(void);
 
 	const string& get_description(void);
 	inline const int get_parsed_blength() {return blength;};
@@ -117,13 +120,13 @@ class field
 	field& sf(int n);
 	bool sfexist(int n) const;
 
-	const char* get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	char* add_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	const string& get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	string& add_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	int field_format(int altformat, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	void remove_field(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	int has_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	char* add_tag(const char *tag, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	const char* get_tag(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	bool has_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	string& add_tag(const string &tag, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	const string& get_tag(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 };
 
 #endif

@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 	struct dirent *de;
 	int frmcounter=0;
 	string msgbuf;
-	char msgbuf2[1000];
+	string msgbuf2;
 	unsigned int msglen=0;
 	unsigned int msglen1=0;
 	unsigned int msglen2=0;
@@ -124,9 +124,9 @@ int main(int argc, char **argv)
 	message.print_message();
 
 	if(debug)
-		printf("Building %s, estimated length: %d\n", message.get_description().c_str(), message.estimate_length());
+		printf("Building %s, estimated length: %d\n", message.get_description().c_str(), message.get_blength());
 
-	msglen2=message.build_message(msgbuf2, sizeof(msgbuf2));
+	msglen2=message.build_message(msgbuf2);
 
 	if(!msglen2)
 	{
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s built. Length: %d\n", message.get_description().c_str(), msglen2);
+		printf("%s built. Length: %d/%d\n", message.get_description().c_str(), msglen2, msgbuf2.length());
 
 	if(msglen2!=msglen)
 	{

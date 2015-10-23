@@ -23,8 +23,8 @@ field::~field(void)
 
 void field::fill_default(void)
 {
-	data=NULL;
-	tag=NULL;
+	data.clear();
+	tag.clear();
 	start=0;
 	blength=0;
 	length=0;
@@ -36,45 +36,12 @@ void field::fill_default(void)
 void field::clear(void)
 {
 	fldformat *tmpfrm=frm;
-
-	if(data!=NULL)
-		free(data);
-
-	if(tag!=NULL)
-		free(tag);
-
 	fill_default();
 	frm=tmpfrm; //make frm immune to clear()
 }
 
 //forks the field. All data and subfields are also copied so that all pointers except frm will have new values to newly copied data but non-pointers will have same values
 void field::copyFrom(const field &from)
-{
-	if(this==&from)
-		return;
-
-	clear();
-
-	if(from.data)
-	{
-		data=(char *)malloc((strlen(from.data)+1)*sizeof(char));
-		strcpy(data, from.data);
-	}
-	if(from.tag)
-	{
-		tag=(char *)malloc((strlen(from.tag)+1)*sizeof(char));
-		strcpy(tag, from.tag);
-	}
-	start=from.start;
-	blength=from.blength;
-	length=from.length;
-	frm=from.frm;
-	subfields=from.subfields;
-	altformat=from.altformat;
-}
-
-//relink data from another format. The old format will become empty
-void field::moveFrom(field &from)
 {
 	if(this==&from)
 		return;
@@ -89,10 +56,15 @@ void field::moveFrom(field &from)
 	frm=from.frm;
 	subfields=from.subfields;
 	altformat=from.altformat;
+}
 
-	from.data=NULL;
-	from.tag=NULL;
+//relink data from another format. The old format will become empty
+void field::moveFrom(field &from)
+{
+	if(this==&from)
+		return;
 
+	copyFrom(from);
 	from.clear();
 }
 
@@ -106,10 +78,10 @@ void field::print_message(void) const
 	}
 
 	printf("%s", frm->get_description().c_str());
-	if(tag)
-		printf(" [%s]", tag);
-	if(data)
-		printf(" (%d): [%s]\n", length, data);
+	if(!tag.empty())
+		printf(" [%s]", tag.c_str());
+	if(!data.empty())
+		printf(" (%d): [%s]\n", length, data.c_str());
 	else
 		printf(":\n");
 
@@ -149,10 +121,7 @@ int field::is_empty(void) const
 		case FRM_BITMAP:
 			return 0;
 		default:
-			if(!data || !data[0])
-				return 1;
-			else
-				return 0;
+			return data.empty();
 	}
 
 	if(subfields.empty())
@@ -205,9 +174,9 @@ int field::change_format(fldformat *frmnew)
 }
 
 //a segfault-safe accessor function. Returns a pointer to the field contents. If the field does not exist, it would be created. If it cannot be created, a valid pointer to a dummy array is returned.
-char* field::add_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+string& field::add_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
-	static char def[255]={0};
+	static string def="";
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
 	field *curfld=this;
@@ -225,27 +194,6 @@ char* field::add_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, i
 
 	if(!curfld || !curfld->frm)
 		return def;
-
-	if(curfld->data)
-		return curfld->data;
-
-	switch(curfld->frm->dataFormat)
-	{
-		case FRM_ISOBITMAP:
-		case FRM_BITMAP:
-		case FRM_BITSTR:
-		case FRM_BIN:
-		case FRM_ASCII:
-		case FRM_BCD:
-		case FRM_EBCDIC:
-			curfld->data=(char*)calloc(curfld->frm->maxLength+1, 1);
-			break;
-		case FRM_HEX:
-			curfld->data=(char*)calloc(curfld->frm->maxLength*2 + 1, 1);
-			break;
-		default:
-			return def;
-	}
 
 	return curfld->data;
 }
@@ -321,9 +269,9 @@ int field::field_format(int newaltformat, int n0, int n1, int n2, int n3, int n4
 	return 0;
 } 
 
-char* field::add_tag(const char *tag, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+string& field::add_tag(const string &newtag, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
-	static char def[255]={0};
+	static string def="";
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
 	field *curfld=this;
@@ -344,35 +292,15 @@ char* field::add_tag(const char *tag, int n0, int n1, int n2, int n3, int n4, in
 
 	curfld=&curfld->sf(i);
 
-	switch(curfld->frm->dataFormat)
-	{
-		case FRM_ISOBITMAP:
-		case FRM_BITMAP:
-		case FRM_BITSTR:
-		case FRM_BIN:
-		case FRM_ASCII:
-		case FRM_BCD:
-		case FRM_EBCDIC:
-			curfld->data=(char*)calloc(curfld->frm->maxLength+1, 1);
-			break;
-		case FRM_HEX:
-			curfld->data=(char*)calloc(curfld->frm->maxLength*2 + 1, 1);
-			break;
-		default:
-			return def;
-	}
-
-	curfld->tag=(char*)malloc(strlen(tag)+1);
-
-	strcpy(curfld->tag, tag);
+	curfld->tag=newtag;
 
 	return curfld->data;
 }
 
 //a segfault-safe accessor function. Return a pointer to the fields contents. If the field does not exist, returns a valid pointer to an empty string. The field structure is not modified.
-const char* field::get_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+const string& field::get_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
-	static const char def[255]={0};
+	static const string def="";
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
 	field *curfld=this;
@@ -388,15 +316,15 @@ const char* field::get_field(int n0, int n1, int n2, int n3, int n4, int n5, int
 		curfld=&curfld->sf(n[i]);
 	}
 
-	if(!curfld || !curfld->data)
+	if(!curfld)
 		return def;
 
 	return curfld->data;
 }
 
-const char* field::get_tag(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+const string& field::get_tag(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
-	static const char def[10]={0};
+	static const string def="";
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
 	field *curfld=this;
@@ -412,7 +340,7 @@ const char* field::get_tag(int n0, int n1, int n2, int n3, int n4, int n5, int n
 		curfld=&curfld->sf(n[i]);
 	}
 
-	if(!curfld || !curfld->tag)
+	if(!curfld)
 		return def;
 
 	return curfld->tag;
@@ -442,9 +370,9 @@ void field::remove_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6,
 	return;
 }
 
-//returns zero if fields does not exists or has no subfields or empty.
-//otherwise, returns field length or number of subfields.
-int field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+//returns false if fields does not exists or has no subfields or empty.
+//otherwise, returns true
+bool field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
@@ -456,13 +384,13 @@ int field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int
 			break;
 
 		if(!curfld || !curfld->sfexist(n[i]))
-			return 0;
+			return false;
 
 		curfld=&curfld->sf(n[i]);
 	}
 
 	if(!curfld)
-		return 0;
+		return false;
 
 	switch(curfld->frm->dataFormat)
 	{
@@ -476,10 +404,7 @@ int field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int
 		case FRM_TLVDS:
 			return subfields.empty();
 		default:
-			if(curfld->length || !curfld->data)
-				return curfld->length;
-			else
-				return strlen(curfld->data);
+			return data.empty();
 	}
 }
 

@@ -4,10 +4,10 @@
 
 #include "parser.h"
 
-void parse_ebcdic(const char*, char*, unsigned int);
-int parse_hex(const char*, char*, unsigned int);
-int parse_bcdr(const char*, char*, unsigned int);
-int parse_bcdl(const char*, char*, unsigned int);
+unsigned int parse_ebcdic(const std::string::const_iterator&, std::string&, unsigned int);
+unsigned int parse_hex(const std::string::const_iterator&, std::string&, unsigned int);
+unsigned int parse_bcdr(const std::string::const_iterator&, std::string&, unsigned int);
+unsigned int parse_bcdl(const std::string::const_iterator&, std::string&, unsigned int);
 
 // return value:
 // >0: successfully parsed, the value is the length
@@ -34,7 +34,7 @@ int field::parse_message(const string &msgbuf)
 
 	message.frm=frm;
 
-	parsedlength=message.parse_field(msgbuf.data(), msgbuf.length());
+	parsedlength=message.parse_field(msgbuf.begin(), msgbuf.end());
 
 	if(parsedlength>0)
 		moveFrom(message);
@@ -45,18 +45,11 @@ int field::parse_message(const string &msgbuf)
 	return parsedlength;
 }
 
-int field::parse_field_length(const char *buf, unsigned int maxlength)
+int field::parse_field_length(const std::string::const_iterator &buf, const std::string::const_iterator &bufend)
 {
 	unsigned int lenlen=0;
-	unsigned int newlength=0;
-	char lengthbuf[7];
-
-	if(!buf)
-	{
-		if(debug)
-			printf("Error: No buf\n");
-		return 0;
-	}
+	unsigned int newlength=0; //TODO: union
+	string lengthbuf;
 
 	if(!frm)
 	{
@@ -65,16 +58,9 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 		return 0;
 	}
 
-	if(maxlength==0)
-	{
-		if(debug)
-			printf("Error: Zero length\n");
-		return -1;
-	}
-
 	lenlen=frm->lengthLength;
 
-	if(lenlen > maxlength)
+	if(lenlen > bufend-buf)
 	{
 		if(debug)
 			printf("Error: Buffer less than length size\n");
@@ -100,7 +86,7 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 			if((unsigned char)buf[0]>127)
 			{
 				lenlen=2;
-				if(lenlen > maxlength)
+				if(lenlen > bufend-buf)
 				{
 					if(debug)
 						printf("Error: Buffer less than length size\n");
@@ -129,7 +115,7 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 			else
 				parse_hex(buf, lengthbuf, lenlen*2);
 
-			newlength=atoi(lengthbuf);
+			newlength=atoi(lengthbuf.c_str());
 			break;
 
 		case FRM_ASCII:
@@ -142,9 +128,8 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 						return 0;
 					}
 
-			memcpy(lengthbuf, buf, lenlen);
-			lengthbuf[lenlen]='\0';
-			newlength=atoi(lengthbuf);
+			lengthbuf.assign(buf, buf+lenlen);
+			newlength=atoi(lengthbuf.c_str());
 			break;
 		
 		case FRM_EBCDIC:
@@ -162,11 +147,11 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 			else
 				parse_ebcdic(buf, lengthbuf, lenlen);
 
-			newlength=atoi(lengthbuf);
+			newlength=atoi(lengthbuf.c_str());
 			break;
 
 		case FRM_UNKNOWN:
-			newlength=maxlength<frm->maxLength?maxlength:frm->maxLength;
+			newlength=bufend-buf < frm->maxLength ? bufend-buf : frm->maxLength;
 			break;
 
 		case FRM_FIXED:
@@ -203,17 +188,17 @@ int field::parse_field_length(const char *buf, unsigned int maxlength)
 // >0: successfully parsed, the value is the length
 // <0: Parse failed but you could try a greater maxlength of at least the negated returned value
 // =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
-int field::parse_field(const char *buf, unsigned int maxlength)
+int field::parse_field(const std::string::const_iterator &buf, const std::string::const_iterator &bufend)
 {
 	fldformat *tmpfrm;
 	int newlength;
 	int minlength=0;
 
-	if(!buf)
+	if(bufend-buf<=0)
 	{
 		if(debug)
-			printf("Error: No buf\n");
-		return 0;
+			printf("Error: buf too small on %s\n", frm->get_description().c_str());
+		return -1;
 	}
 
 	if(blength && frm && frm->altformat)
@@ -234,7 +219,7 @@ int field::parse_field(const char *buf, unsigned int maxlength)
 		frm=tmpfrm;
 		altformat=i++;
 
-		newlength=parse_field_alt(buf, maxlength);
+		newlength=parse_field_alt(buf, bufend);
 		if(newlength>0)
 			return newlength;
 
@@ -253,11 +238,11 @@ int field::parse_field(const char *buf, unsigned int maxlength)
 	return minlength;
 }
 
-int field::parse_field_alt(const char *buf, unsigned int maxlength)
+int field::parse_field_alt(const std::string::const_iterator &buf, const std::string::const_iterator &bufend)
 {
 	unsigned int lenlen=0;
 	unsigned int newblength=0;
-	char lengthbuf[7];
+	string lengthbuf;
 	unsigned int j;
 	int bitmap_start=-1;
 	int bitmap_end=0;
@@ -269,8 +254,9 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 	unsigned int taglength;
 	fldformat tmpfrm;
 	fldformat *frmold;
+	unsigned int maxlength=bufend-buf;
 
-	if(!buf)
+	if(bufend-buf<=0)
 	{
 		if(debug)
 			printf("Error: No buf\n");
@@ -296,7 +282,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 
 	if(frm->dataFormat!=FRM_ISOBITMAP)
 	{
-		sflen=parse_field_length(buf, maxlength);
+		sflen=parse_field_length(buf, bufend);
 
 		if(sflen<=0)
 			return sflen;
@@ -386,7 +372,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 								if(debug)
 									printf("trying pos %d length %d/%d for %s\n", pos, i, length+lenlen-pos, cursf->second.get_description().c_str());
 								sf(cursf->first).blength=0;
-								sflen=sf(cursf->first).parse_field(buf+pos, i);
+								sflen=sf(cursf->first).parse_field(buf+pos, buf+pos+i);
 
 								if(sflen>=0)
 									break;
@@ -398,7 +384,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 							}
 						}
 						else
-							sflen=sf(cursf->first).parse_field(buf+pos, length+lenlen-pos);
+							sflen=sf(cursf->first).parse_field(buf+pos, buf+length+lenlen);
 
 						if(sflen==0 && sf(cursf->first).frm->maxLength==0)
 						{
@@ -422,7 +408,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 							if(debug && bitmap_start!=-1)
 								printf("Warning: Only one bitmap per subfield allowed\n");
 							bitmap_start=cursf->first;
-							bitmap_end=bitmap_start+strlen(sf(bitmap_start).data);
+							bitmap_end=bitmap_start+sf(bitmap_start).data.length();
 
 							for(unsigned int i=0; i<bitmap_end-bitmap_start; i++)
 								if(sf(bitmap_start).data[i]=='1' && !frm->sfexist(bitmap_start+1+i))
@@ -502,7 +488,6 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 			break;
 
 		case FRM_BCDSF:
-			data=(char*)malloc(length+1);
 			if(!parse_bcdl(buf+lenlen, data, length))
 			{
 				if(debug)
@@ -519,10 +504,9 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 			frmold=frm;
 			change_format(&tmpfrm);
 
-			sflen=parse_field(data, length);
+			sflen=parse_field(data.begin(), data.end());
 			
-			free(data);
-			data=0;
+			data.clear();
 			change_format(frmold);
 
 			if(sflen<=0)
@@ -570,30 +554,24 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 					return -(pos+taglength);
 				}
 
-				sf(i);
-
 				switch(frm->tagFormat)
 				{
 					case FRM_EBCDIC:
-						sf(i).tag=(char*)malloc(taglength+1);
 						parse_ebcdic(buf+pos, sf(i).tag, taglength);
 						break;
 					case FRM_BCD:
 					case FRM_HEX:
-						sf(i).tag=(char*)malloc(taglength*2+1);
 						parse_hex(buf+pos, sf(i).tag, taglength*2);
 						break;
 					case FRM_ASCII:
 					default:
-						sf(i).tag=(char*)malloc(taglength+1);
-						memcpy(sf(i).tag, buf+pos, taglength);
-						sf(i).tag[taglength]='\0';
+						sf(i).tag.assign(buf+pos, buf+pos+taglength);
 				}
 				//printf("Tag=(%d)'%s'\n", taglength, sf(i).tag);
 
 				pos+=taglength;
 
-				sflen=sf(i).parse_field(buf+pos, length+lenlen-pos);
+				sflen=sf(i).parse_field(buf+pos, buf+length+lenlen);
 
 				if(sflen<=0)
 				{
@@ -638,24 +616,24 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 					return -(pos+taglength);
 				}
 
+				lengthbuf.clear();
 				switch(frm->tagFormat)
 				{
 					case FRM_EBCDIC:
 						parse_ebcdic(buf+pos, lengthbuf, taglength);
-						j=atoi(lengthbuf);
+						j=atoi(lengthbuf.c_str());
 						break;
 					case FRM_BCD:
 						parse_bcdl(buf+pos, lengthbuf, taglength*2);
-						j=atoi(lengthbuf);
+						j=atoi(lengthbuf.c_str());
 					case FRM_HEX:
 						parse_hex(buf+pos, lengthbuf, taglength*2);
-						sscanf(lengthbuf, "%X", &j);
+						sscanf(lengthbuf.c_str(), "%X", &j);
 						break;
 					case FRM_ASCII:
 					default:
-						memcpy(lengthbuf, buf+pos, taglength);
-						lengthbuf[taglength]='\0';
-						j=atoi(lengthbuf);
+						lengthbuf.assign(buf+pos, buf+pos+taglength);
+						j=atoi(lengthbuf.c_str());
 				}
 
 				if(!frm->sfexist(j))
@@ -667,7 +645,7 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 
 				pos+=taglength;
 
-				sflen=sf(j).parse_field(buf+pos, length+lenlen-pos);
+				sflen=sf(j).parse_field(buf+pos, buf+length+lenlen);
 
 				if(sflen<=0)
 				{
@@ -688,13 +666,11 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 					printf("Error: Too much TLV subfields (%d, %d)\n", pos, length);
 				return 0;
 			}
-
 			break;
 
 		case FRM_ISOBITMAP:
 			for(unsigned int i=0; i==0 || buf[i*8-8]>>7; i++)
 			{
-				data=(char*)realloc(data, (i+1)*64);
 				length=i*64+63;
 				newblength=i*8+8;
 				if((i+1)*8>maxlength)
@@ -704,45 +680,36 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 					return -(i+1)*8;
 				}
 
-				data[(i+1)*64-1]='\0';
-
 				if(i!=0)
-					data[i*64 - 1]='0';
+					data.push_back('0');
 
 				for(j=1; j<64; j++)
-					data[i*64+j-1]=buf[i*8+j/8] & (1<<(7-j%8)) ? '1':'0';
+					data.push_back(buf[i*8+j/8] & (1<<(7-j%8)) ? '1':'0');
 			}
-
 			break;
 
 		case FRM_BITMAP:
 		case FRM_BITSTR:
-			data=(char*)calloc(frm->maxLength+1, 1);
+			data.clear();
 			for(unsigned int i=0; i<length;i++)
-				data[i]=buf[lenlen + i/8] & (1<<(7-i%8)) ? '1':'0';
-
+				data.push_back(buf[lenlen + i/8] & (1<<(7-i%8)) ? '1':'0');
 			break;
 
 		case FRM_BIN:
 		case FRM_ASCII:
-			data=(char*)malloc(frm->maxLength+1);
-			memcpy(data, buf+lenlen, length);
-			data[length]='\0';
+			data.assign(buf+lenlen, buf+lenlen+length);
 			break;
 
 		case FRM_HEX:
-			data=(char*)malloc(frm->maxLength*2+1);
 			parse_hex(buf+lenlen, data, length);
 			break;
 
 		case FRM_BCD:
-			data=(char*)malloc(frm->maxLength+1);
 			if(!parse_bcdr(buf+lenlen, data, length))
 				return 0;
 			break;
 
 		case FRM_EBCDIC:
-			data=(char*)malloc(frm->maxLength+1);
 			parse_ebcdic(buf+lenlen, data, newblength);
 			break;
 
@@ -752,35 +719,34 @@ int field::parse_field_alt(const char *buf, unsigned int maxlength)
 			return 0;
 	}
 
-	if(!frm->data.empty() && data && data!=frm->data)
+	if(!frm->data.empty() && !data.empty() && data!=frm->data)
 	{
 		if(debug)
 			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data.c_str(), data, frm->get_description().c_str());
-		free(data);
-		data=NULL;
+		data.clear();
 		return 0;
 	}
 
 	blength=lenlen+newblength;
 
-	if(debug && data && frm->dataFormat!=FRM_SUBFIELDS)
-		printf("%s \t[%d(%d)] [%s]\n", frm->get_description().c_str(), length, blength, data);
+	if(debug && !data.empty() && frm->dataFormat!=FRM_SUBFIELDS)
+		printf("%s \t[%d(%d)] [%s]\n", frm->get_description().c_str(), length, blength, data.c_str());
 
 	return lenlen+newblength;
 }
 
-void parse_ebcdic(const char *from, char *to, unsigned int len)
+unsigned int parse_ebcdic(const string::const_iterator &from, string &to, unsigned int len)
 {
-//	const unsigned char ebcdic2ascii[256]="\0\x001\x002\x003 \t \x07F   \x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013 \n\x008 \x018\x019  \x01C\x01D\x01E\x01F\x080 \x01C  \x00A\x017\x01B     \x005\x006\x007  \x016    \x004    \x014\x015 \x01A  âäàáãåçñ¢.<(+|&éêëèíîïìß!$*);¬-/ÂÄÀÁÃÅÇÑ\x0A6,%_>?øÉÊËÈÍÎÏÌ`:#@'=\"Øabcdefghi   ý  \x010jklmnopqr  Æ æ  ~stuvwxyz   Ý  ^£¥       []    {ABCDEFGHI ôöòóõ}JKLMNOPQR ûüùúÿ\\ STUVWXYZ ÔÖÒÓÕ0123456789 ÛÜÙÚŸ";
-	const unsigned char ebcdic2ascii[257]=" \x001\x002\x003 \t \x07F   \x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013 \n\x008 \x018\x019  \x01C\x01D\x01E\x01F\x080 \x01C  \x00A\x017\x01B     \x005\x006\x007  \x016    \x004    \x014\x015 \x01A           .<(+|&         !$*); -/        \x0A6,%_>?         `:#@'=\" abcdefghi      \x010jklmnopqr       ~stuvwxyz      ^         []    {ABCDEFGHI      }JKLMNOPQR      \\ STUVWXYZ      0123456789      ";
+//	const string ebcdic2ascii("\0\x001\x002\x003 \t \x07F   \x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013 \n\x008 \x018\x019  \x01C\x01D\x01E\x01F\x080 \x01C  \x00A\x017\x01B     \x005\x006\x007  \x016    \x004    \x014\x015 \x01A  âäàáãåçñ¢.<(+|&éêëèíîïìß!$*);¬-/ÂÄÀÁÃÅÇÑ\x0A6,%_>?øÉÊËÈÍÎÏÌ`:#@'=\"Øabcdefghi   ý  \x010jklmnopqr  Æ æ  ~stuvwxyz   Ý  ^£¥       []    {ABCDEFGHI ôöòóõ}JKLMNOPQR ûüùúÿ\\ STUVWXYZ ÔÖÒÓÕ0123456789 ÛÜÙÚŸ", 256);
+	const string ebcdic2ascii(" \x001\x002\x003 \t \x07F   \x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013 \n\x008 \x018\x019  \x01C\x01D\x01E\x01F\x080 \x01C  \x00A\x017\x01B     \x005\x006\x007  \x016    \x004    \x014\x015 \x01A           .<(+|&         !$*); -/        \x0A6,%_>?         `:#@'=\" abcdefghi      \x010jklmnopqr       ~stuvwxyz      ^         []    {ABCDEFGHI      }JKLMNOPQR      \\ STUVWXYZ      0123456789      ", 256);
 
 	for(unsigned int i=0; i<len; i++)
-		to[i]=ebcdic2ascii[(unsigned char)from[i]];
-	
-	to[len]='\0';
+		to.push_back(ebcdic2ascii[(unsigned char)from[i]]);
+
+	return len;
 }
 
-int parse_bcdr(const char *from, char *to, unsigned int len)
+unsigned int parse_bcdr(const string::const_iterator &from, string &to, unsigned int len)
 {
 	unsigned char t;
 	unsigned int u=len/2*2==len?0:1;
@@ -794,7 +760,7 @@ int parse_bcdr(const char *from, char *to, unsigned int len)
 			if(17<len && len<38 && !separator_found && t==0xD)     //making one exception for track2
 			{
 				separator_found=1;
-				to[i*2-u]='^';
+				to.push_back('^');
 			}
 			else if (t > 9)
 			{
@@ -803,7 +769,7 @@ int parse_bcdr(const char *from, char *to, unsigned int len)
 				return 0;
 			}
 			else
-				to[i*2-u]='0' + t;
+				to.push_back('0'+t);
 		}
 		else if(((unsigned char)from[i])>>4!=0)
 		{
@@ -816,7 +782,7 @@ int parse_bcdr(const char *from, char *to, unsigned int len)
 		if(17<len && len<38 && !separator_found && t==0xD)     //making one exception for track2
 		{
 			separator_found=1;
-			to[i*2-u]='^';
+			to.push_back('^');
 		}
 		else if (t > 9)
 		{
@@ -825,13 +791,13 @@ int parse_bcdr(const char *from, char *to, unsigned int len)
 			return 0;
 		}
 		else
-			to[i*2+1-u]='0' + t;
+			to.push_back('0'+t);
 	}
-	to[len]='\0';
-	return 1;
+
+	return len;
 }
 
-int parse_bcdl(const char *from, char *to, unsigned int len)
+unsigned int parse_bcdl(const string::const_iterator &from, string &to, unsigned int len)
 {
 	unsigned char t;
 	unsigned int u=len/2*2==len?0:1;
@@ -843,7 +809,7 @@ int parse_bcdl(const char *from, char *to, unsigned int len)
 		if(17<len && len<38 && !separator_found && t==0xD)     //making one exception for track2
 		{
 			separator_found=1;
-			to[i*2]='^';
+			to.push_back('^');
 		}
 		else if (t > 9)
 		{
@@ -852,7 +818,7 @@ int parse_bcdl(const char *from, char *to, unsigned int len)
 			return 0;
 		}
 		else
-			to[i*2]='0' + t;
+			to.push_back('0'+t);
 
 		if(u==0 || i!=(len+1)/2-1)
 		{
@@ -860,7 +826,7 @@ int parse_bcdl(const char *from, char *to, unsigned int len)
 			if(17<len && len<38 && !separator_found && t==0xD)     //making one exception for track2
 			{
 				separator_found=1;
-				to[i*2]='^';
+				to.push_back('^');
 			}
 			else if (t > 9)
 			{
@@ -869,7 +835,7 @@ int parse_bcdl(const char *from, char *to, unsigned int len)
 				return 0;
 			}
 			else
-				to[i*2+1]='0' + t;
+				to.push_back('0'+t);
 		}
 		else if((((unsigned char)from[i]) & 0x0F)!=0)
 		{
@@ -878,12 +844,11 @@ int parse_bcdl(const char *from, char *to, unsigned int len)
 			return 0;
 		}
 	}
-	to[len]='\0';
 
-	return 1;
+	return len;
 }
 
-int parse_hex(const char *from, char *to, unsigned int len)
+unsigned int parse_hex(const string::const_iterator &from, string &to, unsigned int len)
 {
 	unsigned char t;
 	unsigned int u=len/2*2==len?0:1;
@@ -894,9 +859,9 @@ int parse_hex(const char *from, char *to, unsigned int len)
 		{
 			t=((unsigned char)from[i]) >> 4;
 			if (t > 9)
-				to[i*2-u]='A' + t - 10;
+				to.push_back('A'+t-10);
 			else
-				to[i*2-u]='0' + t;
+				to.push_back('0'+t);
 		}
 		else if(((unsigned char)from[i])>>4!=0)
 		{
@@ -907,11 +872,11 @@ int parse_hex(const char *from, char *to, unsigned int len)
 
 		t=((unsigned char)from[i]) & 0x0F;
 		if (t > 9)
-			to[i*2+1-u]='A' + t - 10;
+			to.push_back('A'+t-10);
 		else
-			to[i*2+1-u]='0' + t;
+			to.push_back('0'+t);
 	}
-	to[len]='\0';
-	return 1;
+
+	return len;
 }
 
