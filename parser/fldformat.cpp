@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <iostream>
+#include <fstream>
 #include "parser.h"
 
 //constructor
@@ -136,45 +137,34 @@ void fldformat::moveFrom(fldformat &from)
 // load format from file
 // returns 0 on failure, 1 on success
 // if already loaded, adds new as altformat
-int fldformat::load_format(const char *filename)
+int fldformat::load_format(const string &filename)
 {
-	char line[256];
-	char number[sizeof(line)];
-	char format[sizeof(line)];
-	char descr[sizeof(line)];
+	string line;
+	char number[256];
+	char format[256];
+	char descr[256];
 	char chr;
-	unsigned int i=0;
 	unsigned int j=0;
 	int k=0;
 	fldformat *frmtmp, *frmnew;
-	FILE *file;
 	map<string,fldformat> orphans;
+	std::ifstream file(filename.c_str());
 
-	orphans["message"];
-
-	if((file=fopen(filename, "r"))==NULL)
+	if(!file)
 	{
 		if(debug)
 			perror("Error: Unable to open file\n");
 		return 0;
 	}
 
-	while ((chr=fgetc(file))!=EOF)
+	orphans["message"];
+
+	while (!getline(file, line).eof())
 	{
-		if(chr!='\n' && chr!='\r' && i<sizeof(line))
-		{
-			line[i++]=chr;
-			continue;
-		}
-		
-		line[i]='\0';
-
-		i=0;
-
-		if(line[0]=='\0')
+		if(line.empty())
 			continue;
 
-		j=sscanf(line, "%s %s %[][a-zA-Z0-9 .,/;:'\"\\|?!@#$%^&*(){}<>_+=-]", number, format, descr);
+		j=sscanf(line.c_str(), "%s %s %[][a-zA-Z0-9 .,/;:'\"\\|?!@#$%^&*(){}<>_+=-]", number, format, descr);
 		if(number[0]=='#')
 			continue;
 		if(j==2)
@@ -182,7 +172,7 @@ int fldformat::load_format(const char *filename)
 		else if (j!=3)
 		{
 			if(debug)
-				printf("Warning: Wrong format in line, skipping:\n%s\n", line);
+				printf("Warning: Wrong format in line, skipping:\n%s\n", line.c_str());
 			continue;
 		}
 
@@ -193,7 +183,7 @@ int fldformat::load_format(const char *filename)
 		if (!frmtmp->parseFormat(format, orphans))
 		{
 			if(debug)
-				printf("Error: Unable to parse format, skipping:\n%s\n", line);
+				printf("Error: Unable to parse format, skipping:\n%s\n", line.c_str());
 			delete frmtmp;
 			continue;
 		}
@@ -235,7 +225,6 @@ int fldformat::load_format(const char *filename)
 
 		k++;
 	}
-	fclose(file);
 
 	if(k>1)
 	{

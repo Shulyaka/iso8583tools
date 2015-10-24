@@ -62,7 +62,7 @@ class fldformat
 	~fldformat(void);
 	void clear(void);
 	int is_empty(void);
-	int load_format(const char *filename);
+	int load_format(const string &filename);
 	void copyFrom(const fldformat &from);
 	void moveFrom(fldformat &from);
 	inline fldformat *get_altformat(void);
