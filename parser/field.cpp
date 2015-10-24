@@ -12,7 +12,6 @@ field::field(void)
 //copy constructor
 field::field(const field &from)
 {
-	fill_default();
 	copyFrom(from);
 }
 
@@ -58,7 +57,7 @@ void field::copyFrom(const field &from)
 	altformat=from.altformat;
 }
 
-//relink data from another format. The old format will become empty
+//relink data from another field. The old field will become empty
 void field::moveFrom(field &from)
 {
 	if(this==&from)
@@ -418,7 +417,7 @@ const string& field::get_description(void)
 		return frm->get_description();
 }
 
-//returns reference to subformat. If it does not exists, it will be added.
+//returns reference to subfield. If it does not exists, it will be added.
 field& field::sf(int n)
 {
 	if(n < 0 || !frm)

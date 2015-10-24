@@ -276,7 +276,8 @@ inline fldformat* fldformat::get_lastaltformat(void)
 // During parent search, always choses latest altformat wherever possible
 fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &orphans)
 {
-	unsigned int i, l, n;
+	unsigned int i, l;
+	int n;
 	string key;
 	fldformat *frmtmp;
 
@@ -299,11 +300,19 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 	if(i==l) //if all are numeric, this is the last iteration
 	{
 		if(number[i-1]=='*')
-			n=0;
-		else	
+			n=-1;
+		else
+		{
 			n=atoi(number);
+			if(n<0)
+			{
+				if(debug)
+					printf("Negative field number %s\n", number);
+				return NULL;
+			}
+		}
 
-		return get_lastaltformat()->sf(n).get_lastaltformat();
+		return get_lastaltformat()->subfields[n].get_lastaltformat();
 	}
 
 	if(i==0 || number[i]!='.') //if has non-numeric characters, then search the orphans
@@ -325,20 +334,26 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 
 	//now we know it's not the last iteration
 	if(number[i-1]=='*')
-		n=0;
+		n=-1;
 	else
 	{
 		n=atoi(number);
+		if(n<0)
+		{
+			if(debug)
+				printf("Negative field number %s\n", number);
+			return NULL;
+		}
 	}
 
-	if(!sfexist(n))
+	if(!subfields.count(n))
 	{
 		if(debug)
 			printf("Warning: Parent format not loaded yet [%s][%d] %s\n", number, n, description.c_str());
 		return NULL;
 	}
 
-	return sf(n).get_lastaltformat()->get_by_number(number+i+1, orphans);
+	return subfields[n].get_lastaltformat()->get_by_number(number+i+1, orphans);
 }
 
 //parses format string
@@ -616,44 +631,17 @@ const string& fldformat::get_description(void)
 	return description;
 }
 
-//returns reference to subformat. If it does not exists, it will be added.
+//returns reference to subformat. If it does not exists but wildcard subformat exists, it will be returned instead. If none of them exist, a new subformat will be added.
 fldformat& fldformat::sf(int n)
 {
-	switch(dataFormat)
-	{
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
-		case FRM_TLVEMV:
-			n=0;
-	}
-
-	if(n < 0)
-	{
-		printf("Error: Wrong subfield number: %d\n", n);
-		exit(1);
-	}
-
+	if(!subfields.count(n) && subfields.count(-1))
+		return subfields[-1];
 	return subfields[n];
 }
 
 bool fldformat::sfexist(int n) const
 {
-	switch(dataFormat)
-	{
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
-		case FRM_TLVEMV:
-			n=0;
-	}
-
-	if(n < 0)
-		return false;
-
-	return subfields.count(n);
+	return subfields.count(n) || subfields.count(-1);
 }
 
 void fldformat::erase(void)

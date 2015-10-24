@@ -348,6 +348,9 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 				for(; cursf!=frm->subfields.end(); cursf++)
 				{
+					if(cursf->first<0) // skip wildcard
+						continue;
+
 					sflen=0;
 					if(pos==length+lenlen) // Some subfields are missing or canceled by bitmap
 						break;
@@ -440,7 +443,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 					if(sflen<0 && (minlength==0 || sflen-pos>minlength))
 						minlength=sflen-pos;
 
-					for(cursf--; cursf!=frm->subfields.begin(); cursf--)
+					for(cursf--; cursf!=frm->subfields.begin() && cursf->first>=0; cursf--)
 					{
 						if(cursf->first==bitmap_start)
 							bitmap_start=-1;
@@ -456,7 +459,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 							subfields.erase(cursf->first);
 					}
 
-					if(cursf==frm->subfields.begin())
+					if(cursf==frm->subfields.begin() && cursf->first>=0)
 					{
 						if(cursf->first==bitmap_start)
 							bitmap_start=-1;
@@ -476,6 +479,13 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 								printf("Not comming back (%s)\n", frm->get_description().c_str());
 							break;
 						}
+					}
+					else if(cursf->first<0)
+					{
+						if(debug)
+							printf("Not comming back (%s)\n", frm->get_description().c_str());
+						break;
+
 					}
 				}
 			}
@@ -523,13 +533,6 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 		case FRM_TLV3:
 		case FRM_TLV4:
 		case FRM_TLVEMV:
-
-			if(!frm->sfexist(0))
-			{
-				if(debug)
-					printf("Error: No tlv subfield format\n");
-				return 0;
-			}
 
 			pos=lenlen;
 			taglength=frm->dataFormat-FRM_TLV1+1;
