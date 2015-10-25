@@ -248,6 +248,8 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	int bitmap_end=0;
 	int parse_failed;
 	map<int,fldformat>::iterator cursf;
+	int curnum;
+	fldformat *curfrm;
 	unsigned int pos;
 	int sflen;
 	int minlength=0;
@@ -337,6 +339,8 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 		case FRM_SUBFIELDS:
 			parse_failed=1;
 			cursf=frm->subfields.begin();
+			curnum=cursf->first;
+			curfrm=&cursf->second;
 			pos=lenlen;
 			minlength=0;
 			while(parse_failed)
@@ -348,52 +352,55 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 				for(; cursf!=frm->subfields.end(); cursf++)
 				{
-					if(cursf->first<0) // skip wildcard
+					curnum=cursf->first;
+					curfrm=&cursf->second;
+
+					if(curnum<0) // skip wildcard
 						continue;
 
 					sflen=0;
 					if(pos==length+lenlen) // Some subfields are missing or canceled by bitmap
 						break;
 
-					if(bitmap_start!=-1 && sf(bitmap_start).frm->dataFormat==FRM_ISOBITMAP && bitmap_end < cursf->first)
+					if(bitmap_start!=-1 && sf(bitmap_start).frm->dataFormat==FRM_ISOBITMAP && bitmap_end < curnum)
 						break;
 
-					if(bitmap_start==-1 || (bitmap_end > cursf->first-1 && sf(bitmap_start).data[cursf->first-bitmap_start-1]=='1'))
+					if(bitmap_start==-1 || (bitmap_end > curnum-1 && sf(bitmap_start).data[curnum-bitmap_start-1]=='1'))
 					{
-						if(sfexist(cursf->first))
+						if(sfexist(curnum))
 						{
-							sflen=sf(cursf->first).blength;
-							sf(cursf->first).clear();
-							sf(cursf->first).blength=sflen;
+							sflen=sf(curnum).blength;
+							sf(curnum).clear();
+							sf(curnum).blength=sflen;
 						}
 
-						if(cursf->second.lengthFormat==FRM_UNKNOWN && cursf->second.dataFormat!=FRM_ISOBITMAP) //for unknown length, search for the smallest
+						if(curfrm->lengthFormat==FRM_UNKNOWN && curfrm->dataFormat!=FRM_ISOBITMAP) //for unknown length, search for the smallest
 						{
 							sflen=-1;
-							for(unsigned int i=sf(cursf->first).blength+1; i<length+lenlen-pos+1; i=-sflen)
+							for(unsigned int i=sf(curnum).blength+1; i<length+lenlen-pos+1; i=-sflen)
 							{
 								if(debug)
-									printf("trying pos %d length %d/%d for %s\n", pos, i, length+lenlen-pos, cursf->second.get_description().c_str());
-								sf(cursf->first).blength=0;
-								sflen=sf(cursf->first).parse_field(buf+pos, buf+pos+i);
+									printf("trying pos %d length %d/%d for %s\n", pos, i, length+lenlen-pos, curfrm->get_description().c_str());
+								sf(curnum).blength=0;
+								sflen=sf(curnum).parse_field(buf+pos, buf+pos+i);
 
 								if(sflen>=0)
 									break;
 
-								sf(cursf->first).change_format(&cursf->second); //restore frm that might be replaced with altformat by parse_field
+								sf(curnum).change_format(curfrm); //restore frm that might be replaced with altformat by parse_field
 
 								if(-sflen<=i)
 									sflen=-(i+1);
 							}
 						}
 						else
-							sflen=sf(cursf->first).parse_field(buf+pos, buf+length+lenlen);
+							sflen=sf(curnum).parse_field(buf+pos, buf+length+lenlen);
 
-						if(sflen==0 && sf(cursf->first).frm->maxLength==0)
+						if(sflen==0 && sf(curnum).frm->maxLength==0)
 						{
 							if(debug)
-								printf("Optional subfield %d (%s) skipped\n", cursf->first, sf(cursf->first).frm->get_description().c_str());
-							subfields.erase(cursf->first);
+								printf("Optional subfield %d (%s) skipped\n", curnum, sf(curnum).frm->get_description().c_str());
+							subfields.erase(curnum);
 							continue;
 						}
 
@@ -401,16 +408,16 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						{
 							if(debug)
 								printf("Error: unable to parse subfield (%d)\n", sflen);
-							subfields.erase(cursf->first);
+							subfields.erase(curnum);
 							parse_failed=1;
 							break;
 						}
 
-						if(sf(cursf->first).frm->dataFormat==FRM_BITMAP || sf(cursf->first).frm->dataFormat==FRM_ISOBITMAP)
+						if(sf(curnum).frm->dataFormat==FRM_BITMAP || sf(curnum).frm->dataFormat==FRM_ISOBITMAP)
 						{
 							if(debug && bitmap_start!=-1)
 								printf("Warning: Only one bitmap per subfield allowed\n");
-							bitmap_start=cursf->first;
+							bitmap_start=curnum;
 							bitmap_end=bitmap_start+sf(bitmap_start).data.length();
 
 							for(unsigned int i=0; i<bitmap_end-bitmap_start; i++)
@@ -418,14 +425,14 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 								{
 									if(debug)
 										printf("Error: No format for subfield %d which is present in bitmap\n", bitmap_start+1+i);
-									subfields.erase(cursf->first);
+									subfields.erase(curnum);
 									bitmap_start=-1;
 									parse_failed=1;
 									break;
 								}
 						}
 
-						sf(cursf->first).start=pos;
+						sf(curnum).start=pos;
 
 						pos+=sflen;
 					}
@@ -445,35 +452,37 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 					for(cursf--; cursf!=frm->subfields.begin() && cursf->first>=0; cursf--)
 					{
-						if(cursf->first==bitmap_start)
+						curnum=cursf->first;
+						if(curnum==bitmap_start)
 							bitmap_start=-1;
 
-						if(sfexist(cursf->first) && ((sf(cursf->first).frm->lengthFormat==FRM_UNKNOWN && sf(cursf->first).frm->dataFormat!=FRM_ISOBITMAP && sf(cursf->first).blength < length+lenlen-sf(cursf->first).start) || sf(cursf->first).frm->altformat))
+						if(sfexist(curnum) && ((sf(curnum).frm->lengthFormat==FRM_UNKNOWN && sf(curnum).frm->dataFormat!=FRM_ISOBITMAP && sf(curnum).blength < length+lenlen-sf(curnum).start) || sf(curnum).frm->altformat))
 						{
 							if(debug)
-								printf("Come back to sf %d of %s (%s)\n", cursf->first, frm->get_description().c_str(), sf(cursf->first).frm->get_description().c_str());
-							pos=sf(cursf->first).start;
+								printf("Come back to sf %d of %s (%s)\n", curnum, frm->get_description().c_str(), sf(curnum).frm->get_description().c_str());
+							pos=sf(curnum).start;
 							break;
 						}
-						else if(sfexist(cursf->first))
-							subfields.erase(cursf->first);
+						else if(sfexist(curnum))
+							subfields.erase(curnum);
 					}
 
 					if(cursf==frm->subfields.begin() && cursf->first>=0)
 					{
-						if(cursf->first==bitmap_start)
+						curnum=cursf->first;
+						if(curnum==bitmap_start)
 							bitmap_start=-1;
 
-						if(sfexist(cursf->first) && ((sf(cursf->first).frm->lengthFormat==FRM_UNKNOWN && sf(cursf->first).frm->dataFormat!=FRM_ISOBITMAP && sf(cursf->first).blength < length+lenlen-sf(cursf->first).start) || sf(cursf->first).frm->altformat))
+						if(sfexist(curnum) && ((sf(curnum).frm->lengthFormat==FRM_UNKNOWN && sf(curnum).frm->dataFormat!=FRM_ISOBITMAP && sf(curnum).blength < length+lenlen-sf(curnum).start) || sf(curnum).frm->altformat))
 						{
 							if(debug)
-								printf("Come back to sf %d of %s (%s)\n", cursf->first, frm->get_description().c_str(), sf(cursf->first).frm->get_description().c_str());
-							pos=sf(cursf->first).start;
+								printf("Come back to sf %d of %s (%s)\n", curnum, frm->get_description().c_str(), sf(curnum).frm->get_description().c_str());
+							pos=sf(curnum).start;
 						}
 						else
 						{
-							if(sfexist(cursf->first))
-								subfields.erase(cursf->first);
+							if(sfexist(curnum))
+								subfields.erase(curnum);
 
 							if(debug)
 								printf("Not comming back (%s)\n", frm->get_description().c_str());
@@ -485,7 +494,6 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						if(debug)
 							printf("Not comming back (%s)\n", frm->get_description().c_str());
 						break;
-
 					}
 				}
 			}
@@ -571,6 +579,13 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						sf(i).tag.assign(buf+pos, buf+pos+taglength);
 				}
 				//printf("Tag=(%d)'%s'\n", taglength, sf(i).tag);
+
+				if(!frm->sfexist(i))
+				{
+					if(debug)
+						printf("Error: No format for TLV tag %d.\n", i);
+					return 0;
+				}
 
 				pos+=taglength;
 
