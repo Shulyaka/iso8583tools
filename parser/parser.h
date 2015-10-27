@@ -33,6 +33,8 @@ extern int debug;
 class fldformat;
 class field;
 
+class frmiterator;
+
 class fldformat
 {
 	private:
@@ -57,6 +59,11 @@ class fldformat
 	friend field;
 
 	public:
+	typedef frmiterator iterator;
+	iterator begin();
+	iterator end();
+	iterator find(int);
+
 	fldformat(void);
 	fldformat(const fldformat&);
 	~fldformat(void);
@@ -98,6 +105,21 @@ class field
 	unsigned int build_bitmap(string&, unsigned int);
 
 	public:
+	typedef std::map<int,field>::iterator iterator;
+	typedef std::map<int,field>::const_iterator const_iterator;
+	iterator begin() { return subfields.begin();};
+	const_iterator begin() const { return subfields.begin();};
+	iterator end() { return subfields.end();};
+	const_iterator end() const { return subfields.end();};
+	iterator find(int n) { return subfields.find(n);};
+	const_iterator find(int n) const { return subfields.find(n);};
+	typedef std::map<int,field>::reverse_iterator reverse_iterator;
+	typedef std::map<int,field>::const_reverse_iterator const_reverse_iterator;
+	reverse_iterator rbegin() { return subfields.rbegin();};
+	const_reverse_iterator rbegin() const { return subfields.rbegin();};
+	reverse_iterator rend() { return subfields.rend();};
+	const_reverse_iterator rend() const { return subfields.rend();};
+
 	field(void);
 	field(const field&);
 	~field(void);
@@ -127,6 +149,34 @@ class field
 	bool has_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	string& add_tag(const string &tag, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	const string& get_tag(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+};
+
+class frmiterator: public std::iterator<std::bidirectional_iterator_tag, pair<int,fldformat> >
+{
+	friend class fldformat;
+	private:
+	fldformat *wildcard;
+	std::map<int,fldformat>::iterator it;
+	std::map<int,fldformat>::iterator begin;
+	std::map<int,fldformat>::iterator end;
+	std::map<int,fldformat>::iterator next;
+	int curnum;
+	std::map<int,fldformat> tmpmap;
+
+	frmiterator(fldformat*, std::map<int,fldformat>::iterator, std::map<int,fldformat>::iterator, std::map<int,fldformat>::iterator, int);
+
+	public:
+	frmiterator(void);
+	frmiterator(const frmiterator &it);
+	~frmiterator(void);
+
+	frmiterator& operator=(const frmiterator &other);
+	bool operator!=(frmiterator const& other) const;
+	bool operator==(frmiterator const& other) const;
+	pair<const int, fldformat>& operator*(void);
+	pair<const int, fldformat>* operator->(void);
+	frmiterator& operator++(void);
+	frmiterator& operator--(void);
 };
 
 #endif

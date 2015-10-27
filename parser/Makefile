@@ -9,8 +9,8 @@ clean:
 testparse: libparser.a testparse.o
 		g++ testparse.o -L . -l parser -o testparse
 
-libparser.a: field.o fldformat.o parser.o builder.o
-		ar rcs libparser.a field.o fldformat.o parser.o builder.o
+libparser.a: field.o fldformat.o parser.o builder.o frmiterator.o
+		ar rcs libparser.a field.o fldformat.o parser.o builder.o frmiterator.o
 
 testparse.o: testparse.cpp parser.h
 		g++ -c testparse.cpp ${CFLAGS}
@@ -26,3 +26,6 @@ field.o: field.cpp parser.h
 
 fldformat.o: fldformat.cpp parser.h
 		g++ -c fldformat.cpp ${CFLAGS}
+
+frmiterator.o: frmiterator.cpp parser.h
+		g++ -c frmiterator.cpp ${CFLAGS}

@@ -659,3 +659,31 @@ void fldformat::erase(void)
 			break;
 		}
 }
+
+fldformat::iterator fldformat::begin(void)
+{
+	return iterator(subfields.count(-1)?&subfields[-1]:NULL, subfields.begin(), subfields.begin(), subfields.end(), 0);
+}
+
+fldformat::iterator fldformat::end(void)
+{
+	if(subfields.count(-1))
+		return iterator(&subfields[-1], subfields.begin(), subfields.begin(), subfields.begin(), -1);
+	return iterator(0, subfields.end(), subfields.begin(), subfields.end(), 0);
+}
+
+fldformat::iterator fldformat::find(int n)
+{
+	if(subfields.count(n))
+		return iterator(subfields.count(-1)?&subfields[-1]:NULL, subfields.find(n), subfields.begin(), subfields.end(), n);
+	else
+		if(subfields.count(-1) && n>=0)
+		{
+			for(map<int,fldformat>::iterator it=subfields.begin(); it!=subfields.end(); ++it)
+				if(it->first>n)
+					return iterator(&subfields[-1], --it, subfields.begin(), subfields.end(), n);
+			return iterator(&subfields[-1], --subfields.end(), subfields.begin(), subfields.end(), n);
+		}
+		else
+			return end();
+}

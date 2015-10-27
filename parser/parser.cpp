@@ -247,7 +247,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	int bitmap_start=-1;
 	int bitmap_end=0;
 	int parse_failed;
-	map<int,fldformat>::iterator cursf;
+	fldformat::iterator cursf;
 	int curnum;
 	fldformat *curfrm;
 	unsigned int pos;
@@ -338,7 +338,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	{
 		case FRM_SUBFIELDS:
 			parse_failed=1;
-			cursf=frm->subfields.begin();
+			cursf=frm->begin();
 			curnum=cursf->first;
 			curfrm=&cursf->second;
 			pos=lenlen;
@@ -350,13 +350,10 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 				if(frm->subfields.empty())
 					return 0;
 
-				for(; cursf!=frm->subfields.end(); cursf++)
+				for(; cursf!=frm->end(); ++cursf)
 				{
 					curnum=cursf->first;
 					curfrm=&cursf->second;
-
-					if(curnum<0) // skip wildcard
-						continue;
 
 					sflen=0;
 					if(pos==length+lenlen) // Some subfields are missing or canceled by bitmap
@@ -450,7 +447,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 					if(sflen<0 && (minlength==0 || sflen-pos>minlength))
 						minlength=sflen-pos;
 
-					for(cursf--; cursf!=frm->subfields.begin() && cursf->first>=0; cursf--)
+					for(--cursf; cursf!=frm->begin(); --cursf)
 					{
 						curnum=cursf->first;
 						if(curnum==bitmap_start)
@@ -467,7 +464,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 							subfields.erase(curnum);
 					}
 
-					if(cursf==frm->subfields.begin() && cursf->first>=0)
+					if(cursf==frm->begin())
 					{
 						curnum=cursf->first;
 						if(curnum==bitmap_start)
@@ -489,19 +486,11 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 							break;
 						}
 					}
-					else if(cursf->first<0)
-					{
-						if(debug)
-							printf("Not comming back (%s)\n", frm->get_description().c_str());
-						break;
-					}
 				}
 			}
 
 			if(parse_failed)
-			{
 				return minlength;
-			}
 			
 			break;
 
