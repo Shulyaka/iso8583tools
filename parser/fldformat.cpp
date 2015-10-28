@@ -64,7 +64,7 @@ void fldformat::clear(void)
 
 int fldformat::is_empty(void)
 {
-	return description==""
+	return description.empty()
 	    && lengthFormat==FRM_UNKNOWN
 	    && lengthLength==0
 	    && lengthInclusive==0
@@ -96,8 +96,8 @@ void fldformat::copyFrom(const fldformat &from)
 	data=from.data;
 
 	subfields=from.subfields;
-	for(map<int,fldformat>::iterator it=subfields.begin(); it!=subfields.end(); it++)
-		it->second.parent=this;
+	for(map<int,fldformat>::iterator i=subfields.begin(); i!=subfields.end(); ++i)
+		i->second.parent=this;
 
 	if(from.altformat)
 	{
@@ -124,8 +124,8 @@ void fldformat::moveFrom(fldformat &from)
 	tagFormat=from.tagFormat;
 	data=from.data;
 	subfields=from.subfields;
-	for(map<int,fldformat>::iterator it=subfields.begin(); it!=subfields.end(); it++)
-		it->second.parent=this;
+	for(map<int,fldformat>::iterator i=subfields.begin(); i!=subfields.end(); ++i)
+		i->second.parent=this;
 
 	altformat=from.altformat;
 
@@ -188,13 +188,11 @@ int fldformat::load_format(const string &filename)
 			continue;
 		}
 
+		frmtmp->description.assign(descr);
+
 		frmnew=orphans["message"].get_by_number(number, orphans);
 		if(frmnew)
 		{
-			frmtmp->description.assign(number);
-			frmtmp->description.append(". ");
-			frmtmp->description.append(descr);
-
 			if(!frmnew->is_empty())
 			{
 				frmnew->altformat=frmtmp;
@@ -208,8 +206,6 @@ int fldformat::load_format(const string &filename)
 		}
 		else
 		{
-			frmtmp->description.assign(descr);
-
 			if(orphans.count(number) && !orphans[number].is_empty())
 			{
 				frmnew=orphans[number].get_lastaltformat();
@@ -652,10 +648,10 @@ void fldformat::erase(void)
 		exit(1);
 	}
 
-	for(map<int,fldformat>::iterator it=parent->subfields.begin(); it!=parent->subfields.end(); it++)
-		if(&it->second==this)
+	for(map<int,fldformat>::iterator i=parent->subfields.begin(); i!=parent->subfields.end(); ++i)
+		if(&i->second==this)
 		{
-			parent->subfields.erase(it);
+			parent->subfields.erase(i);
 			break;
 		}
 }
@@ -679,9 +675,9 @@ fldformat::iterator fldformat::find(int n)
 	else
 		if(subfields.count(-1) && n>=0)
 		{
-			for(map<int,fldformat>::iterator it=subfields.begin(); it!=subfields.end(); ++it)
-				if(it->first>n)
-					return iterator(&subfields[-1], --it, subfields.begin(), subfields.end(), n);
+			for(map<int,fldformat>::iterator i=subfields.begin(); i!=subfields.end(); ++i)
+				if(i->first>n)
+					return iterator(&subfields[-1], --i, subfields.begin(), subfields.end(), n);
 			return iterator(&subfields[-1], --subfields.end(), subfields.begin(), subfields.end(), n);
 		}
 		else

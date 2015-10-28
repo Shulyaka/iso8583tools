@@ -121,16 +121,16 @@ unsigned int field::get_blength(void)
 		case FRM_SUBFIELDS:
 			pos=lenlen;
 
-			for(map<int,fldformat>::const_iterator i=frm->subfields.begin(); i!=frm->subfields.end(); i++)
+			for(fldformat::iterator i=frm->begin(); i!=frm->end(); ++i)
 				if(i->second.dataFormat==FRM_ISOBITMAP || i->second.dataFormat==FRM_BITMAP)
-					for(map<int,field>::iterator j=subfields.begin(); j!=subfields.end(); j++)
+					for(field::iterator j=begin(); j!=end(); ++j)
 						if(j->first > i->first && !j->second.is_empty())
 						{
 							sf(i->first); //ensure bit map fields are present
 							break;
 						}
 
-			for(map<int,field>::iterator i=subfields.begin(); i!=subfields.end(); i++)
+			for(field::iterator i=begin(); i!=end(); ++i)
 			{
 				if(pos==frm->maxLength+lenlen)
 					break;
@@ -192,7 +192,7 @@ unsigned int field::get_blength(void)
 			pos=lenlen;
 			taglength=frm->dataFormat-FRM_TLV1+1;
 
-			for(map<int,field>::iterator i=subfields.begin(); i!=subfields.end(); i++)
+			for(field::iterator i=begin(); i!=end(); ++i)
 			{
 				if(i->second.is_empty())
 					continue;
@@ -227,7 +227,7 @@ unsigned int field::get_blength(void)
 			else
 				taglength=2;
 
-			for(map<int,field>::iterator i=subfields.begin(); i!=subfields.end(); i++)
+			for(field::iterator i=begin(); i!=end(); ++i)
 			{
 				if(!frm->sfexist(i->first))
 					return 0;
@@ -548,16 +548,16 @@ unsigned int field::build_field_alt(string &buf)
 	switch(frm->dataFormat)
 	{
 		case FRM_SUBFIELDS:
-			for(map<int,fldformat>::const_iterator i=frm->subfields.begin(); i!=frm->subfields.end(); i++)
+			for(fldformat::iterator i=frm->begin(); i!=frm->end(); ++i)
 				if(i->second.dataFormat==FRM_ISOBITMAP || i->second.dataFormat==FRM_BITMAP)
-					for(map<int,field>::iterator j=subfields.begin(); j!=subfields.end(); j++)
+					for(field::iterator j=begin(); j!=end(); ++j)
 						if(j->first > i->first && !j->second.is_empty())
 						{
 							sf(i->first); //ensure bit map fields are present
 							break;
 						}
 
-			for(map<int,field>::iterator i=subfields.begin(); i!=subfields.end(); i++)
+			for(field::iterator i=begin(); i!=end(); ++i)
 			{
 				if(pos==frm->maxLength+lenlen)
 					break;
@@ -656,7 +656,7 @@ unsigned int field::build_field_alt(string &buf)
 
 			taglength=frm->dataFormat-FRM_TLV1+1;
 
-			for(map<int,field>::iterator i=subfields.begin(); i!=subfields.end(); i++)
+			for(field::iterator i=begin(); i!=end(); ++i)
 			{
 				if(i->second.is_empty())
 					continue;
@@ -724,7 +724,7 @@ unsigned int field::build_field_alt(string &buf)
 			else
 				taglength=2;
 
-			for(map<int,field>::iterator i=subfields.begin(); i!=subfields.end(); i++)
+			for(field::iterator i=begin(); i!=end(); ++i)
 			{
 				if(!frm->sfexist(i->first))
 				{
@@ -1108,9 +1108,3 @@ unsigned int field::build_bitmap(string &buf, unsigned int index)
 	return newblength;
 }
 
-string to_string(unsigned int n)
-{
-	ostringstream ss;
-	ss << n;
-	return ss.str();
-}

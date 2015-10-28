@@ -123,7 +123,7 @@ class field
 	field(void);
 	field(const field&);
 	~field(void);
-	void print_message(void) const;
+	void print_message(string prefix="") const;
 	void clear(void);
 	int is_empty(void) const;
 	int change_format(fldformat*);

@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sstream>
 #include <string.h>
 
 #include "parser.h"
+
+string to_string(unsigned int);
 
 field::field(void)
 {
@@ -67,7 +70,7 @@ void field::moveFrom(field &from)
 	from.clear();
 }
 
-void field::print_message(void) const
+void field::print_message(string numprefix) const
 {
 	if(!frm)
 	{
@@ -75,6 +78,9 @@ void field::print_message(void) const
 			printf("Error: No format assigned\n");
 		return;
 	}
+
+	if(!numprefix.empty())
+		printf("%s ", numprefix.c_str());
 
 	printf("%s", frm->get_description().c_str());
 	if(!tag.empty())
@@ -94,8 +100,8 @@ void field::print_message(void) const
 		case FRM_TLV3:
 		case FRM_TLV4:
 		case FRM_TLVEMV:
-			for(map<int,field>::const_iterator i=subfields.begin(); i!=subfields.end(); i++)
-				i->second.print_message();
+			for(field::const_iterator i=begin(); i!=end(); ++i)
+				i->second.print_message(numprefix + to_string(i->first) + ".");
 			break;
 	}
 }
@@ -126,7 +132,7 @@ int field::is_empty(void) const
 	if(subfields.empty())
 		return 1;
 
-	for(map<int,field>::const_iterator i=subfields.begin(); i!=subfields.end(); i++)
+	for(field::const_iterator i=begin(); i!=end(); ++i)
 		if(i->second.frm && i->second.frm->dataFormat!=FRM_ISOBITMAP && i->second.frm->dataFormat!=FRM_BITMAP && !i->second.is_empty())
 			return 0;
 
@@ -135,7 +141,7 @@ int field::is_empty(void) const
 
 int field::change_format(fldformat *frmnew)
 {
-	map<int,field>::iterator i;
+	field::iterator i;
 	fldformat *frmold;
 
 	if(!frmnew)
@@ -148,16 +154,16 @@ int field::change_format(fldformat *frmnew)
 
 	frm=frmnew;
 
-	for(i=subfields.begin(); i!=subfields.end(); i++)
+	for(i=begin(); i!=end(); i++)
 		if(!frmnew->sfexist(i->first) || !i->second.change_format(&frmnew->sf(i->first)))
 			break;
 
-	if(i!=subfields.end())
+	if(i!=end())
 	{
 		if(debug)
 			printf("Error: Unable to change field format (%d). Reverting.\n", i->first);
 
-		for(frm=frmold; i!=subfields.begin(); i--)
+		for(frm=frmold; i!=begin(); i--)
 			if(!frmold->sfexist(i->first) || !i->second.change_format(&frmold->sf(i->first)))
 				if(debug)
 					printf("Error: Unable to revert\n");
@@ -446,4 +452,11 @@ bool field::sfexist(int n) const
 		return false;
 
 	return subfields.count(n);
+}
+
+string to_string(unsigned int n)
+{
+	ostringstream ss;
+	ss << n;
+	return ss.str();
 }
