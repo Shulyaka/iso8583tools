@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <vector>
 #include "parser.h"
 
 unsigned int parse_ebcdic(const std::string::const_iterator&, std::string&, unsigned int);
@@ -238,6 +238,12 @@ int field::parse_field(const std::string::const_iterator &buf, const std::string
 	return minlength;
 }
 
+struct fieldstack
+{
+	int number;
+	unsigned int pos;
+};
+
 int field::parse_field_alt(const std::string::const_iterator &buf, const std::string::const_iterator &bufend)
 {
 	unsigned int lenlen=0;
@@ -248,7 +254,6 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	int bitmap_end=0;
 	int parse_failed;
 	fldformat::iterator cursf;
-	int curnum;
 	fldformat *curfrm;
 	unsigned int pos;
 	int sflen;
@@ -257,6 +262,8 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	fldformat tmpfrm;
 	fldformat *frmold;
 	unsigned int maxlength=bufend-buf;
+	fieldstack current;
+	vector<fieldstack> fieldstack;
 
 	if(bufend-buf<=0)
 	{
@@ -339,7 +346,6 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 		case FRM_SUBFIELDS:
 			parse_failed=1;
 			cursf=frm->begin();
-			curnum=cursf->first;
 			curfrm=&cursf->second;
 			pos=lenlen;
 			minlength=0;
@@ -350,54 +356,66 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 				if(frm->subfields.empty())
 					return 0;
 
-				for(; cursf!=frm->end(); ++cursf)
+				for(; pos!=maxlength;)
 				{
-					curnum=cursf->first;
-					curfrm=&cursf->second;
-
-					sflen=0;
 					if(pos==length+lenlen) // Some subfields are missing or canceled by bitmap
 						break;
 
-					if(bitmap_start!=-1 && sf(bitmap_start).frm->dataFormat==FRM_ISOBITMAP && bitmap_end < curnum)
+					if(cursf==frm->end())
+					{
+						if(debug)
+							printf("Field length is greater than formats available (%s)\n", frm->get_description().c_str());
+						parse_failed=1;
+						break;
+					}
+
+					curfrm=&cursf->second;
+					current.number=cursf->first;
+					current.pos=pos;
+					++cursf;
+					fieldstack.push_back(current);
+
+					sflen=0;
+
+					if(bitmap_start!=-1 && sf(bitmap_start).frm->dataFormat==FRM_ISOBITMAP && bitmap_end < current.number)
 						break;
 
-					if(bitmap_start==-1 || (bitmap_end > curnum-1 && sf(bitmap_start).data[curnum-bitmap_start-1]=='1'))
+					if(bitmap_start==-1 || (bitmap_end > current.number-1 && sf(bitmap_start).data[current.number-bitmap_start-1]=='1'))
 					{
-						if(sfexist(curnum))
+						if(sfexist(current.number))
 						{
-							sflen=sf(curnum).blength;
-							sf(curnum).clear();
-							sf(curnum).blength=sflen;
+							sflen=sf(current.number).blength;
+							sf(current.number).clear();
+							sf(current.number).blength=sflen;
 						}
 
 						if(curfrm->lengthFormat==FRM_UNKNOWN && curfrm->dataFormat!=FRM_ISOBITMAP) //for unknown length, search for the smallest
 						{
 							sflen=-1;
-							for(unsigned int i=sf(curnum).blength+1; i<length+lenlen-pos+1; i=-sflen)
+							for(unsigned int i=sf(current.number).blength+1; i<length+lenlen-pos+1; i=-sflen)
 							{
 								if(debug)
 									printf("trying pos %d length %d/%d for %s\n", pos, i, length+lenlen-pos, curfrm->get_description().c_str());
-								sf(curnum).blength=0;
-								sflen=sf(curnum).parse_field(buf+pos, buf+pos+i);
+								sf(current.number).blength=0;
+								sflen=sf(current.number).parse_field(buf+pos, buf+pos+i);
 
 								if(sflen>=0)
 									break;
 
-								sf(curnum).change_format(curfrm); //restore frm that might be replaced with altformat by parse_field
+								sf(current.number).change_format(curfrm); //restore frm that might be replaced with altformat by parse_field
 
 								if(-sflen<=i)
 									sflen=-(i+1);
 							}
 						}
 						else
-							sflen=sf(curnum).parse_field(buf+pos, buf+length+lenlen);
+							sflen=sf(current.number).parse_field(buf+pos, buf+length+lenlen);
 
-						if(sflen==0 && sf(curnum).frm->maxLength==0)
+						if(sflen==0 && sf(current.number).frm->maxLength==0)
 						{
 							if(debug)
-								printf("Optional subfield %d (%s) skipped\n", curnum, sf(curnum).frm->get_description().c_str());
-							subfields.erase(curnum);
+								printf("Optional subfield %d (%s) skipped\n", current.number, sf(current.number).frm->get_description().c_str());
+							subfields.erase(current.number);
 							continue;
 						}
 
@@ -405,16 +423,16 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						{
 							if(debug)
 								printf("Error: unable to parse subfield (%d)\n", sflen);
-							subfields.erase(curnum);
+							subfields.erase(current.number);
 							parse_failed=1;
 							break;
 						}
 
-						if(sf(curnum).frm->dataFormat==FRM_BITMAP || sf(curnum).frm->dataFormat==FRM_ISOBITMAP)
+						if(sf(current.number).frm->dataFormat==FRM_BITMAP || sf(current.number).frm->dataFormat==FRM_ISOBITMAP)
 						{
 							if(debug && bitmap_start!=-1)
 								printf("Warning: Only one bitmap per subfield allowed\n");
-							bitmap_start=curnum;
+							bitmap_start=current.number;
 							bitmap_end=bitmap_start+sf(bitmap_start).data.length();
 
 							for(unsigned int i=0; i<bitmap_end-bitmap_start; i++)
@@ -422,14 +440,14 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 								{
 									if(debug)
 										printf("Error: No format for subfield %d which is present in bitmap\n", bitmap_start+1+i);
-									subfields.erase(curnum);
+									subfields.erase(current.number);
 									bitmap_start=-1;
 									parse_failed=1;
 									break;
 								}
 						}
 
-						sf(curnum).start=pos;
+						sf(current.number).start=pos;
 
 						pos+=sflen;
 					}
@@ -447,45 +465,35 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 					if(sflen<0 && (minlength==0 || sflen-pos>minlength))
 						minlength=sflen-pos;
 
-					for(--cursf; cursf!=frm->begin(); --cursf)
+					while(!fieldstack.empty())
 					{
-						curnum=cursf->first;
-						if(curnum==bitmap_start)
+						--cursf;
+						current=fieldstack.back();
+						fieldstack.pop_back();
+
+						if(current.number==bitmap_start)
 							bitmap_start=-1;
 
-						if(sfexist(curnum) && ((sf(curnum).frm->lengthFormat==FRM_UNKNOWN && sf(curnum).frm->dataFormat!=FRM_ISOBITMAP && sf(curnum).blength < length+lenlen-sf(curnum).start) || sf(curnum).frm->altformat))
+						if(sfexist(current.number) && ((sf(current.number).frm->lengthFormat==FRM_UNKNOWN && sf(current.number).frm->dataFormat!=FRM_ISOBITMAP && sf(current.number).blength < length+lenlen-sf(current.number).start) || sf(current.number).frm->altformat))
 						{
 							if(debug)
-								printf("Come back to sf %d of %s (%s)\n", curnum, frm->get_description().c_str(), sf(curnum).frm->get_description().c_str());
-							pos=sf(curnum).start;
+								printf("Come back to sf %d of %s (%s)\n", current.number, frm->get_description().c_str(), sf(current.number).frm->get_description().c_str());
+							pos=current.pos;
+							parse_failed=0;
 							break;
 						}
-						else if(sfexist(curnum))
-							subfields.erase(curnum);
+						else if(sfexist(current.number))
+							subfields.erase(current.number);
 					}
 
-					if(cursf==frm->begin())
+					if(parse_failed)
 					{
-						curnum=cursf->first;
-						if(curnum==bitmap_start)
-							bitmap_start=-1;
-
-						if(sfexist(curnum) && ((sf(curnum).frm->lengthFormat==FRM_UNKNOWN && sf(curnum).frm->dataFormat!=FRM_ISOBITMAP && sf(curnum).blength < length+lenlen-sf(curnum).start) || sf(curnum).frm->altformat))
-						{
-							if(debug)
-								printf("Come back to sf %d of %s (%s)\n", curnum, frm->get_description().c_str(), sf(curnum).frm->get_description().c_str());
-							pos=sf(curnum).start;
-						}
-						else
-						{
-							if(sfexist(curnum))
-								subfields.erase(curnum);
-
-							if(debug)
-								printf("Not comming back (%s)\n", frm->get_description().c_str());
-							break;
-						}
+						if(debug)
+							printf("Not comming back (%s)\n", frm->get_description().c_str());
+						break;
 					}
+
+					parse_failed=1;
 				}
 			}
 
