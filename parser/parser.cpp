@@ -238,12 +238,6 @@ int field::parse_field(const std::string::const_iterator &buf, const std::string
 	return minlength;
 }
 
-struct fieldstack
-{
-	int number;
-	unsigned int pos;
-};
-
 int field::parse_field_alt(const std::string::const_iterator &buf, const std::string::const_iterator &bufend)
 {
 	unsigned int lenlen=0;
@@ -258,12 +252,12 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	unsigned int pos;
 	int sflen;
 	int minlength=0;
-	unsigned int taglength;
+	unsigned int taglength=0;
 	fldformat tmpfrm;
 	fldformat *frmold;
 	unsigned int maxlength=bufend-buf;
-	fieldstack current;
-	vector<fieldstack> fieldstack;
+	int curnum;
+	vector<int> fieldstack;
 
 	if(bufend-buf<=0)
 	{
@@ -344,9 +338,17 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	switch(frm->dataFormat)
 	{
 		case FRM_SUBFIELDS:
+		case FRM_TLVDS:
 			parse_failed=1;
-			cursf=frm->begin();
-			curfrm=&cursf->second;
+			if(frm->dataFormat==FRM_SUBFIELDS)
+				cursf=frm->begin();
+			else
+			{
+				if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
+					taglength=1;
+				else
+					taglength=2;
+			}
 			pos=lenlen;
 			minlength=0;
 			while(parse_failed)
@@ -361,61 +363,105 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 					if(pos==length+lenlen) // Some subfields are missing or canceled by bitmap
 						break;
 
-					if(cursf==frm->end())
+					if(frm->dataFormat==FRM_SUBFIELDS)
 					{
-						if(debug)
-							printf("Field length is greater than formats available (%s)\n", frm->get_description().c_str());
-						parse_failed=1;
-						break;
+						if(cursf==frm->end())
+						{
+							if(debug)
+								printf("Field length is greater than formats available (%s)\n", frm->get_description().c_str());
+							parse_failed=1;
+							break;
+						}
+
+						curfrm=&cursf->second;
+						curnum=cursf->first;
+						++cursf;
+					}
+					else
+					{
+						if(pos+taglength>=maxlength)
+						{
+							if(debug)
+								printf("Error: Not enough length for TLV tag\n");
+							return -(pos+taglength);
+						}
+
+						lengthbuf.clear();
+						switch(frm->tagFormat)
+						{
+							case FRM_EBCDIC:
+								parse_ebcdic(buf+pos, lengthbuf, taglength);
+								curnum=atoi(lengthbuf.c_str());
+								break;
+							case FRM_BCD:
+								parse_bcdl(buf+pos, lengthbuf, taglength*2);
+								curnum=atoi(lengthbuf.c_str());
+							case FRM_BIN:
+								curnum=0;
+								for(unsigned int i=0; i<taglength; curnum++)
+									*(((char*)(&curnum))+3-i)=buf[pos+i];
+								break;
+							case FRM_ASCII:
+							default:
+								lengthbuf.assign(buf+pos, buf+pos+taglength);
+								curnum=atoi(lengthbuf.c_str());
+						}
+
+						if(!frm->sfexist(curnum))
+						{
+							if(debug)
+								printf("Error: No format for TLV tag %d.\n", j);
+							return 0;
+						}
+
+						curfrm=&frm->sf(curnum);
+
+						pos+=taglength;
 					}
 
-					curfrm=&cursf->second;
-					current.number=cursf->first;
-					current.pos=pos;
-					++cursf;
-					fieldstack.push_back(current);
+					fieldstack.push_back(curnum);
 
 					sflen=0;
 
-					if(bitmap_start!=-1 && sf(bitmap_start).frm->dataFormat==FRM_ISOBITMAP && bitmap_end < current.number)
+					if(bitmap_start!=-1 && sf(bitmap_start).frm->dataFormat==FRM_ISOBITMAP && bitmap_end < curnum)
 						break;
 
-					if(bitmap_start==-1 || (bitmap_end > current.number-1 && sf(bitmap_start).data[current.number-bitmap_start-1]=='1'))
+					if(bitmap_start==-1 || (bitmap_end > curnum-1 && sf(bitmap_start).data[curnum-bitmap_start-1]=='1'))
 					{
-						if(sfexist(current.number))
+						if(sfexist(curnum))
 						{
-							sflen=sf(current.number).blength;
-							sf(current.number).clear();
-							sf(current.number).blength=sflen;
+							sflen=sf(curnum).blength;
+							sf(curnum).clear();
+							sf(curnum).blength=sflen;
 						}
 
 						if(curfrm->lengthFormat==FRM_UNKNOWN && curfrm->dataFormat!=FRM_ISOBITMAP) //for unknown length, search for the smallest
 						{
 							sflen=-1;
-							for(unsigned int i=sf(current.number).blength+1; i<length+lenlen-pos+1; i=-sflen)
+							for(unsigned int i=sf(curnum).blength+1; i<length+lenlen-pos+1; i=-sflen)
 							{
 								if(debug)
 									printf("trying pos %d length %d/%d for %s\n", pos, i, length+lenlen-pos, curfrm->get_description().c_str());
-								sf(current.number).blength=0;
-								sflen=sf(current.number).parse_field(buf+pos, buf+pos+i);
+								sf(curnum).blength=0;
+								sflen=sf(curnum).parse_field(buf+pos, buf+pos+i);
 
 								if(sflen>=0)
 									break;
 
-								sf(current.number).change_format(curfrm); //restore frm that might be replaced with altformat by parse_field
+								sf(curnum).change_format(curfrm); //restore frm that might be replaced with altformat by parse_field
 
 								if(-sflen<=i)
 									sflen=-(i+1);
 							}
 						}
 						else
-							sflen=sf(current.number).parse_field(buf+pos, buf+length+lenlen);
+							sflen=sf(curnum).parse_field(buf+pos, buf+length+lenlen);
 
-						if(sflen==0 && sf(current.number).frm->maxLength==0)
+						if(sflen==0 && sf(curnum).frm->maxLength==0)
 						{
 							if(debug)
-								printf("Optional subfield %d (%s) skipped\n", current.number, sf(current.number).frm->get_description().c_str());
-							subfields.erase(current.number);
+								printf("Optional subfield %d (%s) skipped\n", curnum, sf(curnum).frm->get_description().c_str());
+							subfields.erase(curnum);
 							continue;
 						}
 
@@ -423,16 +469,16 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						{
 							if(debug)
 								printf("Error: unable to parse subfield (%d)\n", sflen);
-							subfields.erase(current.number);
+							subfields.erase(curnum);
 							parse_failed=1;
 							break;
 						}
 
-						if(sf(current.number).frm->dataFormat==FRM_BITMAP || sf(current.number).frm->dataFormat==FRM_ISOBITMAP)
+						if(frm->dataFormat==FRM_SUBFIELDS && (sf(curnum).frm->dataFormat==FRM_BITMAP || sf(curnum).frm->dataFormat==FRM_ISOBITMAP))	//TODO: change sf(curnum).frm to curfrm or remove curfrm
 						{
 							if(debug && bitmap_start!=-1)
 								printf("Warning: Only one bitmap per subfield allowed\n");
-							bitmap_start=current.number;
+							bitmap_start=curnum;
 							bitmap_end=bitmap_start+sf(bitmap_start).data.length();
 
 							for(unsigned int i=0; i<bitmap_end-bitmap_start; i++)
@@ -440,14 +486,15 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 								{
 									if(debug)
 										printf("Error: No format for subfield %d which is present in bitmap\n", bitmap_start+1+i);
-									subfields.erase(current.number);
+									subfields.erase(curnum);
 									bitmap_start=-1;
 									parse_failed=1;
 									break;
 								}
 						}
 
-						sf(current.number).start=pos;
+						sf(curnum).start=pos-taglength;
+						sf(curnum).blength+=taglength;
 
 						pos+=sflen;
 					}
@@ -467,23 +514,24 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 					while(!fieldstack.empty())
 					{
-						--cursf;
-						current=fieldstack.back();
+						if(frm->dataFormat==FRM_SUBFIELDS)
+							--cursf;
+						curnum=fieldstack.back();
 						fieldstack.pop_back();
 
-						if(current.number==bitmap_start)
+						if(curnum==bitmap_start)
 							bitmap_start=-1;
 
-						if(sfexist(current.number) && ((sf(current.number).frm->lengthFormat==FRM_UNKNOWN && sf(current.number).frm->dataFormat!=FRM_ISOBITMAP && sf(current.number).blength < length+lenlen-sf(current.number).start) || sf(current.number).frm->altformat))
+						if(sfexist(curnum) && ((sf(curnum).frm->lengthFormat==FRM_UNKNOWN && sf(curnum).frm->dataFormat!=FRM_ISOBITMAP && sf(curnum).blength < length+lenlen-sf(curnum).start) || sf(curnum).frm->altformat))
 						{
 							if(debug)
-								printf("Come back to sf %d of %s (%s)\n", current.number, frm->get_description().c_str(), sf(current.number).frm->get_description().c_str());
-							pos=current.pos;
+								printf("Come back to sf %d of %s (%s)\n", curnum, frm->get_description().c_str(), sf(curnum).frm->get_description().c_str());
+							pos=sf(curnum).start;
 							parse_failed=0;
 							break;
 						}
-						else if(sfexist(current.number))
-							subfields.erase(current.number);
+						else if(sfexist(curnum))
+							subfields.erase(curnum);
 					}
 
 					if(parse_failed)
@@ -608,80 +656,6 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 				return 0;
 			}
 
-			break;
-
-		case FRM_TLVDS:
-
-			pos=lenlen;
-
-			if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
-				taglength=1;
-			else
-				taglength=2;
-
-			for(unsigned int i=0; pos!=maxlength; i++)
-			{
-				if(pos==length+lenlen)
-					break;
-
-				if(pos+taglength>maxlength)
-				{
-					if(debug)
-						printf("Error: Not enough length for TLV tag\n");
-					return -(pos+taglength);
-				}
-
-				lengthbuf.clear();
-				switch(frm->tagFormat)
-				{
-					case FRM_EBCDIC:
-						parse_ebcdic(buf+pos, lengthbuf, taglength);
-						j=atoi(lengthbuf.c_str());
-						break;
-					case FRM_BCD:
-						parse_bcdl(buf+pos, lengthbuf, taglength*2);
-						j=atoi(lengthbuf.c_str());
-					case FRM_BIN:
-						j=0;
-						for(unsigned int k=0; k<taglength; j++)
-							*(((char*)(&j))+3-k)=buf[pos+k];
-						break;
-					case FRM_ASCII:
-					default:
-						lengthbuf.assign(buf+pos, buf+pos+taglength);
-						j=atoi(lengthbuf.c_str());
-				}
-
-				if(!frm->sfexist(j))
-				{
-					if(debug)
-						printf("Error: No format for TLV tag %d.\n", j);
-					return 0;
-				}
-
-				pos+=taglength;
-
-				sflen=sf(j).parse_field(buf+pos, buf+length+lenlen);
-
-				if(sflen<=0)
-				{
-					if(debug)
-						printf("Error: unable to parse TLV subfield %d\n", j);
-					return sflen;
-				}
-
-				sf(j).start=pos-taglength;
-				sf(j).blength=sf(j).blength+taglength;
-
-				pos+=sflen;
-			}
-
-			if(pos!=length+lenlen)
-			{
-				if(debug)
-					printf("Error: Too much TLV subfields (%d, %d)\n", pos, length);
-				return 0;
-			}
 			break;
 
 		case FRM_ISOBITMAP:

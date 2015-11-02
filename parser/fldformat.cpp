@@ -137,7 +137,7 @@ void fldformat::moveFrom(fldformat &from)
 // load format from file
 // returns 0 on failure, 1 on success
 // if already loaded, adds new as altformat
-int fldformat::load_format(const string &filename)
+int fldformat::load_format(const string &filename)	//TODO: auto set maxLength for some unknown length type formats
 {
 	string line;
 	char number[256];
