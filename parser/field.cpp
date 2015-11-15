@@ -26,7 +26,6 @@ field::~field(void)
 void field::fill_default(void)
 {
 	data.clear();
-	tag.clear();
 	start=0;
 	blength=0;
 	length=0;
@@ -51,7 +50,6 @@ void field::copyFrom(const field &from)
 	clear();
 
 	data=from.data;
-	tag=from.tag;
 	start=from.start;
 	blength=from.blength;
 	length=from.length;
@@ -83,8 +81,7 @@ void field::print_message(string numprefix) const
 		printf("%s ", numprefix.c_str());
 
 	printf("%s", frm->get_description().c_str());
-	if(!tag.empty())
-		printf(" [%s]", tag.c_str());
+
 	if(!data.empty())
 		printf(" (%d): [%s]\n", length, data.c_str());
 	else
@@ -272,34 +269,6 @@ int field::field_format(int newaltformat, int n0, int n1, int n2, int n3, int n4
 	return 0;
 } 
 
-string& field::add_tag(const string &newtag, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
-{
-	static string def="";
-	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	unsigned int i;
-	field *curfld=this;
-
-	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
-	{
-		if(n[i]==-1)
-			break;
-
-		if(!curfld || !curfld->frm)
-			return def;
-
-		curfld=&curfld->sf(n[i]);
-	}
-
-	if(!curfld || !curfld->frm)
-		return def;
-
-	curfld=&curfld->sf(i);
-
-	curfld->tag=newtag;
-
-	return curfld->data;
-}
-
 //a segfault-safe accessor function. Return a pointer to the fields contents. If the field does not exist, returns a valid pointer to an empty string. The field structure is not modified.
 const string& field::get_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
@@ -323,30 +292,6 @@ const string& field::get_field(int n0, int n1, int n2, int n3, int n4, int n5, i
 		return def;
 
 	return curfld->data;
-}
-
-const string& field::get_tag(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
-{
-	static const string def="";
-	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	unsigned int i;
-	field *curfld=this;
-
-	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
-	{
-		if(n[i]==-1)
-			break;
-
-		if(!curfld || !curfld->sfexist(n[i]))
-			return def;
-
-		curfld=&curfld->sf(n[i]);
-	}
-
-	if(!curfld)
-		return def;
-
-	return curfld->tag;
 }
 
 void field::remove_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)

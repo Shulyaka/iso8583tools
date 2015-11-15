@@ -84,7 +84,6 @@ class field
 {
 	private:
 	string data;  //parsed data
-	string tag;   //parsed TLV tag name
 	unsigned int start;  //start position inside the message binary data relative to the parent field
 	unsigned int blength;  //length of the field inside the message binary data (including length length)
 	unsigned int length;  //parsed data length
@@ -146,8 +145,6 @@ class field
 	int field_format(int altformat, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	void remove_field(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	bool has_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	string& add_tag(const string &tag, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	const string& get_tag(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 };
 
 class frmiterator: public std::iterator<std::bidirectional_iterator_tag, pair<int,fldformat> >

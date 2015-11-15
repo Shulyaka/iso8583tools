@@ -508,9 +508,6 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						sf(curnum).start=pos-taglength;
 						sf(curnum).blength+=taglength;
 
-						if(!lengthbuf.empty())
-							sf(curnum).tag.assign(lengthbuf);
-
 						pos+=sflen;
 					}
 				}
