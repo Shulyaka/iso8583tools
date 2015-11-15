@@ -50,7 +50,6 @@ unsigned int field::get_flength(void)
 		case FRM_TLV3:
 		case FRM_TLV4:
 		case FRM_TLVEMV:
-		case FRM_TLVDS:
 			flength=get_blength();
 			if(flength<=lenlen)
 				return 0;
@@ -119,7 +118,6 @@ unsigned int field::get_blength(void)
 	switch(frm->dataFormat)
 	{
 		case FRM_SUBFIELDS:
-		case FRM_TLVDS:
 		case FRM_TLV1:
 		case FRM_TLV2:
 		case FRM_TLV3:
@@ -139,17 +137,7 @@ unsigned int field::get_blength(void)
 							}
 			}
 			else
-			{
-				if(frm->dataFormat==FRM_TLVDS)
-				{
-					if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
-						taglength=1;
-					else
-						taglength=2;
-				}
-				else
-					taglength=frm->dataFormat-FRM_TLV1+1;
-			}
+				taglength=frm->dataFormat-FRM_TLV1+1;
 
 			for(field::iterator i=begin(); i!=end(); ++i)
 			{
@@ -269,7 +257,6 @@ unsigned int field::get_mlength(void)
 		case FRM_TLV3:
 		case FRM_TLV4:
 		case FRM_TLVEMV:
-		case FRM_TLVDS:
 		case FRM_ISOBITMAP:
 		case FRM_BITMAP:
 		case FRM_BITSTR:
@@ -506,7 +493,6 @@ unsigned int field::build_field_alt(string &buf)
 	switch(frm->dataFormat)
 	{
 		case FRM_SUBFIELDS:
-		case FRM_TLVDS:
 		case FRM_TLV1:
 		case FRM_TLV2:
 		case FRM_TLV3:
@@ -524,17 +510,7 @@ unsigned int field::build_field_alt(string &buf)
 							}
 			}
 			else
-			{
-				if(frm->dataFormat==FRM_TLVDS)
-				{
-					if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
-						taglength=1;
-					else
-						taglength=2;
-				}
-				else
-					taglength=frm->dataFormat-FRM_TLV1+1;
-			}
+				taglength=frm->dataFormat-FRM_TLV1+1;
 
 			for(field::iterator i=begin(); i!=end(); ++i)	//TODO: implement a stack and go back if build failed
 			{

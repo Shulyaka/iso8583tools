@@ -20,7 +20,6 @@
 #define FRM_BCDSF 15	// The field is first converted from BCD to ASCII, and then is split into subfields
 #define FRM_BITSTR 16	//Same as BITMAP but does not define subfields
 #define FRM_EMVL 17     // Length format for EMV tags
-#define FRM_TLVDS 18
 
 #include <stdlib.h>
 

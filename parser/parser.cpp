@@ -338,7 +338,6 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	switch(frm->dataFormat)
 	{
 		case FRM_SUBFIELDS:
-		case FRM_TLVDS:
 		case FRM_TLV1:
 		case FRM_TLV2:
 		case FRM_TLV3:
@@ -348,17 +347,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 			if(frm->dataFormat==FRM_SUBFIELDS)
 				cursf=frm->begin();
 			else
-			{
-				if(frm->dataFormat==FRM_TLVDS)
-				{
-					if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
-						taglength=1;
-					else
-						taglength=2;
-				}
-				else
-					taglength=frm->dataFormat-FRM_TLV1+1;
-			}
+				taglength=frm->dataFormat-FRM_TLV1+1;
 			pos=lenlen;
 			minlength=0;
 			while(parse_failed)

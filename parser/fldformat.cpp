@@ -555,11 +555,6 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 		dataFormat=FRM_TLVEMV;
 		tagFormat=FRM_HEX;
 	}
-	else if(!strncmp(format+i, "TLVDS", 5))
-	{
-		dataFormat=FRM_TLVDS;
-		i+=5;
-	}
 	else if(!strcmp(format+i, "BCDSF"))
 		dataFormat=FRM_BCDSF;
 	else if(!strcmp(format+i, "BITMAP"))
@@ -585,7 +580,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 		return 0;
 	}
 
-	if(dataFormat==FRM_TLV1 || dataFormat==FRM_TLV2 || dataFormat==FRM_TLV3 || dataFormat==FRM_TLV4 || dataFormat==FRM_TLVDS)
+	if(dataFormat==FRM_TLV1 || dataFormat==FRM_TLV2 || dataFormat==FRM_TLV3 || dataFormat==FRM_TLV4)
 	{
 		if(!strcmp(format+i, "EBCDIC") || !strcmp(format+i, "EBC"))
 			tagFormat=FRM_EBCDIC;
