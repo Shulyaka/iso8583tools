@@ -10,7 +10,7 @@
 #define FRM_TLV2 5       //TLV subfields, 2 bytes tag format     TLV2
 #define FRM_TLV3 6       //TLV subfields, 3 bytes tag format     TLV3
 #define FRM_TLV4 7       //TLV subfields, 4 bytes tag format     TLV4
-#define FRM_TLVEMV 8     //TLV subfields, EMV tag format         TLVE
+#define FRM_TLVEMV 8     //TLV subfields, EMV tag format (BER)   TLVE
 #define FRM_EBCDIC 9    // EBCDIC EEEEE
 #define FRM_BCD 10   //  0x012345  CCCCC  BCD
 #define FRM_BIN 11   //  12345     BBBBB  BIN

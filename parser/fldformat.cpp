@@ -591,8 +591,8 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			tagFormat=FRM_EBCDIC;
 		else if(!strcmp(format+i, "BCD"))
 			tagFormat=FRM_BCD;
-		else if(!strcmp(format+i, "HEX"))
-			tagFormat=FRM_HEX;
+/*		else if(!strcmp(format+i, "HEX"))
+			tagFormat=FRM_HEX;*/
 		else if(!strcmp(format+i, "BIN"))
 			tagFormat=FRM_BIN;
 		else if(!strcmp(format+i, "ASCII") || !strcmp(format+i, "ASC") || format[i]=='\0')

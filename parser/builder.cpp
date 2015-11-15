@@ -120,6 +120,11 @@ unsigned int field::get_blength(void)
 	{
 		case FRM_SUBFIELDS:
 		case FRM_TLVDS:
+		case FRM_TLV1:
+		case FRM_TLV2:
+		case FRM_TLV3:
+		case FRM_TLV4:
+		case FRM_TLVEMV:
 			pos=lenlen;
 
 			if(frm->dataFormat==FRM_SUBFIELDS)
@@ -135,10 +140,15 @@ unsigned int field::get_blength(void)
 			}
 			else
 			{
-				if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
-					taglength=1;
+				if(frm->dataFormat==FRM_TLVDS)
+				{
+					if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
+						taglength=1;
+					else
+						taglength=2;
+				}
 				else
-					taglength=2;
+					taglength=frm->dataFormat-FRM_TLV1+1;
 			}
 
 			for(field::iterator i=begin(); i!=end(); ++i)
@@ -171,6 +181,10 @@ unsigned int field::get_blength(void)
 					
 					if(!sflen)
 						return 0;
+
+					if(frm->dataFormat==FRM_TLVEMV)
+						taglength=i->first>0xFF?2:1;
+
 					pos+=taglength+sflen;
 				}
 			}
@@ -188,46 +202,6 @@ unsigned int field::get_blength(void)
 				return 0;
 
 			newblength=(flength+1)/2;
-
-			break;
-
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
-		case FRM_TLVEMV:
-
-			if(!frm->sfexist(0))
-				return 0;
-
-			pos=lenlen;
-			taglength=frm->dataFormat-FRM_TLV1+1;
-
-			for(field::iterator i=begin(); i!=end(); ++i)
-			{
-				if(i->second.is_empty())
-					continue;
-
-				if(i->second.tag.empty())
-					return 0;
-
-				if(frm->dataFormat==FRM_TLVEMV)
-				{
-					if(i->second.tag.length()!=2 && i->second.tag.length()!=4)
-						return 0;
-
-					taglength=i->second.tag.length()/2;
-				}
-			
-				pos+=taglength;
-				
-				sflen=i->second.get_blength();
-				if(!sflen)
-					return 0;
-				pos+=sflen;
-			}
-
-			newblength=pos-lenlen;
 
 			break;
 
@@ -533,6 +507,11 @@ unsigned int field::build_field_alt(string &buf)
 	{
 		case FRM_SUBFIELDS:
 		case FRM_TLVDS:
+		case FRM_TLV1:
+		case FRM_TLV2:
+		case FRM_TLV3:
+		case FRM_TLV4:
+		case FRM_TLVEMV:
 			if(frm->dataFormat==FRM_SUBFIELDS)
 			{
 				for(fldformat::iterator i=frm->begin(); i!=frm->end(); ++i)
@@ -546,10 +525,15 @@ unsigned int field::build_field_alt(string &buf)
 			}
 			else
 			{
-				if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
-					taglength=1;
+				if(frm->dataFormat==FRM_TLVDS)
+				{
+					if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
+						taglength=1;
+					else
+						taglength=2;
+				}
 				else
-					taglength=2;
+					taglength=frm->dataFormat-FRM_TLV1+1;
 			}
 
 			for(field::iterator i=begin(); i!=end(); ++i)	//TODO: implement a stack and go back if build failed
@@ -589,8 +573,25 @@ unsigned int field::build_field_alt(string &buf)
 					{
 						if(frm->dataFormat!=FRM_SUBFIELDS)
 						{
+							if(frm->dataFormat==FRM_TLVEMV)
+								taglength=i->first>0xFF?2:1;
+
 							switch(frm->tagFormat)
 							{
+								case FRM_ASCII:
+									lengthbuf=to_string(i->first);
+									if(lengthbuf.length()>taglength)
+									{
+										if(debug)
+											printf("Error: TLV tag number is too big (%d)\n", i->first);
+										return 0;
+									}
+
+									buf.append(taglength - lengthbuf.length(), '0');
+									buf.append(lengthbuf);
+
+									break;
+
 								case FRM_EBCDIC:
 									lengthbuf=to_string(i->first);
 									if(lengthbuf.length()>taglength)
@@ -629,19 +630,10 @@ unsigned int field::build_field_alt(string &buf)
 										return 0;
 									break;
 
-								case FRM_ASCII:
 								default:
-									lengthbuf=to_string(i->first);
-									if(lengthbuf.length()>taglength)
-									{
-										if(debug)
-											printf("Error: TLV tag number is too big (%d)\n", i->first);
-										return 0;
-									}
-
-									buf.append(taglength - lengthbuf.length(), '0');
-
-									buf.append(lengthbuf);
+									if(debug)
+										printf("Error: Unknown tag format\n");
+									return 0;
 							}
 
 							pos+=taglength;
@@ -697,82 +689,6 @@ unsigned int field::build_field_alt(string &buf)
 
 			data.clear();
 			
-			break;
-
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
-		case FRM_TLVEMV:
-			if(!frm->sfexist(0))
-			{
-				if(debug)
-					printf("Error: No tlv subfield format\n");
-				return 0;
-			}
-
-			taglength=frm->dataFormat-FRM_TLV1+1;
-
-			for(field::iterator i=begin(); i!=end(); ++i)
-			{
-				if(i->second.is_empty())
-					continue;
-
-				if(i->second.tag.empty())
-				{
-					if(debug)
-						printf("Error: Tag length is too small\n");
-					return 0;
-				}
-
-				sflen=i->second.tag.length();
-
-				if(frm->dataFormat==FRM_TLVEMV)
-				{
-					if(sflen!=2 && sflen!=4)
-						return 0;
-
-					taglength=sflen/2;
-				}
-
-				switch(frm->tagFormat)
-				{
-					case FRM_EBCDIC:
-						if(sflen<taglength)
-							return 0;
-						build_ebcdic(i->second.tag.begin(), buf, sflen);
-						break;
-					case FRM_HEX:
-						if(sflen<taglength*2)
-							return 0;
-						build_hex(i->second.tag.begin(), buf, sflen);
-						break;
-					case FRM_BCD:
-						if(sflen<taglength*2)
-							return 0;
-						build_bcdl(i->second.tag.begin(), buf, sflen);
-						break;
-					case FRM_ASCII:
-					default:
-						if(sflen<taglength)
-							return 0;
-						buf.append(i->second.tag);
-				}
-
-				pos+=taglength;
-
-				sflen=i->second.build_field(buf);
-				if(!sflen)
-				{
-					if(debug)
-						printf("Error: unable to build TLV subfield\n");
-					return 0;
-				}
-				pos+=sflen;
-			}
-
-			newblength=pos-lenlen;
-
 			break;
 
 		case FRM_ISOBITMAP:

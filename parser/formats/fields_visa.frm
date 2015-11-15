@@ -241,16 +241,16 @@ message 	BB800-2SF	Visa Message (with header)
 2.101		B17EBCDIC	File Name
 2.102		B28EBCDIC	Account Identification 1
 2.103		B28EBCDIC	Account Identification 2
-2.104		B255TLV1HEX	Transaction-Specific Data (Usage 2)
-2.104.*		BB252TLV1HEX	dataset ID
+2.104		B255TLV1BCD	Transaction-Specific Data (Usage 2)
+2.104.*		BB252TLV1BCD	dataset ID
 2.104.*.*	B250EBCDIC	data
 2.104		B100SF		Transaction Description (Usage 1)
 2.104.0		F1EBCDIC	billing descriptor
 2.104.1		U99EBCDIC	transaction description data
 2.105		F16HEX		Double-Length DES Key (Triple DES)
 2.115		B24EBCDIC	Additional Trace Data
-2.116		B255TLV1HEX	Card Issuer Reference Data
-2.116.*		BB252TLV1HEX	dataset ID
+2.116		B255TLV1BCD	Card Issuer Reference Data
+2.116.*		BB252TLV1BCD	dataset ID
 2.116.*.*	B250EBCDIC	data
 2.117		B255SF		National Use
 2.117.1		F3EBCDIC	country code
@@ -263,8 +263,8 @@ message 	BB800-2SF	Visa Message (with header)
 2.119.2		U252EBCDIC	data
 2.120		B4HEX		Original Message Type ID
 2.121		B11EBCDIC	Issuing Institution Identification Code
-2.123		B255TLV1HEX	Verification Data (TLV format)
-2.123.*		BB252TLV1HEX	dataset ID
+2.123		B255TLV1BCD	Verification Data (TLV format)
+2.123.*		BB252TLV1BCD	dataset ID
 2.123.*.*	B250EBCDIC	Verification Data TLV element
 2.123		B30SF		Verification Data (fixed format)
 2.123.0		F9EBCDIC	postal code

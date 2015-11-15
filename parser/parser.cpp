@@ -339,15 +339,25 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	{
 		case FRM_SUBFIELDS:
 		case FRM_TLVDS:
+		case FRM_TLV1:
+		case FRM_TLV2:
+		case FRM_TLV3:
+		case FRM_TLV4:
+		case FRM_TLVEMV:
 			parse_failed=1;
 			if(frm->dataFormat==FRM_SUBFIELDS)
 				cursf=frm->begin();
 			else
 			{
-				if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
-					taglength=1;
+				if(frm->dataFormat==FRM_TLVDS)
+				{
+					if(frm->tagFormat==FRM_BCD || frm->tagFormat==FRM_HEX)
+						taglength=1;
+					else
+						taglength=2;
+				}
 				else
-					taglength=2;
+					taglength=frm->dataFormat-FRM_TLV1+1;
 			}
 			pos=lenlen;
 			minlength=0;
@@ -363,7 +373,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 					if(pos==length+lenlen) // Some subfields are missing or canceled by bitmap
 						break;
 
-					if(frm->dataFormat==FRM_SUBFIELDS)
+					if(frm->dataFormat==FRM_SUBFIELDS) // subfield number is defined by its position
 					{
 						if(cursf==frm->end())
 						{
@@ -377,8 +387,16 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						curnum=cursf->first;
 						++cursf;
 					}
-					else
+					else // subfield number is encoded as a tag name
 					{
+						if(frm->dataFormat==FRM_TLVEMV)
+						{
+							if((buf[pos]&0x1F)==0x1F)
+								taglength=2;
+							else
+								taglength=1;
+						}
+
 						if(pos+taglength>=maxlength)
 						{
 							if(debug)
@@ -389,6 +407,10 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						lengthbuf.clear();
 						switch(frm->tagFormat)
 						{
+							case FRM_ASCII:
+								lengthbuf.assign(buf+pos, buf+pos+taglength);
+								curnum=atoi(lengthbuf.c_str());
+								break;
 							case FRM_EBCDIC:
 								parse_ebcdic(buf+pos, lengthbuf, taglength);
 								curnum=atoi(lengthbuf.c_str());
@@ -396,15 +418,16 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 							case FRM_BCD:
 								parse_bcdl(buf+pos, lengthbuf, taglength*2);
 								curnum=atoi(lengthbuf.c_str());
+								break;
 							case FRM_BIN:
 								curnum=0;
 								for(unsigned int i=0; i<taglength; curnum++)
 									*(((char*)(&curnum))+3-i)=buf[pos+i];
 								break;
-							case FRM_ASCII:
 							default:
-								lengthbuf.assign(buf+pos, buf+pos+taglength);
-								curnum=atoi(lengthbuf.c_str());
+								if(debug)
+									printf("Error: Unknown tag format\n");
+								return 0;
 						}
 
 						if(!frm->sfexist(curnum))
@@ -496,6 +519,9 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						sf(curnum).start=pos-taglength;
 						sf(curnum).blength+=taglength;
 
+						if(!lengthbuf.empty())
+							sf(curnum).tag.assign(lengthbuf);
+
 						pos+=sflen;
 					}
 				}
@@ -577,83 +603,6 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 				if(debug)
 					printf("Error: Unable to parse BCD subfields\n");
 				return sflen;
-			}
-
-			break;
-
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
-		case FRM_TLVEMV:
-
-			pos=lenlen;
-			taglength=frm->dataFormat-FRM_TLV1+1;
-
-			for(unsigned int i=0; pos!=maxlength; i++)
-			{
-				if(pos==length+lenlen)
-					break;
-
-				if(frm->dataFormat==FRM_TLVEMV)
-				{
-					if((buf[pos]&0x1F)==0x1F)
-						taglength=2;
-					else
-						taglength=1;
-				}
-
-				if(pos+taglength>maxlength)
-				{
-					if(debug)
-						printf("Error: Not enough length for TLV tag\n");
-					return -(pos+taglength);
-				}
-
-				switch(frm->tagFormat)
-				{
-					case FRM_EBCDIC:
-						parse_ebcdic(buf+pos, sf(i).tag, taglength);
-						break;
-					case FRM_BCD:
-					case FRM_HEX:
-						parse_hex(buf+pos, sf(i).tag, taglength*2);
-						break;
-					case FRM_ASCII:
-					default:
-						sf(i).tag.assign(buf+pos, buf+pos+taglength);
-				}
-				//printf("Tag=(%d)'%s'\n", taglength, sf(i).tag);
-
-				if(!frm->sfexist(i))
-				{
-					if(debug)
-						printf("Error: No format for TLV tag %d.\n", i);
-					return 0;
-				}
-
-				pos+=taglength;
-
-				sflen=sf(i).parse_field(buf+pos, buf+length+lenlen);
-
-				if(sflen<=0)
-				{
-					if(debug)
-						printf("Error: unable to parse TLV subfield\n");
-					return sflen;
-				}
-
-				sf(i).start=pos-taglength;
-				sf(i).blength=sf(i).blength+taglength;
-
-				pos+=sflen;
-			}
-
-			if(pos!=length+lenlen)
-			{
-				if(debug)
-					printf("Error: Too much TLV subfields (%d, %d)\n", pos, length);
-				return 0;
 			}
 
 			break;
