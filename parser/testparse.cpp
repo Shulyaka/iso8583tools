@@ -1,14 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <dirent.h>
-#include <string.h>
-#include <errno.h>
-#include <time.h>
+#include <err.h>
+#include <cstdio>
+#include <cstring>
+#include <cerrno>
+#include <ctime>
 #include <iostream>
 #include <fstream>
 #include <string>
 
 #include "parser.h"
+
+using namespace std;
 
 int debug=0;
 
@@ -38,10 +40,7 @@ int main(int argc, char **argv)
 	frmdir=opendir(format_dir);
 
 	if(!frmdir)
-	{
-		printf("Error: Can't open %s: %s\n", format_dir, strerror(errno));
-		return 2;
-	}
+		err(2, "Can't open %s", format_dir);
 
 	while(de=readdir(frmdir))
 	{
@@ -81,10 +80,7 @@ int main(int argc, char **argv)
 	{
 		std::ifstream infile(argv[1]);
 		if(!infile)
-		{
-			printf("Error: Cannot open file %s: %s\n", argv[1], strerror(errno));
-			return 4;
-		}
+			err(4, "Cannot open file %s", argv[1]);
 
 		if(debug)
 			printf("Reading from %s\n", argv[1]);

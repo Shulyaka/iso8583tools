@@ -1,9 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
 #include <sstream>
-#include <string.h>
 
 #include "parser.h"
+
+using namespace std;
 
 unsigned int build_ebcdic(const string::const_iterator&, string&, unsigned int);
 unsigned int build_hex(const string::const_iterator&, string&, unsigned int);

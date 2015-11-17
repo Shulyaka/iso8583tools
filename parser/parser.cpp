@@ -1,8 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
 #include <vector>
 #include "parser.h"
+
+using namespace std;
 
 unsigned int parse_ebcdic(const std::string::const_iterator&, std::string&, unsigned int);
 unsigned int parse_hex(const std::string::const_iterator&, std::string&, unsigned int);

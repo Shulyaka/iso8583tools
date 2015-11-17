@@ -21,11 +21,8 @@
 #define FRM_BITSTR 16	//Same as BITMAP but does not define subfields
 #define FRM_EMVL 17     // Length format for EMV tags
 
-#include <stdlib.h>
-
 #include <string>
 #include <map>
-using namespace std;
 
 extern int debug;
 
@@ -37,7 +34,7 @@ class frmiterator;
 class fldformat
 {
 	private:
-	string description;
+	std::string description;
 	unsigned int lengthFormat;
 	unsigned int lengthLength;
 	unsigned short lengthInclusive;
@@ -45,15 +42,15 @@ class fldformat
 	int addLength;
 	unsigned int dataFormat;
 	unsigned int tagFormat;
-	string data;
-	map<int,fldformat> subfields;
+	std::string data;
+	std::map<int,fldformat> subfields;
 	fldformat *altformat;
 	fldformat *parent;
 
 	void fill_default(void);
 
-	int parseFormat(char*, map<string,fldformat> &orphans);
-	fldformat* get_by_number(const char *number, map<string,fldformat> &orphans);
+	int parseFormat(char*, std::map<std::string,fldformat> &orphans);
+	fldformat* get_by_number(const char *number, std::map<std::string,fldformat> &orphans);
 
 	friend field;
 
@@ -68,12 +65,12 @@ class fldformat
 	~fldformat(void);
 	void clear(void);
 	int is_empty(void);
-	int load_format(const string &filename);
+	int load_format(const std::string &filename);
 	void copyFrom(const fldformat &from);
 	void moveFrom(fldformat &from);
 	inline fldformat *get_altformat(void);
 	inline fldformat *get_lastaltformat(void);
-	const string& get_description(void);
+	const std::string& get_description(void);
 	inline const unsigned int get_lengthLength() {return lengthLength;};
 	fldformat& sf(int n);
 	bool sfexist(int n) const;
@@ -83,12 +80,12 @@ class fldformat
 class field
 {
 	private:
-	string data;  //parsed data
+	std::string data;  //parsed data
 	unsigned int start;  //start position inside the message binary data relative to the parent field
 	unsigned int blength;  //length of the field inside the message binary data (including length length)
 	unsigned int length;  //parsed data length
 	fldformat *frm;  //field format
-	map<int,field> subfields;
+	std::map<int,field> subfields;
 	unsigned int altformat;  //altformat number
 
 	void fill_default(void);
@@ -96,11 +93,11 @@ class field
 	int parse_field(const std::string::const_iterator&, const std::string::const_iterator&);
 	int parse_field_alt(const std::string::const_iterator&, const std::string::const_iterator&);
 	int parse_field_length(const std::string::const_iterator&, const std::string::const_iterator&);
-	unsigned int build_field(string&);
-	unsigned int build_field_length(string&);
-	unsigned int build_field_alt(string&);
-	unsigned int build_isobitmap(string&, unsigned int);
-	unsigned int build_bitmap(string&, unsigned int);
+	unsigned int build_field(std::string&);
+	unsigned int build_field_length(std::string&);
+	unsigned int build_field_alt(std::string&);
+	unsigned int build_isobitmap(std::string&, unsigned int);
+	unsigned int build_bitmap(std::string&, unsigned int);
 
 	public:
 	typedef std::map<int,field>::iterator iterator;
@@ -121,33 +118,33 @@ class field
 	field(void);
 	field(const field&);
 	~field(void);
-	void print_message(string prefix="") const;
+	void print_message(std::string prefix="") const;
 	void clear(void);
 	int is_empty(void) const;
 	int change_format(fldformat*);
 	void copyFrom(const field &from);
 	void moveFrom(field &from);
 
-	int parse_message(const string&);
-	unsigned int build_message(string&);
+	int parse_message(const std::string&);
+	unsigned int build_message(std::string&);
 	unsigned int get_blength(void);
 	unsigned int get_flength(void);
 	unsigned int get_mlength(void);
 
-	const string& get_description(void);
+	const std::string& get_description(void);
 	inline const int get_parsed_blength() {return blength;};
 	inline const int get_lengthLength() {return frm?frm->get_lengthLength():0;};
 	field& sf(int n);
 	bool sfexist(int n) const;
 
-	const string& get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	string& add_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	const std::string& get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	std::string& add_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	int field_format(int altformat, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	void remove_field(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	bool has_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 };
 
-class frmiterator: public std::iterator<std::bidirectional_iterator_tag, pair<int,fldformat> >
+class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pair<int,fldformat> >
 {
 	friend class fldformat;
 	private:
@@ -169,8 +166,8 @@ class frmiterator: public std::iterator<std::bidirectional_iterator_tag, pair<in
 	frmiterator& operator=(const frmiterator &other);
 	bool operator!=(frmiterator const& other) const;
 	bool operator==(frmiterator const& other) const;
-	pair<const int, fldformat>& operator*(void);
-	pair<const int, fldformat>* operator->(void);
+	std::pair<const int, fldformat>& operator*(void);
+	std::pair<const int, fldformat>* operator->(void);
 	frmiterator& operator++(void);
 	frmiterator& operator--(void);
 };

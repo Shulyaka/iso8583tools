@@ -1,9 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib> //for exit(). TODO: Remove exit() and introduce exceptions
 #include <sstream>
-#include <string.h>
 
 #include "parser.h"
+
+using namespace std;
 
 string to_string(unsigned int);
 

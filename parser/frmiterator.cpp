@@ -57,7 +57,7 @@ bool frmiterator::operator==(frmiterator const &other) const
 	return it==other.it && curnum==other.curnum;
 }
 
-pair<const int, fldformat>& frmiterator::operator*(void)
+std::pair<const int, fldformat>& frmiterator::operator*(void)
 {
 	if(!wildcard||it->first==curnum||curnum<0)
 		return *it;
@@ -68,7 +68,7 @@ pair<const int, fldformat>& frmiterator::operator*(void)
 	}
 }
 
-pair<const int, fldformat>* frmiterator::operator->(void)
+std::pair<const int, fldformat>* frmiterator::operator->(void)
 {
 	return &(*(*this));
 }
