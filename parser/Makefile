@@ -1,7 +1,8 @@
 CFLAGS=-ggdb
 
+.PHONY: clean all tests
 
-all: libparser.a testparse
+all: libparser.a testparse tests
 
 clean:
 	rm -f *.o libparser.a testparse core.* imessage* omessage*
@@ -29,3 +30,6 @@ fldformat.o: fldformat.cpp parser.h
 
 frmiterator.o: frmiterator.cpp parser.h
 		g++ -c frmiterator.cpp ${CFLAGS}
+
+tests: testparse
+		for i in `ls tests`; do ./testparse tests/$$i >/dev/null || (echo "Test $$i failed with status $$?"; exit 1) || exit 1 ; done
