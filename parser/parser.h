@@ -49,7 +49,7 @@ class fldformat
 
 	void fill_default(void);
 
-	int parseFormat(char*, std::map<std::string,fldformat> &orphans);
+	bool parseFormat(char*, std::map<std::string,fldformat> &orphans);
 	fldformat* get_by_number(const char *number, std::map<std::string,fldformat> &orphans);
 
 	friend field;
@@ -64,8 +64,8 @@ class fldformat
 	fldformat(const fldformat&);
 	~fldformat(void);
 	void clear(void);
-	int is_empty(void) const;
-	int load_format(const std::string &filename);
+	bool is_empty(void) const;
+	bool load_format(const std::string &filename);
 	void copyFrom(const fldformat &from);
 	void moveFrom(fldformat &from);
 	inline fldformat *get_altformat(void) const;
@@ -120,8 +120,8 @@ class field
 	~field(void);
 	void print_message(std::string prefix="") const;
 	void clear(void);
-	int is_empty(void) const;
-	int change_format(fldformat*);
+	bool is_empty(void) const;
+	bool change_format(fldformat*);
 	void copyFrom(const field &from);
 	void moveFrom(field &from);
 
@@ -134,8 +134,8 @@ class field
 	const std::string& get_description(void) const;
 	inline const int get_parsed_blength(void) const {return blength;};
 	inline const int get_lengthLength(void) const {return frm?frm->get_lengthLength():0;};
-	field& sf(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	bool sfexist(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1) const;
+	field& sf(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	bool sfexist(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1) const;
 
 	const std::string& get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	std::string& add_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);

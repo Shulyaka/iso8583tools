@@ -64,7 +64,7 @@ void fldformat::clear(void)
 	parent=tmpfrm; //make parent immune to clear
 }
 
-int fldformat::is_empty(void) const
+bool fldformat::is_empty(void) const
 {
 	return description.empty()
 	    && lengthFormat==FRM_UNKNOWN
@@ -137,9 +137,9 @@ void fldformat::moveFrom(fldformat &from)
 }
 
 // load format from file
-// returns 0 on failure, 1 on success
+// returns false on failure, true on success
 // if already loaded, adds new as altformat
-int fldformat::load_format(const string &filename)	//TODO: auto set maxLength for some unknown length type formats
+bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength for some unknown length type formats
 {
 	string line;
 	char number[256];
@@ -156,7 +156,7 @@ int fldformat::load_format(const string &filename)	//TODO: auto set maxLength fo
 	{
 		if(debug)
 			perror("Error: Unable to open file\n");
-		return 0;
+		return false;
 	}
 
 	orphans["message"];
@@ -246,13 +246,13 @@ int fldformat::load_format(const string &filename)	//TODO: auto set maxLength fo
 	{
 		if(debug)
 			printf("Error: No fields loaded\n");
-		return 0;
+		return false;
 	}
 
 	if(debug)
 		printf("Info: Loaded %d fields\n", k);
 
-	return 1;
+	return true;
 }
 
 inline fldformat* fldformat::get_altformat(void) const
@@ -355,7 +355,7 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 }
 
 //parses format string
-int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
+bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 {
 	unsigned int i, j=0;
 	char *p;
@@ -365,14 +365,14 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	{
 		if(debug)
 			printf("Error: Null pointer to second arg\n");
-		return 0;
+		return false;
 	}
 
 	if(!strcmp(format, "ISOBITMAP"))
 	{
 		dataFormat=FRM_ISOBITMAP;
 		maxLength=192;
-		return 1;
+		return true;
 	}
 
 	switch (format[0])
@@ -454,7 +454,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 				{
 					if(debug)
 						printf("Error: Unable to find referenced format (%s) (no parent loaded)\n", format+1);
-					return 0;
+					return false;
 				}
 			}
 			else if(tmpfrm->is_empty())
@@ -462,14 +462,14 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 				if(debug)
 					printf("Error: Unable to find referenced format (%s) (parent loaded)\n", format+1);
 				tmpfrm->erase();
-				return 0;
+				return false;
 			}
 			else
 				copyFrom(*tmpfrm);
 
 			description.clear();
 
-			return 1;
+			return true;
 
 			break;
 
@@ -493,7 +493,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	{
 		if(debug)
 			printf("Error: Unrecognized max length (%s)\n", format);
-		return 0;
+		return false;
 	}
 
 	maxLength=atoi(format+j);
@@ -508,7 +508,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 		{
 			if(debug)
 				printf("Error: Unrecognized additional length (%s)\n", format);
-			return 0;
+			return false;
 		}
 
 		addLength=(format[i]=='+')? atoi(format+i+1) : -atoi(format+i+1);
@@ -518,7 +518,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 		addLength=0;
 
 	if(!maxLength)
-		return 1; //allow zero length fields
+		return true; //allow zero length fields
 
 	p=strstr(format+i, "=");
 	if(p)
@@ -579,7 +579,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			printf("Error: Unrecognized data format (%s)\n", format+i);
 		if(p)
 			*p='=';
-		return 0;
+		return false;
 	}
 
 	if(dataFormat==FRM_TLV1 || dataFormat==FRM_TLV2 || dataFormat==FRM_TLV3 || dataFormat==FRM_TLV4)
@@ -600,7 +600,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 				printf("Error: Unrecognized TLV tag format (%s)\n", format+i+4);
 			if(p)
 				*p='=';
-			return 0;
+			return false;
 		}
 	}
 
@@ -611,12 +611,12 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	{
 		if(debug)
 			printf("Error: Mandatory data specified for subfield format\n");
-		return 0;
+		return false;
 	}
 
 	//printf("Field: %s, Length type: %d, LengthLength: %d, Max Length: %d, Data format: %d, Mandatory data: %s\n", description.c_str(), lengthFormat, lengthLength, maxLength, dataFormat, data.c_str());
 
-	return 1;
+	return true;
 }
 
 const string& fldformat::get_description(void) const

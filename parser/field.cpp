@@ -97,16 +97,16 @@ void field::print_message(string numprefix) const
 		case FRM_TLV3:
 		case FRM_TLV4:
 		case FRM_TLVEMV:
-			for(field::const_iterator i=begin(); i!=end(); ++i)
+			for(const_iterator i=begin(); i!=end(); ++i)
 				i->second.print_message(numprefix + to_string(i->first) + ".");
 			break;
 	}
 }
 
-int field::is_empty(void) const
+bool field::is_empty(void) const
 {
 	if(!frm)
-		return 1;
+		return true;
 
 	switch(frm->dataFormat)
 	{
@@ -120,31 +120,31 @@ int field::is_empty(void) const
 			break;
 		case FRM_ISOBITMAP:
 		case FRM_BITMAP:
-			return 0;
+			return false;
 		default:
 			return data.empty();
 	}
 
 	if(subfields.empty())
-		return 1;
+		return true;
 
-	for(field::const_iterator i=begin(); i!=end(); ++i)
+	for(const_iterator i=begin(); i!=end(); ++i)
 		if(i->second.frm && i->second.frm->dataFormat!=FRM_ISOBITMAP && i->second.frm->dataFormat!=FRM_BITMAP && !i->second.is_empty())
-			return 0;
+			return false;
 
-	return 1;
+	return true;
 }
 
-int field::change_format(fldformat *frmnew)
+bool field::change_format(fldformat *frmnew)
 {
-	field::iterator i;
+	iterator i;
 	fldformat *frmold;
 
 	if(!frmnew)
-		return 0;
+		return false;
 
 	if(frm == frmnew)
-		return 1;
+		return true;
 
 	frmold=frm;
 
@@ -168,10 +168,10 @@ int field::change_format(fldformat *frmnew)
 			if(debug)
 				printf("Error: Unable to revert\n");
 
-		return 0;
+		return false;
 	}
 
-	return 1;
+	return true;
 }
 
 //a segfault-safe accessor function. Returns a pointer to the field contents. If the field does not exist, it would be created. If it cannot be created, a valid pointer to a dummy array is returned.
