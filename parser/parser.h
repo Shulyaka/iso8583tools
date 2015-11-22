@@ -56,22 +56,22 @@ class fldformat
 
 	public:
 	typedef frmiterator iterator;
-	iterator begin();
-	iterator end();
+	iterator begin(void);
+	iterator end(void);
 	iterator find(int);
 
 	fldformat(void);
 	fldformat(const fldformat&);
 	~fldformat(void);
 	void clear(void);
-	int is_empty(void);
+	int is_empty(void) const;
 	int load_format(const std::string &filename);
 	void copyFrom(const fldformat &from);
 	void moveFrom(fldformat &from);
-	inline fldformat *get_altformat(void);
+	inline fldformat *get_altformat(void) const;
 	inline fldformat *get_lastaltformat(void);
-	const std::string& get_description(void);
-	inline const unsigned int get_lengthLength() {return lengthLength;};
+	const std::string& get_description(void) const;
+	inline const unsigned int get_lengthLength(void) const {return lengthLength;};
 	fldformat& sf(int n);
 	bool sfexist(int n) const;
 	void erase(void);
@@ -102,18 +102,18 @@ class field
 	public:
 	typedef std::map<int,field>::iterator iterator;
 	typedef std::map<int,field>::const_iterator const_iterator;
-	iterator begin() { return subfields.begin();};
-	const_iterator begin() const { return subfields.begin();};
-	iterator end() { return subfields.end();};
-	const_iterator end() const { return subfields.end();};
+	iterator begin(void) { return subfields.begin();};
+	const_iterator begin(void) const { return subfields.begin();};
+	iterator end(void) { return subfields.end();};
+	const_iterator end(void) const { return subfields.end();};
 	iterator find(int n) { return subfields.find(n);};
 	const_iterator find(int n) const { return subfields.find(n);};
 	typedef std::map<int,field>::reverse_iterator reverse_iterator;
 	typedef std::map<int,field>::const_reverse_iterator const_reverse_iterator;
-	reverse_iterator rbegin() { return subfields.rbegin();};
-	const_reverse_iterator rbegin() const { return subfields.rbegin();};
-	reverse_iterator rend() { return subfields.rend();};
-	const_reverse_iterator rend() const { return subfields.rend();};
+	reverse_iterator rbegin(void) { return subfields.rbegin();};
+	const_reverse_iterator rbegin(void) const { return subfields.rbegin();};
+	reverse_iterator rend(void) { return subfields.rend();};
+	const_reverse_iterator rend(void) const { return subfields.rend();};
 
 	field(void);
 	field(const field&);
@@ -131,11 +131,11 @@ class field
 	unsigned int get_flength(void);
 	unsigned int get_mlength(void);
 
-	const std::string& get_description(void);
-	inline const int get_parsed_blength() {return blength;};
-	inline const int get_lengthLength() {return frm?frm->get_lengthLength():0;};
-	field& sf(int n);
-	bool sfexist(int n) const;
+	const std::string& get_description(void) const;
+	inline const int get_parsed_blength(void) const {return blength;};
+	inline const int get_lengthLength(void) const {return frm?frm->get_lengthLength():0;};
+	field& sf(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	bool sfexist(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1) const;
 
 	const std::string& get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	std::string& add_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);

@@ -356,7 +356,7 @@ bool field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, in
 	}
 }
 
-const string& field::get_description(void)
+const string& field::get_description(void) const
 {
 	static const string dummy="";
 	
@@ -367,34 +367,46 @@ const string& field::get_description(void)
 }
 
 //returns reference to subfield. If it does not exists, it will be added.
-field& field::sf(int n)
+field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
-	if(n < 0 || !frm)
+	if(n0 < 0 || !frm)
 	{
-		printf("Error: Wrong subfield number: %d\n", n);
+		printf("Error: Wrong subfield number: %d\n", n0);
 		exit(1);
 	}
 
-	if(!sfexist(n))
+	if(!sfexist(n0))
 	{
-		if(!frm->sfexist(n))
+		if(!frm->sfexist(n0))
 		{
-			printf("Error: Wrong format for subfield number: %d\n", n);
+			printf("Error: Wrong format for subfield number: %d\n", n0);
 			exit(1);
 		}
 
-		subfields[n].change_format(&frm->sf(n));
+		if(!subfields[n0].frm)
+			subfields[n0].change_format(&frm->sf(n0));
 	}
 
-	return subfields[n];
+	if(n1<0)
+		return subfields[n0];
+	else
+		return subfields[n0].sf(n1, n2, n3, n4, n5, n6, n7, n8, n9);
 }
 
-bool field::sfexist(int n) const
+bool field::sfexist(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9) const
 {
-	if(n < 0 || !frm)
+	if(n0 < 0 || !frm)
 		return false;
 
-	return subfields.count(n);
+	const_iterator it = subfields.find(n0);
+
+	if(it == subfields.end())
+		return false;
+
+	if(n1<0)
+		return true;
+	else
+		return it->second.sfexist(n1, n2, n3, n4, n5, n6, n7, n8, n9);
 }
 
 string to_string(unsigned int n)

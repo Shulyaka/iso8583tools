@@ -49,7 +49,7 @@ int field::parse_message(const string &msgbuf)
 int field::parse_field_length(const std::string::const_iterator &buf, const std::string::const_iterator &bufend)
 {
 	unsigned int lenlen=0;
-	unsigned int newlength=0; //TODO: union
+	unsigned int newlength=0;
 	string lengthbuf;
 
 	if(!frm)

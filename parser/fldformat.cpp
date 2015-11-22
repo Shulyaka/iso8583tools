@@ -64,7 +64,7 @@ void fldformat::clear(void)
 	parent=tmpfrm; //make parent immune to clear
 }
 
-int fldformat::is_empty(void)
+int fldformat::is_empty(void) const
 {
 	return description.empty()
 	    && lengthFormat==FRM_UNKNOWN
@@ -255,7 +255,7 @@ int fldformat::load_format(const string &filename)	//TODO: auto set maxLength fo
 	return 1;
 }
 
-inline fldformat* fldformat::get_altformat(void)
+inline fldformat* fldformat::get_altformat(void) const
 {
 	return altformat;
 }
@@ -619,7 +619,7 @@ int fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	return 1;
 }
 
-const string& fldformat::get_description(void)
+const string& fldformat::get_description(void) const
 {
 	return description;
 }
