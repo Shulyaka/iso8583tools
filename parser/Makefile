@@ -32,4 +32,4 @@ frmiterator.o: frmiterator.cpp parser.h
 		g++ -c frmiterator.cpp ${CFLAGS}
 
 tests: testparse
-		@for i in `ls tests`; do ./testparse tests/$$i >/dev/null || (echo "Test $$i failed with status $$?"; exit 1) || exit 1 ; done
+		@for i in `ls tests`; do echo "./testparse tests/$$i"; ./testparse tests/$$i >/dev/null || (echo "Test $$i failed with status $$?"; exit 1) || exit 1 ; done

@@ -17,7 +17,7 @@ int debug=0;
 int main(int argc, char **argv)
 {
 	fldformat frm;
-	field message;
+	field message(&frm);
 	char format_dir[]="./formats";
 	char filename[sizeof(format_dir)+NAME_MAX+1];
 	DIR *frmdir;
@@ -71,10 +71,11 @@ int main(int argc, char **argv)
 		return 3;
 	}
 
-	message.change_format(&frm);
-
 	if(debug)
 		printf("Info: Loaded %d formats\n", frmcounter);
+
+	if(debug)
+		frm.print_format();
 
 	if(argc>1)
 	{

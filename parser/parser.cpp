@@ -16,7 +16,7 @@ unsigned int parse_bcdl(const std::string::const_iterator&, std::string&, unsign
 // =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
 int field::parse_message(const string &msgbuf)
 {
-	field message;
+	field message(frm);
 	int parsedlength;
 
 	if(msgbuf.empty())
@@ -25,15 +25,6 @@ int field::parse_message(const string &msgbuf)
 			printf("Error: Empty input\n");
 		return 0;
 	}
-
-	if(!frm)
-	{
-		if(debug)
-			printf("Error: No frm\n");
-		return 0;
-	}
-
-	message.frm=frm;
 
 	parsedlength=message.parse_field(msgbuf.begin(), msgbuf.end());
 
@@ -51,13 +42,6 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 	unsigned int lenlen=0;
 	unsigned int newlength=0;
 	string lengthbuf;
-
-	if(!frm)
-	{
-		if(debug)
-			printf("Error: No frm\n");
-		return 0;
-	}
 
 	lenlen=frm->lengthLength;
 
@@ -217,7 +201,7 @@ int field::parse_field(const std::string::const_iterator &buf, const std::string
 
 	for(unsigned int i=0; tmpfrm!=NULL; tmpfrm=frm->altformat)
 	{
-		frm=tmpfrm;
+		change_format(tmpfrm);
 		altformat=i++;
 
 		newlength=parse_field_alt(buf, bufend);
@@ -232,7 +216,7 @@ int field::parse_field(const std::string::const_iterator &buf, const std::string
 
 		clear();
 
-		frm=tmpfrm; //save last attempted format
+		change_format(tmpfrm); //save last attempted format
 		altformat=i-1;
 	}
 
@@ -264,13 +248,6 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	{
 		if(debug)
 			printf("Error: No buf\n");
-		return 0;
-	}
-
-	if(!frm)
-	{
-		if(debug)
-			printf("Error: No frm\n");
 		return 0;
 	}
 
@@ -481,7 +458,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						if(sflen<=0)
 						{
 							if(debug)
-								printf("Error: unable to parse subfield (%d)\n", sflen);
+								printf("Error: unable to parse subfield %d (%s/%s, %d)\n", curnum, get_description().c_str(), sf(curnum).frm->get_description().c_str(), sflen);
 							subfields.erase(curnum);
 							parse_failed=1;
 							break;

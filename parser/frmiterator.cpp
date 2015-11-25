@@ -59,18 +59,18 @@ bool frmiterator::operator==(frmiterator const &other) const
 
 std::pair<const int, fldformat>& frmiterator::operator*(void)
 {
-	if(!wildcard||it->first==curnum||curnum<0)
-		return *it;
-	else
-	{
-		tmpmap[curnum].copyFrom(*wildcard); //construct a temporary map of the missing references
-		return *tmpmap.find(curnum);
-	}
+	return *this->operator->();
 }
 
 std::pair<const int, fldformat>* frmiterator::operator->(void)
 {
-	return &(*(*this));
+	if(!wildcard || (it!=end && (it->first==curnum || curnum<0)))
+		return it.operator->();
+	else
+	{
+		tmpmap[curnum].copyFrom(*wildcard); //construct a temporary map of the missing references
+		return tmpmap.find(curnum).operator->();
+	}
 }
 
 frmiterator& frmiterator::operator++(void)

@@ -11,6 +11,21 @@ string to_string(unsigned int);
 field::field(void)
 {
 	fill_default();
+	frm=new fldformat();
+	deletefrm=true;
+}
+
+field::field(fldformat *format)
+{
+	fill_default();
+	frm=format;
+}
+
+field::field(const std::string &filename)
+{
+	fill_default();
+	frm=new fldformat(filename);
+	deletefrm=true;
 }
 
 //copy constructor
@@ -22,6 +37,8 @@ field::field(const field &from)
 field::~field(void)
 {
 	clear();
+	if(deletefrm)
+		delete frm;
 }
 
 void field::fill_default(void)
@@ -33,13 +50,16 @@ void field::fill_default(void)
 	frm=NULL;
 	subfields.clear();
 	altformat=0;
+	deletefrm=false;
 }
 
 void field::clear(void)
 {
 	fldformat *tmpfrm=frm;
+	bool delfrm=deletefrm;
 	fill_default();
 	frm=tmpfrm; //make frm immune to clear()
+	deletefrm=delfrm;
 }
 
 //forks the field. All data and subfields are also copied so that all pointers except frm will have new values to newly copied data but non-pointers will have same values
@@ -54,7 +74,11 @@ void field::copyFrom(const field &from)
 	start=from.start;
 	blength=from.blength;
 	length=from.length;
-	frm=from.frm;
+	deletefrm=from.deletefrm;
+	if(deletefrm)
+		frm=new fldformat(*from.frm);
+	else
+		frm=from.frm;
 	subfields=from.subfields;
 	altformat=from.altformat;
 }
@@ -71,13 +95,6 @@ void field::moveFrom(field &from)
 
 void field::print_message(string numprefix) const
 {
-	if(!frm)
-	{
-		if(debug)
-			printf("Error: No format assigned\n");
-		return;
-	}
-
 	if(!numprefix.empty())
 		printf("%s ", numprefix.c_str());
 
@@ -105,7 +122,7 @@ void field::print_message(string numprefix) const
 
 bool field::is_empty(void) const
 {
-	if(!frm)
+	if(frm->is_empty())
 		return true;
 
 	switch(frm->dataFormat)
@@ -169,6 +186,12 @@ bool field::change_format(fldformat *frmnew)
 				printf("Error: Unable to revert\n");
 
 		return false;
+	}
+
+	if(deletefrm)
+	{
+		delete frmold;
+		deletefrm=false;
 	}
 
 	return true;
@@ -356,20 +379,10 @@ bool field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, in
 	}
 }
 
-const string& field::get_description(void) const
-{
-	static const string dummy="";
-	
-	if(!frm)
-		return dummy;
-	else
-		return frm->get_description();
-}
-
 //returns reference to subfield. If it does not exists, it will be added.
 field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
-	if(n0 < 0 || !frm)
+	if(n0 < 0)
 	{
 		printf("Error: Wrong subfield number: %d\n", n0);
 		exit(1);
@@ -383,7 +396,7 @@ field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7,
 			exit(1);
 		}
 
-		if(!subfields[n0].frm)
+		if(subfields[n0].is_empty())
 			subfields[n0].change_format(&frm->sf(n0));
 	}
 
@@ -395,7 +408,7 @@ field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7,
 
 bool field::sfexist(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9) const
 {
-	if(n0 < 0 || !frm)
+	if(n0 < 0)
 		return false;
 
 	const_iterator it = subfields.find(n0);

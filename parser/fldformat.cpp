@@ -7,10 +7,22 @@
 
 using namespace std;
 
+string to_string(unsigned int);
+
 //constructor
 fldformat::fldformat(void)
 {
 	fill_default();
+}
+
+fldformat::fldformat(const string &filename)
+{
+	fill_default();
+	if(!load_format(filename))
+	{
+		printf("Error: Unable to load format\n");
+		exit(1);
+	}
 }
 
 //copy constructor
@@ -136,6 +148,136 @@ void fldformat::moveFrom(fldformat &from)
 	from.clear();
 }
 
+void fldformat::print_format(string numprefix)
+{
+	if(!numprefix.empty())
+		printf("%s\t", numprefix.c_str());
+	else
+		printf("message\t");
+
+	if(dataFormat==FRM_ISOBITMAP)
+		printf("ISOBITMAP");
+	else
+	{
+		if(lengthFormat==FRM_FIXED)
+			printf("F");
+		else if(lengthFormat==FRM_UNKNOWN)
+			printf("U");
+		else if(lengthFormat==FRM_EMVL)
+			printf("M");
+		else
+			for(int i=0; i<lengthLength; i++)
+				switch(lengthFormat)
+			        {
+					case FRM_ASCII:
+						printf("L");
+						break;
+					case FRM_BIN:
+						printf("B");
+						break;
+					case FRM_BCD:
+						printf("C");
+						break;
+					case FRM_EBCDIC:
+						printf("E");
+						break;
+				}
+
+		if(lengthInclusive)
+			printf("I");
+
+		printf("%d", maxLength);
+
+		if(addLength)
+			printf("%+d", addLength);
+
+		switch(dataFormat)
+	        {
+			case FRM_SUBFIELDS:
+				printf("SF");
+				break;
+			case FRM_TLV1:
+				printf("TLV1");
+				break;
+			case FRM_TLV2:
+				printf("TLV2");
+				break;
+			case FRM_TLV3:
+				printf("TLV3");
+				break;
+			case FRM_TLV4:
+				printf("TLV4");
+				break;
+			case FRM_TLVEMV:
+				printf("TLVEMV");
+				break;
+			case FRM_BCDSF:
+				printf("BCDSF");
+				break;
+			case FRM_BITMAP:
+				printf("BITMAP");
+				break;
+			case FRM_BITSTR:
+				printf("BITSTR");
+				break;
+			case FRM_EBCDIC:
+				printf("EBCDIC");
+				break;
+			case FRM_BCD:
+				printf("BCD");
+				break;
+			case FRM_BIN:
+				printf("BIN");
+				break;
+			case FRM_HEX:
+				printf("HEX");
+				break;
+			case FRM_ASCII:
+				printf("ASCII");
+				break;
+		}
+
+		if(dataFormat==FRM_TLV1 || dataFormat==FRM_TLV2 || dataFormat==FRM_TLV3 || dataFormat==FRM_TLV4)
+			switch(tagFormat)
+			{
+				case FRM_EBCDIC:
+					printf("EBCDIC");
+					break;
+				case FRM_BCD:
+					printf("BCD");
+					break;
+				case FRM_BIN:
+					printf("BIN");
+					break;
+				case FRM_ASCII:
+					printf("ASCII");
+					break;
+			}
+
+		if(!data.empty())
+			printf("=%s", data.c_str());
+	}
+
+	printf("\t%s\n", description.c_str());
+
+	switch(dataFormat)
+	{
+		case FRM_SUBFIELDS:
+		case FRM_BCDSF:
+		case FRM_TLV1:
+		case FRM_TLV2:
+		case FRM_TLV3:
+		case FRM_TLV4:
+		case FRM_TLVEMV:
+			for(map<int,fldformat>::iterator i=subfields.begin(); i!=subfields.end(); ++i)
+				i->second.print_format((numprefix.empty() ? "" : numprefix + ".") + (i->first==-1? "*" : to_string(i->first)));
+			break;
+	}
+
+	if(altformat)
+		altformat->print_format(numprefix);
+}
+
 // load format from file
 // returns false on failure, true on success
 // if already loaded, adds new as altformat
@@ -253,19 +395,6 @@ bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength f
 		printf("Info: Loaded %d fields\n", k);
 
 	return true;
-}
-
-inline fldformat* fldformat::get_altformat(void) const
-{
-	return altformat;
-}
-
-inline fldformat* fldformat::get_lastaltformat(void)
-{
-	fldformat *last;
-	for(last=this; last->altformat!=NULL; )
-		last=last->altformat;
-	return last;
 }
 
 // parses a string and returns a pointer to format by its number.
@@ -619,24 +748,6 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	return true;
 }
 
-const string& fldformat::get_description(void) const
-{
-	return description;
-}
-
-//returns reference to subformat. If it does not exists but wildcard subformat exists, it will be returned instead. If none of them exist, a new subformat will be added.
-fldformat& fldformat::sf(int n)
-{
-	if(!subfields.count(n) && subfields.count(-1))
-		return subfields[-1];
-	return subfields[n];
-}
-
-bool fldformat::sfexist(int n) const
-{
-	return subfields.count(n) || subfields.count(-1);
-}
-
 void fldformat::erase(void)
 {
 	if(!parent)
@@ -680,3 +791,4 @@ fldformat::iterator fldformat::find(int n)
 		else
 			return end();
 }
+

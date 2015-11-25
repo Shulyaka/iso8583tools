@@ -11,11 +11,6 @@ unsigned int build_bcdl(const string::const_iterator&, string&, unsigned int);
 unsigned int build_bcdr(const string::const_iterator&, string&, unsigned int);
 string to_string(unsigned int);
 
-unsigned int field::build_message(string &buf)
-{
-	return build_field(buf);
-}
-
 //On success, returns field data length. If field has subfields, their total size is returned
 //On failure, returns 0
 unsigned int field::get_flength(void)
@@ -24,13 +19,6 @@ unsigned int field::get_flength(void)
 	unsigned int flength=data.length();
 	fldformat tmpfrm;
 	fldformat *frmold;
-
-	if(!frm)
-	{
-		if(debug)
-			printf("Error: No frm\n");
-		return 0;
-	}
 
 	flength=data.length();
 
@@ -99,13 +87,6 @@ unsigned int field::get_blength(void)
 	int bitmap_found=-1;
 	fldformat tmpfrm;
 	fldformat *frmold;
-
-	if(!frm)
-	{
-		if(debug)
-			printf("Error: No frm\n");
-		return 0;
-	}
 
 	if(frm->lengthFormat==FRM_EMVL)
 		if(frm->dataFormat==FRM_BCD || frm->dataFormat==FRM_HEX)
@@ -234,13 +215,6 @@ unsigned int field::get_mlength(void)
 	unsigned int flength=data.length();
 	unsigned int mlength=0;
 
-	if(!frm)
-	{
-		if(debug)
-			printf("Error: No frm\n");
-		return 0;
-	}
-
 	if(frm->lengthFormat==FRM_EMVL)
 		if(frm->dataFormat==FRM_BCD || frm->dataFormat==FRM_HEX)
 			lenlen=(data.length()+1)/2>127?2:1;
@@ -301,13 +275,6 @@ unsigned int field::build_field_length(string &buf)
 	fldformat tmpfrm;
 	fldformat *frmold;
 	unsigned int bufsize=buf.size();
-
-	if(!frm)
-	{
-		if(debug)
-			printf("Error: No frm\n");
-		return 0;
-	}
 
 	mlength=get_mlength();
 	if(!mlength)
@@ -419,13 +386,6 @@ unsigned int field::build_field(string &buf)  //TODO: remove build_field_alt() a
 	fldformat *tmpfrm=frm;
 	unsigned int newlength;
 
-	if(!frm)
-	{
-		if(debug)
-			printf("Error: No frm\n");
-		return 0;
-	}
-
 	if(altformat)   //if altformat is forced by field_format()
 		return build_field_alt(buf);  //then trying to build the field with it
 
@@ -463,13 +423,6 @@ unsigned int field::build_field_alt(string &buf)
 	fldformat *frmold;
 	unsigned int bufsize=buf.size();
 	unsigned char tmpc=0;
-
-	if(!frm)
-	{
-		if(debug)
-			printf("Error: No frm\n");
-		return 0;
-	}
 
 //	printf("Building %s\n", frm->get_description().c_str());
 

@@ -48,7 +48,7 @@ class fldformat
 	fldformat *parent;
 
 	void fill_default(void);
-
+	inline fldformat *get_lastaltformat(void) {fldformat *last; for(last=this; last->altformat!=NULL; ) last=last->altformat; return last;};
 	bool parseFormat(char*, std::map<std::string,fldformat> &orphans);
 	fldformat* get_by_number(const char *number, std::map<std::string,fldformat> &orphans);
 
@@ -61,19 +61,20 @@ class fldformat
 	iterator find(int);
 
 	fldformat(void);
+	fldformat(const std::string &filename);
 	fldformat(const fldformat&);
 	~fldformat(void);
+	void print_format(std::string prefix="");
 	void clear(void);
 	bool is_empty(void) const;
 	bool load_format(const std::string &filename);
 	void copyFrom(const fldformat &from);
 	void moveFrom(fldformat &from);
-	inline fldformat *get_altformat(void) const;
-	inline fldformat *get_lastaltformat(void);
-	const std::string& get_description(void) const;
+	inline fldformat *get_altformat(void) const {return altformat;};
+	inline const std::string& get_description(void) const {return description;};
 	inline const unsigned int get_lengthLength(void) const {return lengthLength;};
-	fldformat& sf(int n);
-	bool sfexist(int n) const;
+	inline fldformat& sf(int n) {if(!subfields.count(n) && subfields.count(-1)) return subfields[-1]; else return subfields[n];};
+	inline bool sfexist(int n) const {return subfields.count(n) || subfields.count(-1);};
 	void erase(void);
 };
 
@@ -85,6 +86,7 @@ class field
 	unsigned int blength;  //length of the field inside the message binary data (including length length)
 	unsigned int length;  //parsed data length
 	fldformat *frm;  //field format
+	bool deletefrm;
 	std::map<int,field> subfields;
 	unsigned int altformat;  //altformat number
 
@@ -116,6 +118,8 @@ class field
 	const_reverse_iterator rend(void) const { return subfields.rend();};
 
 	field(void);
+	field(fldformat *frm);
+	field(const std::string &filename);
 	field(const field&);
 	~field(void);
 	void print_message(std::string prefix="") const;
@@ -126,12 +130,12 @@ class field
 	void moveFrom(field &from);
 
 	int parse_message(const std::string&);
-	unsigned int build_message(std::string&);
+	inline unsigned int build_message(std::string& buf) {return build_field(buf);};
 	unsigned int get_blength(void);
 	unsigned int get_flength(void);
 	unsigned int get_mlength(void);
 
-	const std::string& get_description(void) const;
+	inline const std::string& get_description(void) const {return frm->get_description();};
 	inline const int get_parsed_blength(void) const {return blength;};
 	inline const int get_lengthLength(void) const {return frm?frm->get_lengthLength():0;};
 	field& sf(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
