@@ -13,12 +13,14 @@ field::field(void)
 	fill_default();
 	frm=new fldformat();
 	deletefrm=true;
+	firstfrm=frm;
 }
 
 field::field(fldformat *format)
 {
 	fill_default();
 	frm=format;
+	firstfrm=frm;
 }
 
 field::field(const std::string &filename)
@@ -26,6 +28,7 @@ field::field(const std::string &filename)
 	fill_default();
 	frm=new fldformat(filename);
 	deletefrm=true;
+	firstfrm=frm;
 }
 
 //copy constructor
@@ -51,15 +54,17 @@ void field::fill_default(void)
 	subfields.clear();
 	altformat=0;
 	deletefrm=false;
+	firstfrm=frm;
 }
 
 void field::clear(void)
 {
-	fldformat *tmpfrm=frm;
+	fldformat *tmpfirstfrm=firstfrm;
 	bool delfrm=deletefrm;
 	fill_default();
-	frm=tmpfrm; //make frm immune to clear()
 	deletefrm=delfrm;
+	firstfrm=tmpfirstfrm; //make firstfrm immune to clear()
+	frm=firstfrm; //reset altformat
 }
 
 //forks the field. All data and subfields are also copied so that all pointers except frm will have new values to newly copied data but non-pointers will have same values
@@ -75,10 +80,17 @@ void field::copyFrom(const field &from)
 	blength=from.blength;
 	length=from.length;
 	deletefrm=from.deletefrm;
+	frm=from.frm;
 	if(deletefrm)
-		frm=new fldformat(*from.frm);
+	{
+		firstfrm=new fldformat(*from.firstfrm);
+		frm=firstfrm;
+		for(fldformat *tmpfrm=from.firstfrm; tmpfrm!=NULL; tmpfrm=tmpfrm->get_altformat(), frm=frm->get_altformat())
+			if(tmpfrm==from.frm)
+				break;
+	}
 	else
-		frm=from.frm;
+		firstfrm=from.firstfrm;
 	subfields=from.subfields;
 	altformat=from.altformat;
 }
@@ -152,18 +164,67 @@ bool field::is_empty(void) const
 	return true;
 }
 
+// Switches to the next applicable altformat.
+// Returns true on success, false if no applicable altformats left after the current
+bool field::switch_altformat(void)
+{
+	fldformat *frmtmp=frm;
+
+	for(unsigned int i=altformat+1; (frmtmp=frmtmp->get_altformat())!=NULL; i++)
+		if(change_format(frmtmp))
+		{
+			altformat=i;
+			return true;
+		}
+
+	return false;
+}
+
+// Rewinds to the first applicable altformat.
+// Returns true on success, false if none formats are applicable (which is an error)
+bool field::reset_altformat(void)
+{
+	fldformat *frmtmp=firstfrm;
+
+	for(unsigned int i=0; frmtmp!=NULL; frmtmp=frmtmp->get_altformat(), i++)
+		if(change_format(frmtmp))
+		{
+			altformat=i;
+			return true;
+		}
+
+	return false;
+}
+
+// Assigns a new format to the field. Not to be used to switch to an altformat because it assumes the new format to be the root of altformat, so the information about the first altformat is lost and reset_altformat() would not reset to original altformat, use switch_altformat() instead.
+bool field::set_frm(fldformat *frmnew)
+{
+	if(!change_format(frmnew))
+		return false;
+
+	if(deletefrm)
+	{
+		delete firstfrm;
+		deletefrm=false;
+	}
+
+	firstfrm=frmnew;
+
+	return true;
+}
+
+// Internal function to change current format, not to be called directly
+// If the new format does not suit the already present field tree, the function will restore the original format. The function guarantees consistency of the resulting field format, however it is not guaranteed that all subfields will remain on the same altformats in case of failure.
 bool field::change_format(fldformat *frmnew)
 {
 	iterator i;
-	fldformat *frmold;
+	fldformat *frmold=frm;
 
 	if(!frmnew)
 		return false;
 
 	if(frm == frmnew)
 		return true;
-
-	frmold=frm;
 
 	frm=frmnew;
 
@@ -186,12 +247,6 @@ bool field::change_format(fldformat *frmnew)
 				printf("Error: Unable to revert\n");
 
 		return false;
-	}
-
-	if(deletefrm)
-	{
-		delete frmold;
-		deletefrm=false;
 	}
 
 	return true;
@@ -397,7 +452,7 @@ field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7,
 		}
 
 		if(subfields[n0].is_empty())
-			subfields[n0].change_format(&frm->sf(n0));
+			subfields[n0].set_frm(&frm->sf(n0));
 	}
 
 	if(n1<0)

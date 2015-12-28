@@ -16,7 +16,7 @@ unsigned int parse_bcdl(const std::string::const_iterator&, std::string&, unsign
 // =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
 int field::parse_message(const string &msgbuf)
 {
-	field message(frm);
+	field message(firstfrm);
 	int parsedlength;
 
 	if(msgbuf.empty())

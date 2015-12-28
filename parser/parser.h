@@ -86,6 +86,7 @@ class field
 	unsigned int blength;  //length of the field inside the message binary data (including length length)
 	unsigned int length;  //parsed data length
 	fldformat *frm;  //field format
+	fldformat *firstfrm;
 	bool deletefrm;
 	std::map<int,field> subfields;
 	unsigned int altformat;  //altformat number
@@ -100,6 +101,7 @@ class field
 	unsigned int build_field_alt(std::string&);
 	unsigned int build_isobitmap(std::string&, unsigned int);
 	unsigned int build_bitmap(std::string&, unsigned int);
+	bool change_format(fldformat*);
 
 	public:
 	typedef std::map<int,field>::iterator iterator;
@@ -125,7 +127,9 @@ class field
 	void print_message(std::string prefix="") const;
 	void clear(void);
 	bool is_empty(void) const;
-	bool change_format(fldformat*);
+	bool set_frm(fldformat*);
+	bool switch_altformat(void);
+	bool reset_altformat(void);
 	void copyFrom(const field &from);
 	void moveFrom(field &from);
 
