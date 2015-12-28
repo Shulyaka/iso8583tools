@@ -18,7 +18,8 @@ unsigned int field::get_flength(void)
 	unsigned int lenlen=0;
 	unsigned int flength=data.length();
 	fldformat tmpfrm;
-	fldformat *frmold;
+	fldformat *frmold, *firstfrmold;
+	unsigned int altformatold;
 
 	flength=data.length();
 
@@ -50,11 +51,15 @@ unsigned int field::get_flength(void)
 			tmpfrm.lengthLength=0;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
 			frmold=frm;
-			change_format(&tmpfrm);
+			firstfrmold=firstfrm;
+			altformatold=altformat;
+			set_frm(&tmpfrm);
 
 			flength=get_blength();
 
+			set_frm(firstfrmold);
 			change_format(frmold);
+			altformat=altformatold;
 			break;
 
 		case FRM_ISOBITMAP:
@@ -383,30 +388,43 @@ unsigned int field::build_field_length(string &buf)
 
 unsigned int field::build_field(string &buf)  //TODO: remove build_field_alt() and make sure altformat is set during filling of the field
 {
-	fldformat *tmpfrm=frm;
 	unsigned int newlength;
+	fldformat *frmold=frm;
 
-	if(altformat)   //if altformat is forced by field_format()
-		return build_field_alt(buf);  //then trying to build the field with it
+	do
+	{
+		newlength=build_field_alt(buf);
 
-	altformat=1;            //if not,
-	newlength=build_field_alt(buf);   //then try the first format
-	if(newlength)
-		return newlength;
+		if(newlength)
+			return newlength;
+
+		if(debug)
+			printf("Info: Retrying with an alternate format\n");
+	}
+	while(switch_altformat());
 
 	if(debug)
-		printf("Info: Retrying with an alternate format\n");
+		printf("Info: No alternate format\nWarning: Unable to build the field. Trying to reset to the first altformat and start over\n");
 
-	for(; tmpfrm->altformat; tmpfrm=tmpfrm->altformat)   //if that failed,
+	reset_altformat();
+
+	do
 	{
-		altformat++;            //then iterate through remaining altformats
-		if(change_format(tmpfrm->altformat))  //that we are able to change to
-		{
-			newlength=build_field_alt(buf);		//TODO: check blength against maxLength
-			if(newlength)
-				return newlength;
-		}
+		if(frmold==frm) //full loop
+			break;
+
+		newlength=build_field_alt(buf);
+
+		if(newlength)
+			return newlength;
+
+		if(debug)
+			printf("Info: Retrying with an alternate format\n");
 	}
+	while(switch_altformat());
+
+	if(debug)
+		printf("Info: No alternate format\n");
 
 	return 0;
 }
@@ -420,7 +438,8 @@ unsigned int field::build_field_alt(string &buf)
 	unsigned int pos, sflen, taglength=0;
 	int bitmap_found=-1;
 	fldformat tmpfrm;
-	fldformat *frmold;
+	fldformat *frmold, *firstfrmold;
+	unsigned int altformatold;
 	unsigned int bufsize=buf.size();
 	unsigned char tmpc=0;
 
@@ -594,11 +613,15 @@ unsigned int field::build_field_alt(string &buf)
 			tmpfrm.lengthLength=0;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
 			frmold=frm;
-			change_format(&tmpfrm);
+			firstfrmold=firstfrm;
+			altformatold=altformat;
+			set_frm(&tmpfrm);
 
 			flength=build_field(data);
 
+			set_frm(firstfrmold);
 			change_format(frmold);
+			altformat=altformatold;
 
 			if(!flength)
 			{

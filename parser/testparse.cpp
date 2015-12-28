@@ -12,7 +12,7 @@
 
 using namespace std;
 
-int debug=1;
+int debug=0;
 
 int main(int argc, char **argv)
 {
@@ -119,6 +119,8 @@ int main(int argc, char **argv)
 		printf("%s parsed, length: %d\n", message.get_description().c_str(), message.get_parsed_blength());
 
 	message.print_message();
+
+	message.reset_altformat();
 
 	if(debug)
 		printf("Building %s, estimated length: %d\n", message.get_description().c_str(), message.get_blength());
