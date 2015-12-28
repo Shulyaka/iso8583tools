@@ -59,12 +59,14 @@ void field::fill_default(void)
 
 void field::clear(void)
 {
-	fldformat *tmpfirstfrm=firstfrm;
+	fldformat *tmpfrm=frm, *tmpfirstfrm=firstfrm;
+	unsigned int tmpaltformat=altformat;
 	bool delfrm=deletefrm;
 	fill_default();
 	deletefrm=delfrm;
-	firstfrm=tmpfirstfrm; //make firstfrm immune to clear()
-	frm=firstfrm; //reset altformat
+	firstfrm=tmpfirstfrm; //make formats immune to clear()
+	frm=tmpfrm;
+	altformat=tmpaltformat;
 }
 
 //forks the field. All data and subfields are also copied so that all pointers except frm will have new values to newly copied data but non-pointers will have same values
@@ -199,7 +201,16 @@ bool field::reset_altformat(void)
 // Assigns a new format to the field. Not to be used to switch to an altformat because it assumes the new format to be the root of altformat, so the information about the first altformat is lost and reset_altformat() would not reset to original altformat, use switch_altformat() instead.
 bool field::set_frm(fldformat *frmnew)
 {
-	if(!change_format(frmnew))
+	fldformat *frmtmp=frmnew;
+
+	for(unsigned int i=0; frmtmp!=NULL; frmtmp=frmtmp->get_altformat(), i++)
+		if(change_format(frmtmp))
+		{
+			altformat=i;
+			break;
+		}
+
+	if(!frmtmp)
 		return false;
 
 	if(deletefrm)

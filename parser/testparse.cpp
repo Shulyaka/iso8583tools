@@ -12,7 +12,7 @@
 
 using namespace std;
 
-int debug=0;
+int debug=1;
 
 int main(int argc, char **argv)
 {

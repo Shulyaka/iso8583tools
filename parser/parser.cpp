@@ -83,7 +83,7 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 				
 			((char *)(&newlength))[0]=buf[lenlen-1];	
 			break;
-		
+
 		case FRM_BCD:
 			if(lenlen>3)
 			{
@@ -116,7 +116,7 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 			lengthbuf.assign(buf, buf+lenlen);
 			newlength=atoi(lengthbuf.c_str());
 			break;
-		
+
 		case FRM_EBCDIC:
 			if(lenlen>6)
 				for(unsigned int i=0; i < lenlen-6; i++)
@@ -175,7 +175,6 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 // =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
 int field::parse_field(const std::string::const_iterator &buf, const std::string::const_iterator &bufend)
 {
-	fldformat *tmpfrm;
 	int newlength;
 	int minlength=0;
 
@@ -188,21 +187,22 @@ int field::parse_field(const std::string::const_iterator &buf, const std::string
 
 	if(blength && frm && frm->altformat)
 	{
-		tmpfrm=frm->altformat;
 		clear();
-		if(debug)
-			printf("Field was already parsed. Retrying with alternate format \"%s\"\n", tmpfrm->get_description().c_str());
+
+		if(!switch_altformat())
+		{
+			if(debug)
+				printf("Error: Field was already parsed but unable to switch to altformat\n");
+			return 0;
+		}
 	}
 	else
-		tmpfrm=frm;
+		reset_altformat();
 
-	if(debug && tmpfrm==NULL)
-		printf("Error: No frm\n");
-
-	for(unsigned int i=0; tmpfrm!=NULL; tmpfrm=frm->altformat)
+	do
 	{
-		change_format(tmpfrm);
-		altformat=i++;
+		if(debug && altformat)
+			printf("Info: parse_field: Retrying with alternate format \"%s\"\n", frm->get_description().c_str());
 
 		newlength=parse_field_alt(buf, bufend);
 		if(newlength>0)
@@ -211,14 +211,9 @@ int field::parse_field(const std::string::const_iterator &buf, const std::string
 		if(newlength!=0 && (minlength==0 || newlength>minlength))
 			minlength=newlength;
 
-		if(debug && tmpfrm->altformat)
-			printf("Info: parse_field: Retrying with alternate format \"%s\"\n", tmpfrm->altformat->get_description().c_str());
-
 		clear();
-
-		change_format(tmpfrm); //save last attempted format
-		altformat=i-1;
 	}
+	while(switch_altformat());
 
 	return minlength;
 }
@@ -239,7 +234,8 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	int minlength=0;
 	unsigned int taglength=0;
 	fldformat tmpfrm;
-	fldformat *frmold;
+	fldformat *frmold, *firstfrmold;
+	unsigned int altformatold;
 	unsigned int maxlength=bufend-buf;
 	int curnum;
 	vector<int> fieldstack;
@@ -438,7 +434,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 								if(sflen>=0)
 									break;
 
-								sf(curnum).change_format(curfrm); //restore frm that might be replaced with altformat by parse_field
+								sf(curnum).reset_altformat(); //restore frm that might be replaced with altformat by parse_field
 
 								if(-sflen<=i)
 									sflen=-(i+1);
@@ -555,12 +551,16 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 			tmpfrm.addLength=0;
 			tmpfrm.dataFormat=FRM_SUBFIELDS;
 			frmold=frm;
-			change_format(&tmpfrm);
+			firstfrmold=firstfrm;
+			altformatold=altformat;
+			set_frm(&tmpfrm);
 
 			sflen=parse_field(data.begin(), data.end());
 			
 			data.clear();
+			set_frm(firstfrmold);
 			change_format(frmold);
+			altformat=altformatold;
 
 			if(sflen<=0)
 			{
