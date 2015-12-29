@@ -1,26 +1,6 @@
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
-//TODO: switch to enum
-#define FRM_UNKNOWN 0    //unknown format    U
-#define FRM_ISOBITMAP 1  //primary and secondary bitmaps
-#define FRM_BITMAP 2     //fixed length bitmap
-#define FRM_SUBFIELDS 3  //the contents is split to subfields     SF
-#define FRM_TLV 4       //TLV subfields, 1 byte tag format      TLV1
-//#define FRM_TLV2 5       //TLV subfields, 2 bytes tag format     TLV2
-//#define FRM_TLV3 6       //TLV subfields, 3 bytes tag format     TLV3
-//#define FRM_TLV4 7       //TLV subfields, 4 bytes tag format     TLV4
-#define FRM_TLVEMV 8     //TLV subfields, EMV tag format (BER)   TLVE
-#define FRM_EBCDIC 9    // EBCDIC EEEEE
-#define FRM_BCD 10   //  0x012345  CCCCC  BCD
-#define FRM_BIN 11   //  12345     BBBBB  BIN
-#define FRM_ASCII 12  // "12345"   LLLLL  ASC
-#define FRM_FIXED 13     // Fixed length   F12345
-#define FRM_HEX	14	// 0x0123FD -> "0123FD"
-#define FRM_BCDSF 15	// The field is first converted from BCD to ASCII, and then is split into subfields
-#define FRM_BITSTR 16	//Same as BITMAP but does not define subfields
-#define FRM_EMVL 17     // Length format for EMV tags
-
 #include <string>
 #include <map>
 
@@ -35,13 +15,41 @@ class fldformat
 {
 	private:
 	std::string description;
-	unsigned int lengthFormat;
+	enum fieldformat
+	{
+		fld_isobitmap,	// primary and secondary bitmaps	ISOBITMAP
+		fld_bitmap,	// fixed length bitmap			BITMAP
+		fld_subfields,	// the contents is split to subfields	SF
+		fld_tlv,	// TLV subfields			TLV
+		fld_ebcdic,	// EBCDIC				EBCDIC
+		fld_bcd,	// Binary Coded Decimal			BCD
+		fld_ascii,	// ASCII				ASC
+		fld_hex,	// 0x0123FD -> "0123FD"			HEX
+		fld_bcdsf,	// The field is first converted from BCD to ASCII, and then is split into subfields	BCDSF
+		fld_bitstr	// Same as BITMAP but does not define subfields						BITMAP
+	} dataFormat;
+	enum lengthformat
+	{
+		fll_unknown,	// unknown format		U
+		fll_ebcdic,	// 0xF1F2F3F4			E
+		fll_bcd,	// 0x012345			C
+		fll_bin,	// 12345			B
+		fll_ascii,	// "12345"			L
+		fll_fixed,	// Fixed length			F
+		fll_ber		// Length format for EMV tags	R
+	} lengthFormat;
 	unsigned int lengthLength;
 	unsigned short lengthInclusive;
 	unsigned int maxLength;
 	int addLength;
-	unsigned int dataFormat;
-	unsigned int tagFormat;
+	enum tagformat
+	{
+		flt_ebcdic,	// 0xF1F2F3F4		EBCDIC
+		flt_bcd,	// 0x012345		BCD
+		flt_bin,	// 12345		BIN
+		flt_ascii,	// 0x31323334		ASCII
+		flt_ber		// EMV tag format	TLVBER
+	} tagFormat;
 	unsigned int tagLength;
 	std::string data;
 	std::map<int,fldformat> subfields;
@@ -148,7 +156,7 @@ class field
 
 	const std::string& get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	std::string& add_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	int field_format(int altformat, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	int field_format(unsigned int altformat, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	void remove_field(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	bool has_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 };
@@ -157,13 +165,13 @@ class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 {
 	friend class fldformat;
 	private:
+	std::map<int,fldformat> tmpmap;
 	fldformat *wildcard;
 	std::map<int,fldformat>::iterator it;
+	std::map<int,fldformat>::iterator next;
 	std::map<int,fldformat>::iterator begin;
 	std::map<int,fldformat>::iterator end;
-	std::map<int,fldformat>::iterator next;
 	int curnum;
-	std::map<int,fldformat> tmpmap;
 
 	frmiterator(fldformat*, std::map<int,fldformat>::iterator, std::map<int,fldformat>::iterator, std::map<int,fldformat>::iterator, int);
 

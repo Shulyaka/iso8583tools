@@ -54,7 +54,7 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 
 	switch(frm->lengthFormat)
 	{
-		case FRM_BIN:
+		case fldformat::fll_bin:
 			if(lenlen>4)
 				for(unsigned int i=0; i < lenlen-4; i++)
 					if(buf[i]!='\0')
@@ -67,7 +67,7 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 				((char *)(&newlength))[i]=buf[(lenlen>4?4:lenlen)-i-1];
 			break;
 
-		case FRM_EMVL:
+		case fldformat::fll_ber:
 			if((unsigned char)buf[0]>127)
 			{
 				lenlen=2;
@@ -84,7 +84,7 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 			((char *)(&newlength))[0]=buf[lenlen-1];	
 			break;
 
-		case FRM_BCD:
+		case fldformat::fll_bcd:
 			if(lenlen>3)
 			{
 				for(unsigned int i=0; i < lenlen-3; i++)
@@ -103,7 +103,7 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 			newlength=atoi(lengthbuf.c_str());
 			break;
 
-		case FRM_ASCII:
+		case fldformat::fll_ascii:
 			if(lenlen>6)
 				for(unsigned int i=0; i < lenlen-6; i++)
 					if(buf[i]!='0')
@@ -117,7 +117,7 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 			newlength=atoi(lengthbuf.c_str());
 			break;
 
-		case FRM_EBCDIC:
+		case fldformat::fll_ebcdic:
 			if(lenlen>6)
 				for(unsigned int i=0; i < lenlen-6; i++)
 					if(buf[i]!=(char)0xF0)
@@ -135,16 +135,16 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 			newlength=atoi(lengthbuf.c_str());
 			break;
 
-		case FRM_UNKNOWN:
+		case fldformat::fll_unknown:
 			newlength=bufend-buf < frm->maxLength ? bufend-buf : frm->maxLength;
 			break;
 
-		case FRM_FIXED:
+		case fldformat::fll_fixed:
 			newlength=frm->maxLength;
 			break;
 
 		default:
-			if(frm->dataFormat!=FRM_ISOBITMAP)
+			if(frm->dataFormat!=fldformat::fld_isobitmap)
 			{
 				if(debug)
 					printf("Error: Unknown length format\n");
@@ -154,7 +154,7 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 
 	newlength-=frm->addLength;
 
-	if(frm->dataFormat==FRM_BCDSF && frm->lengthFormat!=FRM_FIXED)
+	if(frm->dataFormat==fldformat::fld_bcdsf && frm->lengthFormat!=fldformat::fll_fixed)
 		newlength*=2;
 
 	if(frm->lengthInclusive && newlength<=lenlen)
@@ -249,7 +249,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 	lenlen=frm->lengthLength;
 
-	if(frm->lengthFormat==FRM_EMVL)
+	if(frm->lengthFormat==fldformat::fll_ber)
 	{
 		if((unsigned char)buf[0]>127)
 			lenlen=2;
@@ -257,7 +257,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 			lenlen=1;
 	}
 
-	if(frm->dataFormat!=FRM_ISOBITMAP)
+	if(frm->dataFormat!=fldformat::fld_isobitmap)
 	{
 		sflen=parse_field_length(buf, bufend);
 
@@ -277,15 +277,15 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 		switch(frm->dataFormat)
 		{
-			case FRM_BITMAP:
-			case FRM_BITSTR:
+			case fldformat::fld_bitmap:
+			case fldformat::fld_bitstr:
 				newblength=(length+7)/8;
 				break;
-			case FRM_HEX:
-//			case FRM_BCDSF:
+			case fldformat::fld_hex:
+//			case fldformat::fld_bcdsf:
 				length=length*2;
-			case FRM_BCDSF:
-			case FRM_BCD:
+			case fldformat::fld_bcdsf:
+			case fldformat::fld_bcd:
 				newblength=(length+1)/2;
 				break;
 			default:
@@ -311,11 +311,10 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	
 	switch(frm->dataFormat)
 	{
-		case FRM_SUBFIELDS:
-		case FRM_TLV:
-		case FRM_TLVEMV:
+		case fldformat::fld_subfields:
+		case fldformat::fld_tlv:
 			parse_failed=1;
-			if(frm->dataFormat==FRM_SUBFIELDS)
+			if(frm->dataFormat==fldformat::fld_subfields)
 				cursf=frm->begin();
 			else
 				taglength=frm->tagLength;
@@ -333,7 +332,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 					if(pos==length+lenlen) // Some subfields are missing or canceled by bitmap
 						break;
 
-					if(frm->dataFormat==FRM_SUBFIELDS) // subfield number is defined by its position
+					if(frm->dataFormat==fldformat::fld_subfields) // subfield number is defined by its position
 					{
 						if(cursf==frm->end())
 						{
@@ -349,7 +348,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 					}
 					else // subfield number is encoded as a tag name
 					{
-						if(frm->dataFormat==FRM_TLVEMV)
+						if(frm->tagFormat==fldformat::flt_ber)
 						{
 							if((buf[pos]&0x1F)==0x1F)
 								taglength=2;
@@ -367,22 +366,23 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						lengthbuf.clear();
 						switch(frm->tagFormat)
 						{
-							case FRM_ASCII:
-								lengthbuf.assign(buf+pos, buf+pos+taglength);
-								curnum=atoi(lengthbuf.c_str());
-								break;
-							case FRM_EBCDIC:
+							case fldformat::flt_ebcdic:
 								parse_ebcdic(buf+pos, lengthbuf, taglength);
 								curnum=atoi(lengthbuf.c_str());
 								break;
-							case FRM_BCD:
+							case fldformat::flt_bcd:
 								parse_bcdl(buf+pos, lengthbuf, taglength*2);
 								curnum=atoi(lengthbuf.c_str());
 								break;
-							case FRM_BIN:
+							case fldformat::flt_ber:
+							case fldformat::flt_bin:
 								curnum=0;
 								for(unsigned int i=0; i<taglength; curnum++)
 									*(((char*)(&curnum))+3-i)=buf[pos+i];
+								break;
+							case fldformat::flt_ascii:
+								lengthbuf.assign(buf+pos, buf+pos+taglength);
+								curnum=atoi(lengthbuf.c_str());
 								break;
 							default:
 								if(debug)
@@ -393,7 +393,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						if(!frm->sfexist(curnum))
 						{
 							if(debug)
-								printf("Error: No format for TLV tag %d.\n", j);
+								printf("Error: No format for TLV tag %d.\n", curnum);
 							return 0;
 						}
 
@@ -406,7 +406,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 					sflen=0;
 
-					if(bitmap_start!=-1 && sf(bitmap_start).frm->dataFormat==FRM_ISOBITMAP && bitmap_end < curnum)
+					if(bitmap_start!=-1 && sf(bitmap_start).frm->dataFormat==fldformat::fld_isobitmap && bitmap_end < curnum)
 						break;
 
 					if(bitmap_start==-1 || (bitmap_end > curnum-1 && sf(bitmap_start).data[curnum-bitmap_start-1]=='1'))
@@ -418,7 +418,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 							sf(curnum).blength=sflen;
 						}
 
-						if(curfrm->lengthFormat==FRM_UNKNOWN && curfrm->dataFormat!=FRM_ISOBITMAP) //for unknown length, search for the smallest
+						if(curfrm->lengthFormat==fldformat::fll_unknown && curfrm->dataFormat!=fldformat::fld_isobitmap) //for unknown length, search for the smallest
 						{
 							sflen=-1;
 							for(unsigned int i=sf(curnum).blength+1; i<length+lenlen-pos+1; i=-sflen)
@@ -433,7 +433,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 								sf(curnum).reset_altformat(); //restore frm that might be replaced with altformat by parse_field
 
-								if(-sflen<=i)
+								if((unsigned int)-sflen<=i)
 									sflen=-(i+1);
 							}
 						}
@@ -457,14 +457,14 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 							break;
 						}
 
-						if(frm->dataFormat==FRM_SUBFIELDS && (sf(curnum).frm->dataFormat==FRM_BITMAP || sf(curnum).frm->dataFormat==FRM_ISOBITMAP))	//TODO: change sf(curnum).frm to curfrm or remove curfrm
+						if(frm->dataFormat==fldformat::fld_subfields && (sf(curnum).frm->dataFormat==fldformat::fld_bitmap || sf(curnum).frm->dataFormat==fldformat::fld_isobitmap))	//TODO: change sf(curnum).frm to curfrm or remove curfrm
 						{
 							if(debug && bitmap_start!=-1)
 								printf("Warning: Only one bitmap per subfield allowed\n");
 							bitmap_start=curnum;
 							bitmap_end=bitmap_start+sf(bitmap_start).data.length();
 
-							for(unsigned int i=0; i<bitmap_end-bitmap_start; i++)
+							for(int i=0; i<bitmap_end-bitmap_start; i++)
 								if(sf(bitmap_start).data[i]=='1' && !frm->sfexist(bitmap_start+1+i))
 								{
 									if(debug)
@@ -492,12 +492,12 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 				if(parse_failed)
 				{
-					if(sflen<0 && (minlength==0 || sflen-pos>minlength))
+					if(sflen<0 && (minlength==0 || sflen-(int)pos>minlength))
 						minlength=sflen-pos;
 
 					while(!fieldstack.empty())
 					{
-						if(frm->dataFormat==FRM_SUBFIELDS)
+						if(frm->dataFormat==fldformat::fld_subfields)
 							--cursf;
 						curnum=fieldstack.back();
 						fieldstack.pop_back();
@@ -505,7 +505,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						if(curnum==bitmap_start)
 							bitmap_start=-1;
 
-						if(sfexist(curnum) && ((sf(curnum).frm->lengthFormat==FRM_UNKNOWN && sf(curnum).frm->dataFormat!=FRM_ISOBITMAP && sf(curnum).blength < length+lenlen-sf(curnum).start) || sf(curnum).frm->altformat))
+						if(sfexist(curnum) && ((sf(curnum).frm->lengthFormat==fldformat::fll_unknown && sf(curnum).frm->dataFormat!=fldformat::fld_isobitmap && sf(curnum).blength < length+lenlen-sf(curnum).start) || sf(curnum).frm->altformat))
 						{
 							if(debug)
 								printf("Come back to sf %d of %s (%s)\n", curnum, frm->get_description().c_str(), sf(curnum).frm->get_description().c_str());
@@ -533,7 +533,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 			
 			break;
 
-		case FRM_BCDSF:
+		case fldformat::fld_bcdsf:
 			if(!parse_bcdl(buf+lenlen, data, length))
 			{
 				if(debug)
@@ -542,11 +542,11 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 			}
 
 			tmpfrm.copyFrom(*frm);
-			tmpfrm.lengthFormat=FRM_FIXED;
+			tmpfrm.lengthFormat=fldformat::fll_fixed;
 			tmpfrm.lengthLength=0;
 			tmpfrm.maxLength=length;
 			tmpfrm.addLength=0;
-			tmpfrm.dataFormat=FRM_SUBFIELDS;
+			tmpfrm.dataFormat=fldformat::fld_subfields;
 			frmold=frm;
 			firstfrmold=firstfrm;
 			altformatold=altformat;
@@ -568,7 +568,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 			break;
 
-		case FRM_ISOBITMAP:
+		case fldformat::fld_isobitmap:
 			for(unsigned int i=0; i==0 || buf[i*8-8]>>7; i++)
 			{
 				length=i*64+63;
@@ -588,28 +588,27 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 			}
 			break;
 
-		case FRM_BITMAP:
-		case FRM_BITSTR:
+		case fldformat::fld_bitmap:
+		case fldformat::fld_bitstr:
 			data.clear();
 			for(unsigned int i=0; i<length;i++)
 				data.push_back(buf[lenlen + i/8] & (1<<(7-i%8)) ? '1':'0');
 			break;
 
-		case FRM_BIN:
-		case FRM_ASCII:
+		case fldformat::fld_ascii:
 			data.assign(buf+lenlen, buf+lenlen+length);
 			break;
 
-		case FRM_HEX:
+		case fldformat::fld_hex:
 			parse_hex(buf+lenlen, data, length);
 			break;
 
-		case FRM_BCD:
+		case fldformat::fld_bcd:
 			if(!parse_bcdr(buf+lenlen, data, length))
 				return 0;
 			break;
 
-		case FRM_EBCDIC:
+		case fldformat::fld_ebcdic:
 			parse_ebcdic(buf+lenlen, data, newblength);
 			break;
 
@@ -622,14 +621,14 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	if(!frm->data.empty() && !data.empty() && data!=frm->data)
 	{
 		if(debug)
-			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data.c_str(), data, frm->get_description().c_str());
+			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data.c_str(), data.c_str(), frm->get_description().c_str());
 		data.clear();
 		return 0;
 	}
 
 	blength=lenlen+newblength;
 
-	if(debug && !data.empty() && frm->dataFormat!=FRM_SUBFIELDS)
+	if(debug && !data.empty() && frm->dataFormat!=fldformat::fld_subfields)
 		printf("%s \t[%d(%d)] [%s]\n", frm->get_description().c_str(), length, blength, data.c_str());
 
 	return lenlen+newblength;

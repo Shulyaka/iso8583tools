@@ -121,12 +121,13 @@ void field::print_message(string numprefix) const
 
 	switch(frm->dataFormat)
 	{
-		case FRM_SUBFIELDS:
-		case FRM_BCDSF:
-		case FRM_TLV:
-		case FRM_TLVEMV:
+		case fldformat::fld_subfields:
+		case fldformat::fld_bcdsf:
+		case fldformat::fld_tlv:
 			for(const_iterator i=begin(); i!=end(); ++i)
 				i->second.print_message(numprefix + to_string(i->first) + ".");
+			break;
+		default:
 			break;
 	}
 }
@@ -138,13 +139,12 @@ bool field::is_empty(void) const
 
 	switch(frm->dataFormat)
 	{
-		case FRM_SUBFIELDS:
-		case FRM_BCDSF:
-		case FRM_TLV:
-		case FRM_TLVEMV:
+		case fldformat::fld_subfields:
+		case fldformat::fld_bcdsf:
+		case fldformat::fld_tlv:
 			break;
-		case FRM_ISOBITMAP:
-		case FRM_BITMAP:
+		case fldformat::fld_isobitmap:
+		case fldformat::fld_bitmap:
 			return false;
 		default:
 			return data.empty();
@@ -154,7 +154,7 @@ bool field::is_empty(void) const
 		return true;
 
 	for(const_iterator i=begin(); i!=end(); ++i)
-		if(i->second.frm && i->second.frm->dataFormat!=FRM_ISOBITMAP && i->second.frm->dataFormat!=FRM_BITMAP && !i->second.is_empty())
+		if(i->second.frm && i->second.frm->dataFormat!=fldformat::fld_isobitmap && i->second.frm->dataFormat!=fldformat::fld_bitmap && !i->second.is_empty())
 			return false;
 
 	return true;
@@ -282,7 +282,7 @@ string& field::add_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6,
 	return curfld->data;
 }
 
-int field::field_format(int newaltformat, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
+int field::field_format(unsigned int newaltformat, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
 	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 	unsigned int i;
@@ -426,10 +426,9 @@ bool field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, in
 
 	switch(curfld->frm->dataFormat)
 	{
-		case FRM_SUBFIELDS:
-		case FRM_TLV:
-		case FRM_TLVEMV:
-		case FRM_BCDSF:
+		case fldformat::fld_subfields:
+		case fldformat::fld_tlv:
+		case fldformat::fld_bcdsf:
 			return subfields.empty();
 		default:
 			return data.empty();

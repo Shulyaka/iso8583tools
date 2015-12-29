@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 	if(!frmdir)
 		err(2, "Can't open %s", format_dir);
 
-	while(de=readdir(frmdir))
+	while((de=readdir(frmdir)))
 	{
 		#ifdef _DIRENT_HAVE_D_TYPE
 			if(de->d_type!=DT_LNK && de->d_type!=DT_REG && de->d_type!=DT_UNKNOWN)
@@ -143,7 +143,7 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s built. Length: %d/%d\n", message.get_description().c_str(), msglen2, msgbuf2.length());
+		printf("%s built. Length: %d/%ld\n", message.get_description().c_str(), msglen2, msgbuf2.length());
 
 	if(msglen2!=msglen)
 	{

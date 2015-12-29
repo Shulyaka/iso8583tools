@@ -9,10 +9,10 @@ frmiterator::frmiterator(void)
 frmiterator::frmiterator(fldformat *iwildcard, std::map<int,fldformat>::iterator iit, std::map<int,fldformat>::iterator ibegin, std::map<int,fldformat>::iterator iend, int icurnum) :
 	wildcard(iwildcard),
 	it(iit),
+	next(iit==iend?iend:++iit),
 	begin(ibegin),
 	end(iend),
-	curnum(icurnum),
-	next(iit==iend?iend:++iit)
+	curnum(icurnum)
 {
 	while(it!=end && it->first<0)
 		++it;
@@ -20,12 +20,12 @@ frmiterator::frmiterator(fldformat *iwildcard, std::map<int,fldformat>::iterator
 }
 
 frmiterator::frmiterator(const frmiterator &it) :
+	tmpmap(it.tmpmap),
 	wildcard(it.wildcard),
 	it(it.it),
 	next(it.next),
 	begin(it.begin),
 	end(it.end),
-	tmpmap(it.tmpmap),
 	curnum(it.curnum)
 {
 	return;
@@ -45,6 +45,7 @@ frmiterator& frmiterator::operator=(const frmiterator &other)
 	end=other.end;
 	tmpmap=other.tmpmap;
 	curnum=other.curnum;
+	return *this;
 }
 
 bool frmiterator::operator!=(frmiterator const &other) const

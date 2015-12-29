@@ -125,7 +125,7 @@ message 	BB800-2SF	Visa Message (with header)
 2.55		B255TLV2BCD	Integrated Circuit Card (ICC)-Related Data
 2.55.00         BB252TLV2	Chip Card TLV data elements (Usage 2)
 2.55.00.*	B250HEX		Chip data tag
-2.55.01		BB252TLVEMV	Chip Card TLV data elements (VSDC)
+2.55.01		BB252TLVBER	Chip Card TLV data elements (VSDC)
 2.55.01.*	M250HEX		Chip data tag
 2.59		B14EBCDIC	National Point-of-Service Geographic Data
 2.60		B12BCDSF	Additional POS Information

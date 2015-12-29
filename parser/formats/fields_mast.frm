@@ -206,7 +206,7 @@ message U1024SF		Mast Message
 54.1	R54.0		Amount 2
 54.2	R54.0		Amount 3
 54.3	R54.0		Amount 4
-55	EEE255TLVEMV	Integrated Circuit Card (ICC) System-Related Data
+55	EEE255TLVBER	Integrated Circuit Card (ICC) System-Related Data
 55.*	M255HEX		Chip data tag
 60	EEE60SF		Advice Reason Code
 60.1	F2EBCDIC	Advice Reason Code

@@ -50,13 +50,13 @@ fldformat::~fldformat(void)
 void fldformat::fill_default(void)
 {
 	description.clear();
-	lengthFormat=FRM_UNKNOWN;
+	lengthFormat=fll_unknown;
 	lengthLength=0;
 	lengthInclusive=0;
 	maxLength=1024;
 	addLength=0;
-	dataFormat=FRM_SUBFIELDS;
-	tagFormat=0;
+	dataFormat=fld_subfields;
+	tagFormat=flt_ascii;
 	tagLength=0;
 	data.clear();
 	subfields.clear();
@@ -67,7 +67,6 @@ void fldformat::fill_default(void)
 //empty to default
 void fldformat::clear(void)
 {
-	unsigned int i;
 	fldformat *tmpfrm=parent;
 
 	if(altformat!=NULL)
@@ -80,13 +79,13 @@ void fldformat::clear(void)
 bool fldformat::is_empty(void) const
 {
 	return description.empty()
-	    && lengthFormat==FRM_UNKNOWN
+	    && lengthFormat==fll_unknown
 	    && lengthLength==0
 	    && lengthInclusive==0
 	    && maxLength==1024
 	    && addLength==0
-	    && dataFormat==FRM_SUBFIELDS
-	    && tagFormat==0
+	    && dataFormat==fld_subfields
+	    && tagFormat==flt_ascii
 	    && tagLength==0
 	    && data==""
 	    && subfields.empty()
@@ -159,32 +158,36 @@ void fldformat::print_format(string numprefix)
 	else
 		printf("message\t");
 
-	if(dataFormat==FRM_ISOBITMAP)
+	if(dataFormat==fld_isobitmap)
 		printf("ISOBITMAP");
 	else
 	{
-		if(lengthFormat==FRM_FIXED)
+		if(lengthFormat==fll_fixed)
 			printf("F");
-		else if(lengthFormat==FRM_UNKNOWN)
+		else if(lengthFormat==fll_unknown)
 			printf("U");
-		else if(lengthFormat==FRM_EMVL)
+		else if(lengthFormat==fll_ber)
 			printf("M");
 		else
-			for(int i=0; i<lengthLength; i++)
+			for(unsigned int i=0; i<lengthLength; i++)
 				switch(lengthFormat)
 			        {
-					case FRM_ASCII:
+					case fll_ascii:
 						printf("L");
 						break;
-					case FRM_BIN:
+					case fll_bin:
 						printf("B");
 						break;
-					case FRM_BCD:
+					case fll_bcd:
 						printf("C");
 						break;
-					case FRM_EBCDIC:
+					case fll_ebcdic:
 						printf("E");
 						break;
+					case fll_fixed:
+					case fll_unknown:
+					case fll_ber:
+						break; // logic error
 				}
 
 		if(lengthInclusive)
@@ -197,54 +200,52 @@ void fldformat::print_format(string numprefix)
 
 		switch(dataFormat)
 	        {
-			case FRM_SUBFIELDS:
+			case fld_subfields:
 				printf("SF");
 				break;
-			case FRM_TLV:
-				printf("TLV%d", tagLength);
+			case fld_tlv:
 				switch(tagFormat)
 				{
-					case FRM_EBCDIC:
-						printf("EBCDIC");
+					case flt_ebcdic:
+						printf("TLV%dEBCDIC", tagLength);
 						break;
-					case FRM_BCD:
-						printf("BCD");
+					case flt_bcd:
+						printf("TLV%dBCD", tagLength);
 						break;
-					case FRM_BIN:
-						printf("BIN");
+					case flt_bin:
+						printf("TLV%dBIN", tagLength);
 						break;
-					case FRM_ASCII:
-						printf("ASCII");
+					case flt_ascii:
+						printf("TLV%dASCII", tagLength);
+						break;
+					case flt_ber:
+						printf("TLVBER");
 						break;
 				}
 				break;
-			case FRM_TLVEMV:
-				printf("TLVEMV");
-				break;
-			case FRM_BCDSF:
+			case fld_bcdsf:
 				printf("BCDSF");
 				break;
-			case FRM_BITMAP:
+			case fld_bitmap:
 				printf("BITMAP");
 				break;
-			case FRM_BITSTR:
+			case fld_bitstr:
 				printf("BITSTR");
 				break;
-			case FRM_EBCDIC:
+			case fld_ebcdic:
 				printf("EBCDIC");
 				break;
-			case FRM_BCD:
+			case fld_bcd:
 				printf("BCD");
 				break;
-			case FRM_BIN:
-				printf("BIN");
-				break;
-			case FRM_HEX:
+			case fld_hex:
 				printf("HEX");
 				break;
-			case FRM_ASCII:
+			case fld_ascii:
 				printf("ASCII");
 				break;
+			case fld_isobitmap:
+				break; //logic error
 		}
 
 		if(!data.empty())
@@ -255,12 +256,13 @@ void fldformat::print_format(string numprefix)
 
 	switch(dataFormat)
 	{
-		case FRM_SUBFIELDS:
-		case FRM_BCDSF:
-		case FRM_TLV:
-		case FRM_TLVEMV:
+		case fld_subfields:
+		case fld_bcdsf:
+		case fld_tlv:
 			for(map<int,fldformat>::iterator i=subfields.begin(); i!=subfields.end(); ++i)
 				i->second.print_format((numprefix.empty() ? "" : numprefix + ".") + (i->first==-1? "*" : to_string(i->first)));
+			break;
+		default:
 			break;
 	}
 
@@ -277,7 +279,6 @@ bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength f
 	char number[256];
 	char format[256];
 	char descr[256];
-	char chr;
 	unsigned int j=0;
 	int k=0;
 	fldformat *frmtmp, *frmnew;
@@ -396,7 +397,6 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 	unsigned int i, l;
 	int n;
 	string key;
-	fldformat *frmtmp;
 
 	if(altformat)
 		return get_lastaltformat()->get_by_number(number, orphans);
@@ -489,7 +489,7 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 
 	if(!strcmp(format, "ISOBITMAP"))
 	{
-		dataFormat=FRM_ISOBITMAP;
+		dataFormat=fld_isobitmap;
 		maxLength=192;
 		return true;
 	}
@@ -497,7 +497,7 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	switch (format[0])
 	{
 		case 'F':
-			lengthFormat=FRM_FIXED;
+			lengthFormat=fll_fixed;
 
 			lengthLength=0;
 
@@ -506,7 +506,7 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			break;
 
 		case 'L':
-			lengthFormat=FRM_ASCII;
+			lengthFormat=fll_ascii;
 
 			for(j=1; j<strlen(format); j++)
 				if(format[j]!='L')
@@ -517,7 +517,7 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			break;
 
 		case 'B':
-			lengthFormat=FRM_BIN;
+			lengthFormat=fll_bin;
 
 			for(j=1; j<strlen(format); j++)
 				if(format[j]!='B')
@@ -528,7 +528,7 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			break;
 
 		case 'C':
-			lengthFormat=FRM_BCD;
+			lengthFormat=fll_bcd;
 
 			for(j=1; j<strlen(format); j++)
 				if(format[j]!='C')
@@ -539,7 +539,7 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			break;
 
 		case 'E':
-			lengthFormat=FRM_EBCDIC;
+			lengthFormat=fll_ebcdic;
 
 			for(j=1; j<strlen(format); j++)
 				if(format[j]!='E')
@@ -550,13 +550,13 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			break;
 
 		case 'U':
-			lengthFormat=FRM_UNKNOWN;
+			lengthFormat=fll_unknown;
 			lengthLength=0;
 			j=1;
 			break;
 
 		case 'M':
-			lengthFormat=FRM_EMVL;
+			lengthFormat=fll_ber;
 			lengthLength=1;
 			j=1;
 			break;
@@ -650,54 +650,50 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	}
 
 	if(!strcmp(format+i, "SF"))
-		dataFormat=FRM_SUBFIELDS;
-	else if(!strcmp(format+i, "TLVEMV"))
-	{
-		dataFormat=FRM_TLVEMV;
-		tagFormat=FRM_HEX;
-	}
+		dataFormat=fld_subfields;
 	else if(!strncmp(format+i, "TLV", 3))
 	{
-		dataFormat=FRM_TLV;
-		i+=3;
-		tagLength=atoi(format+i);
-		for(; format[i]>='0' && format[i]<='9'; i++);
-
-		if(!strcmp(format+i, "EBCDIC") || !strcmp(format+i, "EBC"))
-			tagFormat=FRM_EBCDIC;
-		else if(!strcmp(format+i, "BCD"))
-			tagFormat=FRM_BCD;
-/*		else if(!strcmp(format+i, "HEX"))
-			tagFormat=FRM_HEX;*/
-		else if(!strcmp(format+i, "BIN"))
-			tagFormat=FRM_BIN;
-		else if(!strcmp(format+i, "ASCII") || !strcmp(format+i, "ASC") || format[i]=='\0')
-			tagFormat=FRM_ASCII;
+		dataFormat=fld_tlv;
+		if(!strcmp(format+i, "BER"))
+			tagFormat=flt_ber;
 		else
 		{
-			if(debug)
-				printf("Error: Unrecognized TLV tag format (%s)\n", format+i+4);
-			if(p)
-				*p='=';
-			return false;
+			i+=3;
+			tagLength=atoi(format+i);
+			for(; format[i]>='0' && format[i]<='9'; i++);
+
+			if(!strcmp(format+i, "EBCDIC") || !strcmp(format+i, "EBC"))
+				tagFormat=flt_ebcdic;
+			else if(!strcmp(format+i, "BCD"))
+				tagFormat=flt_bcd;
+			else if(!strcmp(format+i, "BIN"))
+				tagFormat=flt_bin;
+			else if(!strcmp(format+i, "ASCII") || !strcmp(format+i, "ASC") || format[i]=='\0')
+				tagFormat=flt_ascii;
+			else
+			{
+				if(debug)
+					printf("Error: Unrecognized TLV tag format (%s)\n", format+i+4);
+				if(p)
+					*p='=';
+				return false;
+			}
 		}
 	}
 	else if(!strcmp(format+i, "BCDSF"))
-		dataFormat=FRM_BCDSF;
+		dataFormat=fld_bcdsf;
 	else if(!strcmp(format+i, "BITMAP"))
-		dataFormat=FRM_BITMAP;
+		dataFormat=fld_bitmap;
 	else if(!strcmp(format+i, "BITSTR"))
-		dataFormat=FRM_BITSTR;
+		dataFormat=fld_bitstr;
 	else if(!strcmp(format+i, "EBCDIC") || !strcmp(format+i, "EBC"))
-		dataFormat=FRM_EBCDIC;
+		dataFormat=fld_ebcdic;
 	else if(!strcmp(format+i, "BCD"))
-		dataFormat=FRM_BCD;
-	else if(!strcmp(format+i, "BIN"))
-		dataFormat=FRM_BIN;
+		dataFormat=fld_bcd;
 	else if(!strcmp(format+i, "HEX"))
-		dataFormat=FRM_HEX;
+		dataFormat=fld_hex;
 	else if(!strcmp(format+i, "ASCII") || !strcmp(format+i, "ASC"))
-		dataFormat=FRM_ASCII;
+		dataFormat=fld_ascii;
 	else
 	{
 		if(debug)
@@ -710,7 +706,7 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 	if(p)
 		*p='=';
 
-	if(p && dataFormat!=FRM_BITSTR && dataFormat!=FRM_EBCDIC && dataFormat!=FRM_BCD && dataFormat!=FRM_BIN && dataFormat!=FRM_HEX && dataFormat!=FRM_ASCII)
+	if(p && dataFormat!=fld_bitstr && dataFormat!=fld_ebcdic && dataFormat!=fld_bcd && dataFormat!=fld_hex && dataFormat!=fld_ascii)
 	{
 		if(debug)
 			printf("Error: Mandatory data specified for subfield format\n");

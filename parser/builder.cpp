@@ -23,8 +23,8 @@ unsigned int field::get_flength(void)
 
 	flength=data.length();
 
-	if(frm->lengthFormat==FRM_EMVL)
-		if(frm->dataFormat==FRM_BCD || frm->dataFormat==FRM_HEX)
+	if(frm->lengthFormat==fldformat::fll_ber)
+		if(frm->dataFormat==fldformat::fld_bcd || frm->dataFormat==fldformat::fld_hex)
 			lenlen=(flength+1)/2>127?2:1;
 		else
 			lenlen=flength>127?2:1;
@@ -33,20 +33,19 @@ unsigned int field::get_flength(void)
 
 	switch(frm->dataFormat)
 	{
-		case FRM_SUBFIELDS:
-		case FRM_TLV:
-		case FRM_TLVEMV:
+		case fldformat::fld_subfields:
+		case fldformat::fld_tlv:
 			flength=get_blength();
 			if(flength<=lenlen)
 				return 0;
 			flength-=lenlen;
 			break;
 
-		case FRM_BCDSF:
+		case fldformat::fld_bcdsf:
 			tmpfrm.copyFrom(*frm);
-			tmpfrm.lengthFormat=FRM_UNKNOWN;
+			tmpfrm.lengthFormat=fldformat::fll_unknown;
 			tmpfrm.lengthLength=0;
-			tmpfrm.dataFormat=FRM_SUBFIELDS;
+			tmpfrm.dataFormat=fldformat::fld_subfields;
 			frmold=frm;
 			firstfrmold=firstfrm;
 			altformatold=altformat;
@@ -59,14 +58,13 @@ unsigned int field::get_flength(void)
 			altformat=altformatold;
 			break;
 
-		case FRM_ISOBITMAP:
-		case FRM_BITMAP:
-		case FRM_BITSTR:
-		case FRM_BIN:
-		case FRM_ASCII:
-		case FRM_EBCDIC:
-		case FRM_HEX:
-		case FRM_BCD:
+		case fldformat::fld_isobitmap:
+		case fldformat::fld_bitmap:
+		case fldformat::fld_bitstr:
+		case fldformat::fld_ascii:
+		case fldformat::fld_ebcdic:
+		case fldformat::fld_hex:
+		case fldformat::fld_bcd:
 			break;
 
 		default:
@@ -88,10 +86,9 @@ unsigned int field::get_blength(void)
 	unsigned int pos, sflen, taglength=0;
 	int bitmap_found=-1;
 	fldformat tmpfrm;
-	fldformat *frmold;
 
-	if(frm->lengthFormat==FRM_EMVL)
-		if(frm->dataFormat==FRM_BCD || frm->dataFormat==FRM_HEX)
+	if(frm->lengthFormat==fldformat::fll_ber)
+		if(frm->dataFormat==fldformat::fld_bcd || frm->dataFormat==fldformat::fld_hex)
 			lenlen=(flength+1)/2>127?2:1;
 		else
 			lenlen=flength>127?2:1;
@@ -100,15 +97,14 @@ unsigned int field::get_blength(void)
 
 	switch(frm->dataFormat)
 	{
-		case FRM_SUBFIELDS:
-		case FRM_TLV:
-		case FRM_TLVEMV:
+		case fldformat::fld_subfields:
+		case fldformat::fld_tlv:
 			pos=lenlen;
 
-			if(frm->dataFormat==FRM_SUBFIELDS)
+			if(frm->dataFormat==fldformat::fld_subfields)
 			{
 				for(fldformat::iterator i=frm->begin(); i!=frm->end(); ++i)
-					if(i->second.dataFormat==FRM_ISOBITMAP || i->second.dataFormat==FRM_BITMAP)
+					if(i->second.dataFormat==fldformat::fld_isobitmap || i->second.dataFormat==fldformat::fld_bitmap)
 						for(field::iterator j=begin(); j!=end(); ++j)
 							if(j->first > i->first && !j->second.is_empty())
 							{
@@ -124,20 +120,20 @@ unsigned int field::get_blength(void)
 				if(pos==frm->maxLength+lenlen)
 					break;
 
-				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=FRM_ISOBITMAP && frm->sf(bitmap_found).maxLength < i->first-bitmap_found)
+				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=fldformat::fld_isobitmap && frm->sf(bitmap_found).maxLength < i->first-(unsigned int)bitmap_found)
 					break;
 
 				if(!frm->sfexist(i->first))
 					return 0;
 
-				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==FRM_ISOBITMAP || frm->sf(bitmap_found).maxLength > i->first-bitmap_found-1)
+				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==fldformat::fld_isobitmap || frm->sf(bitmap_found).maxLength > i->first-(unsigned int)bitmap_found-1)
 				{
-					if(frm->dataFormat==FRM_SUBFIELDS && frm->sf(i->first).dataFormat==FRM_ISOBITMAP)
+					if(frm->dataFormat==fldformat::fld_subfields && frm->sf(i->first).dataFormat==fldformat::fld_isobitmap)
 					{
 						bitmap_found=i->first;
 						sflen=((subfields.rbegin()->first - i->first)/64+1)*8;
 					}
-					else if(frm->dataFormat==FRM_SUBFIELDS && frm->sf(i->first).dataFormat==FRM_BITMAP)
+					else if(frm->dataFormat==fldformat::fld_subfields && frm->sf(i->first).dataFormat==fldformat::fld_bitmap)
 					{
 						bitmap_found=i->first;
 						sflen=(frm->sf(i->first).maxLength+7)/8;
@@ -150,7 +146,7 @@ unsigned int field::get_blength(void)
 					if(!sflen)
 						return 0;
 
-					if(frm->dataFormat==FRM_TLVEMV)
+					if(frm->dataFormat==fldformat::fld_tlv && frm->tagFormat==fldformat::flt_ber)
 						taglength=i->first>0xFF?2:1;
 
 					pos+=taglength+sflen;
@@ -161,9 +157,9 @@ unsigned int field::get_blength(void)
 			
 			break;
 
-		case FRM_BCDSF:
-		case FRM_HEX:
-		case FRM_BCD:
+		case fldformat::fld_bcdsf:
+		case fldformat::fld_hex:
+		case fldformat::fld_bcd:
 			flength=get_flength();
 
 			if(!flength)
@@ -173,24 +169,23 @@ unsigned int field::get_blength(void)
 
 			break;
 
-		case FRM_ISOBITMAP:
+		case fldformat::fld_isobitmap:
 			flength=get_flength();
 			if(!flength)
 				return 0;
 			newblength=(flength/64)*8;
 			break;
 
-		case FRM_BITMAP:
-		case FRM_BITSTR:
+		case fldformat::fld_bitmap:
+		case fldformat::fld_bitstr:
 			flength=get_flength();
 			if(!flength)
 				return 0;
 			newblength=(flength+7)/8;
 			break;
 
-		case FRM_BIN:
-		case FRM_ASCII:
-		case FRM_EBCDIC:
+		case fldformat::fld_ascii:
+		case fldformat::fld_ebcdic:
 			flength=get_flength();
 			if(!flength)
 				return 0;
@@ -211,11 +206,10 @@ unsigned int field::get_blength(void)
 unsigned int field::get_mlength(void)
 {
 	unsigned int lenlen=0;
-	unsigned int flength=data.length();
 	unsigned int mlength=0;
 
-	if(frm->lengthFormat==FRM_EMVL)
-		if(frm->dataFormat==FRM_BCD || frm->dataFormat==FRM_HEX)
+	if(frm->lengthFormat==fldformat::fll_ber)
+		if(frm->dataFormat==fldformat::fld_bcd || frm->dataFormat==fldformat::fld_hex)
 			lenlen=(data.length()+1)/2>127?2:1;
 		else
 			lenlen=data.length()>127?2:1;
@@ -224,23 +218,21 @@ unsigned int field::get_mlength(void)
 
 	switch(frm->dataFormat)
 	{
-		case FRM_SUBFIELDS:
-		case FRM_TLV:
-		case FRM_TLVEMV:
-		case FRM_ISOBITMAP:
-		case FRM_BITMAP:
-		case FRM_BITSTR:
-		case FRM_BIN:
-		case FRM_ASCII:
-		case FRM_EBCDIC:
-		case FRM_BCD:
+		case fldformat::fld_subfields:
+		case fldformat::fld_tlv:
+		case fldformat::fld_isobitmap:
+		case fldformat::fld_bitmap:
+		case fldformat::fld_bitstr:
+		case fldformat::fld_ascii:
+		case fldformat::fld_ebcdic:
+		case fldformat::fld_bcd:
 			mlength=get_flength();
 			if(!mlength)
 				return 0;
 			break;
 
-		case FRM_BCDSF:
-		case FRM_HEX:
+		case fldformat::fld_bcdsf:
+		case fldformat::fld_hex:
 			mlength=get_blength();
 			if(mlength<=lenlen)
 				return 0;
@@ -262,15 +254,9 @@ unsigned int field::get_mlength(void)
 unsigned int field::build_field_length(string &buf)
 {
 	unsigned int lenlen=0;
-	unsigned int newblength=0;
-	unsigned int flength=0;
 	unsigned int mlength=0;
 	string lengthbuf;
-	unsigned int pos, sflen, taglength;
-	int bitmap_found=-1;
 	fldformat tmpfrm;
-	fldformat *frmold;
-	unsigned int bufsize=buf.size();
 
 	mlength=get_mlength();
 	if(!mlength)
@@ -284,7 +270,7 @@ unsigned int field::build_field_length(string &buf)
 
 	switch(frm->lengthFormat)
 	{
-		case FRM_FIXED:
+		case fldformat::fll_fixed:
 			if(frm->maxLength != mlength)
 			{
 				if(debug)
@@ -293,7 +279,7 @@ unsigned int field::build_field_length(string &buf)
 			}
 			break;
 
-		case FRM_BIN:
+		case fldformat::fll_bin:
 			if(lenlen>4)
 				buf.append(lenlen-4, '\0');
 
@@ -302,7 +288,7 @@ unsigned int field::build_field_length(string &buf)
 
 			break;
 
-		case FRM_EMVL:
+		case fldformat::fll_ber:
 			if(mlength>127)
 			{
 				lenlen=2;
@@ -312,7 +298,7 @@ unsigned int field::build_field_length(string &buf)
 			buf.push_back(mlength);
 			break;
 
-		case FRM_BCD:
+		case fldformat::fll_bcd:
 			lengthbuf=to_string(mlength);
 			if(lengthbuf.length()>lenlen*2)
 			{
@@ -328,7 +314,7 @@ unsigned int field::build_field_length(string &buf)
 
 			break;
 
-		case FRM_ASCII:
+		case fldformat::fll_ascii:
 			lengthbuf=to_string(mlength);
 			if(lengthbuf.length()>lenlen)
 			{
@@ -343,7 +329,7 @@ unsigned int field::build_field_length(string &buf)
 
 			break;
 	
-		case FRM_EBCDIC:
+		case fldformat::fll_ebcdic:
 			lengthbuf=to_string(mlength);
 			if(lengthbuf.length()>lenlen)
 			{
@@ -359,11 +345,11 @@ unsigned int field::build_field_length(string &buf)
 
 			break;
 
-		case FRM_UNKNOWN:
+		case fldformat::fll_unknown:
 			break;
 
 		default:
-			if(frm->dataFormat!=FRM_ISOBITMAP)
+			if(frm->dataFormat!=fldformat::fld_isobitmap)
 			{
 				if(debug)
 					printf("Error: Unknown length format\n");
@@ -372,7 +358,7 @@ unsigned int field::build_field_length(string &buf)
 	}
 
 	if(debug && lenlen)
-		printf("build_field_length: %s, lenlen %d, mlength %d, total length %d\n", frm->get_description().c_str(), lenlen, mlength, buf.length());
+		printf("build_field_length: %s, lenlen %d, mlength %d, total length %ld\n", frm->get_description().c_str(), lenlen, mlength, buf.length());
 
 	return lenlen;
 }
@@ -431,7 +417,6 @@ unsigned int field::build_field_alt(string &buf)
 	fldformat tmpfrm;
 	fldformat *frmold, *firstfrmold;
 	unsigned int altformatold;
-	unsigned int bufsize=buf.size();
 	unsigned char tmpc=0;
 
 //	printf("Building %s\n", frm->get_description().c_str());
@@ -439,7 +424,7 @@ unsigned int field::build_field_alt(string &buf)
 	if(!frm->data.empty() && !data.empty() && data!=frm->data)
 	{
 		if(debug)
-			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data.c_str(), data, frm->get_description().c_str());
+			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data.c_str(), data.c_str(), frm->get_description().c_str());
 		return 0;
 	}
 
@@ -455,13 +440,12 @@ unsigned int field::build_field_alt(string &buf)
 
 	switch(frm->dataFormat)
 	{
-		case FRM_SUBFIELDS:
-		case FRM_TLV:
-		case FRM_TLVEMV:
-			if(frm->dataFormat==FRM_SUBFIELDS)
+		case fldformat::fld_subfields:
+		case fldformat::fld_tlv:
+			if(frm->dataFormat==fldformat::fld_subfields)
 			{
 				for(fldformat::iterator i=frm->begin(); i!=frm->end(); ++i)
-					if(i->second.dataFormat==FRM_ISOBITMAP || i->second.dataFormat==FRM_BITMAP)
+					if(i->second.dataFormat==fldformat::fld_isobitmap || i->second.dataFormat==fldformat::fld_bitmap)
 						for(field::iterator j=begin(); j!=end(); ++j)
 							if(j->first > i->first && !j->second.is_empty())
 							{
@@ -477,7 +461,7 @@ unsigned int field::build_field_alt(string &buf)
 				if(pos==frm->maxLength+lenlen)       //TODO: should we remove?
 					break;
 
-				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=FRM_ISOBITMAP && frm->sf(bitmap_found).maxLength < i->first-bitmap_found)	//TODO: suspicious condition
+				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=fldformat::fld_isobitmap && frm->sf(bitmap_found).maxLength < i->first-(unsigned int)bitmap_found)	//TODO: suspicious condition
 					break;
 
 				if(!frm->sfexist(i->first))
@@ -487,14 +471,14 @@ unsigned int field::build_field_alt(string &buf)
 					return 0;
 				}
 
-				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==FRM_ISOBITMAP || frm->sf(bitmap_found).maxLength > i->first-bitmap_found-1)
+				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==fldformat::fld_isobitmap || frm->sf(bitmap_found).maxLength > i->first-(unsigned int)bitmap_found-1)
 				{
-					if(frm->dataFormat==FRM_SUBFIELDS && frm->sf(i->first).dataFormat==FRM_ISOBITMAP)
+					if(frm->dataFormat==fldformat::fld_subfields && frm->sf(i->first).dataFormat==fldformat::fld_isobitmap)
 					{
 						bitmap_found=i->first;
 						sflen=build_isobitmap(buf, i->first);
 					}
-					else if(frm->dataFormat==FRM_SUBFIELDS && frm->sf(i->first).dataFormat==FRM_BITMAP)
+					else if(frm->dataFormat==fldformat::fld_subfields && frm->sf(i->first).dataFormat==fldformat::fld_bitmap)
 					{
 						bitmap_found=i->first;
 						sflen=build_bitmap(buf, i->first);
@@ -507,28 +491,11 @@ unsigned int field::build_field_alt(string &buf)
 					}
 					else
 					{
-						if(frm->dataFormat!=FRM_SUBFIELDS)
+						if(frm->dataFormat!=fldformat::fld_subfields)
 						{
-							if(frm->dataFormat==FRM_TLVEMV)
-								taglength=i->first>0xFF?2:1;
-
 							switch(frm->tagFormat)
 							{
-								case FRM_ASCII:
-									lengthbuf=to_string(i->first);
-									if(lengthbuf.length()>taglength)
-									{
-										if(debug)
-											printf("Error: TLV tag number is too big (%d)\n", i->first);
-										return 0;
-									}
-
-									buf.append(taglength - lengthbuf.length(), '0');
-									buf.append(lengthbuf);
-
-									break;
-
-								case FRM_EBCDIC:
+								case fldformat::flt_ebcdic:
 									lengthbuf=to_string(i->first);
 									if(lengthbuf.length()>taglength)
 									{
@@ -543,15 +510,7 @@ unsigned int field::build_field_alt(string &buf)
 										return 0;
 									break;
 
-								case FRM_BIN:
-									if(taglength>4)
-										buf.append(taglength-4, '\0');
-
-									for(unsigned int j=0; j<(taglength>4?4:taglength); j++)
-										buf.push_back(((unsigned char *)(&(i->first)))[(taglength>4?4:taglength)-j-1]);  //TODO: htonl()
-									break;
-
-								case FRM_BCD:
+								case fldformat::flt_bcd:
 									lengthbuf=to_string(i->first);
 									if(lengthbuf.length()>taglength*2)
 									{
@@ -564,6 +523,31 @@ unsigned int field::build_field_alt(string &buf)
 
 									if(!build_bcdr(lengthbuf.begin(), buf, lengthbuf.length()))
 										return 0;
+									break;
+
+								case fldformat::flt_ber:
+									taglength=i->first>0xFF?2:1;
+									//no break intentionally
+								case fldformat::flt_bin:
+									if(taglength>4)
+										buf.append(taglength-4, '\0');
+
+									for(unsigned int j=0; j<(taglength>4?4:taglength); j++)
+										buf.push_back(((unsigned char *)(&(i->first)))[(taglength>4?4:taglength)-j-1]);  //TODO: htonl()
+									break;
+
+								case fldformat::flt_ascii:
+									lengthbuf=to_string(i->first);
+									if(lengthbuf.length()>taglength)
+									{
+										if(debug)
+											printf("Error: TLV tag number is too big (%d)\n", i->first);
+										return 0;
+									}
+
+									buf.append(taglength - lengthbuf.length(), '0');
+									buf.append(lengthbuf);
+
 									break;
 
 								default:
@@ -593,13 +577,13 @@ unsigned int field::build_field_alt(string &buf)
 
 			break;
 
-		case FRM_BCDSF:
+		case fldformat::fld_bcdsf:
 			data.clear();
 
 			tmpfrm.copyFrom(*frm);
-			tmpfrm.lengthFormat=FRM_UNKNOWN;
+			tmpfrm.lengthFormat=fldformat::fll_unknown;
 			tmpfrm.lengthLength=0;
-			tmpfrm.dataFormat=FRM_SUBFIELDS;
+			tmpfrm.dataFormat=fldformat::fld_subfields;
 			frmold=frm;
 			firstfrmold=firstfrm;
 			altformatold=altformat;
@@ -631,7 +615,7 @@ unsigned int field::build_field_alt(string &buf)
 			
 			break;
 
-		case FRM_ISOBITMAP:
+		case fldformat::fld_isobitmap:
 			flength=data.length();
 
 			if(flength==0)
@@ -674,8 +658,8 @@ unsigned int field::build_field_alt(string &buf)
 
 			break;
 
-		case FRM_BITMAP:
-		case FRM_BITSTR:
+		case fldformat::fld_bitmap:
+		case fldformat::fld_bitstr:
 			flength=data.length();
 
 			newblength=(flength+7)/8;
@@ -694,13 +678,12 @@ unsigned int field::build_field_alt(string &buf)
 
 			break;
 
-		case FRM_BIN:
-		case FRM_ASCII:
+		case fldformat::fld_ascii:
 			newblength=data.length();
 			buf.append(data);
 			break;
 
-		case FRM_HEX:
+		case fldformat::fld_hex:
 			flength=data.length();
 			newblength=(flength+1)/2;
 			if(!build_hex(data.begin(), buf, flength))
@@ -708,7 +691,7 @@ unsigned int field::build_field_alt(string &buf)
 
 			break;
 
-		case FRM_BCD:
+		case fldformat::fld_bcd:
 			flength=data.length();
 			newblength=(flength+1)/2;
 			if(!build_bcdr(data.begin(), buf, flength))
@@ -716,7 +699,7 @@ unsigned int field::build_field_alt(string &buf)
 
 			break;
 
-		case FRM_EBCDIC:
+		case fldformat::fld_ebcdic:
 			newblength=data.length();;
 			build_ebcdic(data.begin(), buf, newblength);
 			break;
@@ -728,7 +711,7 @@ unsigned int field::build_field_alt(string &buf)
 	}
 
 	if(debug)
-		printf("build_field: %s, length %d, total length %d\n", frm->get_description().c_str(), newblength, buf.length());
+		printf("build_field: %s, length %d, total length %ld\n", frm->get_description().c_str(), newblength, buf.length());
 
 	return lenlen+newblength;
 }
@@ -808,7 +791,7 @@ unsigned int build_bcdl(const string::const_iterator &from, string &to, unsigned
 		else
 		{
 			if(debug)
-				printf("Error: build_bcdl: The string is not BCD ('%s')\n", from);
+				printf("Error: build_bcdl: The string is not BCD\n");
 			return 0;
 		}
 
@@ -825,7 +808,7 @@ unsigned int build_bcdl(const string::const_iterator &from, string &to, unsigned
 			else
 			{
 				if(debug)
-					printf("Error: build_bcdl: The string is not BCD ('%s')\n", from);
+					printf("Error: build_bcdl: The string is not BCD\n");
 				to.push_back(tmpc);
 				return 0;
 			}
