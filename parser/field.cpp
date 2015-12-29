@@ -123,10 +123,7 @@ void field::print_message(string numprefix) const
 	{
 		case FRM_SUBFIELDS:
 		case FRM_BCDSF:
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
+		case FRM_TLV:
 		case FRM_TLVEMV:
 			for(const_iterator i=begin(); i!=end(); ++i)
 				i->second.print_message(numprefix + to_string(i->first) + ".");
@@ -143,10 +140,7 @@ bool field::is_empty(void) const
 	{
 		case FRM_SUBFIELDS:
 		case FRM_BCDSF:
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
+		case FRM_TLV:
 		case FRM_TLVEMV:
 			break;
 		case FRM_ISOBITMAP:
@@ -433,10 +427,7 @@ bool field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, in
 	switch(curfld->frm->dataFormat)
 	{
 		case FRM_SUBFIELDS:
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
+		case FRM_TLV:
 		case FRM_TLVEMV:
 		case FRM_BCDSF:
 			return subfields.empty();

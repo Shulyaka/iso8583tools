@@ -6,10 +6,10 @@
 #define FRM_ISOBITMAP 1  //primary and secondary bitmaps
 #define FRM_BITMAP 2     //fixed length bitmap
 #define FRM_SUBFIELDS 3  //the contents is split to subfields     SF
-#define FRM_TLV1 4       //TLV subfields, 1 byte tag format      TLV1
-#define FRM_TLV2 5       //TLV subfields, 2 bytes tag format     TLV2
-#define FRM_TLV3 6       //TLV subfields, 3 bytes tag format     TLV3
-#define FRM_TLV4 7       //TLV subfields, 4 bytes tag format     TLV4
+#define FRM_TLV 4       //TLV subfields, 1 byte tag format      TLV1
+//#define FRM_TLV2 5       //TLV subfields, 2 bytes tag format     TLV2
+//#define FRM_TLV3 6       //TLV subfields, 3 bytes tag format     TLV3
+//#define FRM_TLV4 7       //TLV subfields, 4 bytes tag format     TLV4
 #define FRM_TLVEMV 8     //TLV subfields, EMV tag format (BER)   TLVE
 #define FRM_EBCDIC 9    // EBCDIC EEEEE
 #define FRM_BCD 10   //  0x012345  CCCCC  BCD
@@ -42,6 +42,7 @@ class fldformat
 	int addLength;
 	unsigned int dataFormat;
 	unsigned int tagFormat;
+	unsigned int tagLength;
 	std::string data;
 	std::map<int,fldformat> subfields;
 	fldformat *altformat;

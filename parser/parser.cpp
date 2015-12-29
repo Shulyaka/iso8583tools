@@ -312,16 +312,13 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	switch(frm->dataFormat)
 	{
 		case FRM_SUBFIELDS:
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
+		case FRM_TLV:
 		case FRM_TLVEMV:
 			parse_failed=1;
 			if(frm->dataFormat==FRM_SUBFIELDS)
 				cursf=frm->begin();
 			else
-				taglength=frm->dataFormat-FRM_TLV1+1;
+				taglength=frm->tagLength;
 			pos=lenlen;
 			minlength=0;
 			while(parse_failed)

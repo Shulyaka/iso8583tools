@@ -57,6 +57,7 @@ void fldformat::fill_default(void)
 	addLength=0;
 	dataFormat=FRM_SUBFIELDS;
 	tagFormat=0;
+	tagLength=0;
 	data.clear();
 	subfields.clear();
 	altformat=NULL;
@@ -86,6 +87,7 @@ bool fldformat::is_empty(void) const
 	    && addLength==0
 	    && dataFormat==FRM_SUBFIELDS
 	    && tagFormat==0
+	    && tagLength==0
 	    && data==""
 	    && subfields.empty()
 	    && altformat==NULL;
@@ -107,6 +109,7 @@ void fldformat::copyFrom(const fldformat &from)
 	addLength=from.addLength;
 	dataFormat=from.dataFormat;
 	tagFormat=from.tagFormat;
+	tagLength=from.tagLength;
 	data=from.data;
 
 	subfields=from.subfields;
@@ -136,6 +139,7 @@ void fldformat::moveFrom(fldformat &from)
 	addLength=from.addLength;
 	dataFormat=from.dataFormat;
 	tagFormat=from.tagFormat;
+	tagLength=from.tagLength;
 	data=from.data;
 	subfields=from.subfields;
 	for(map<int,fldformat>::iterator i=subfields.begin(); i!=subfields.end(); ++i)
@@ -196,17 +200,23 @@ void fldformat::print_format(string numprefix)
 			case FRM_SUBFIELDS:
 				printf("SF");
 				break;
-			case FRM_TLV1:
-				printf("TLV1");
-				break;
-			case FRM_TLV2:
-				printf("TLV2");
-				break;
-			case FRM_TLV3:
-				printf("TLV3");
-				break;
-			case FRM_TLV4:
-				printf("TLV4");
+			case FRM_TLV:
+				printf("TLV%d", tagLength);
+				switch(tagFormat)
+				{
+					case FRM_EBCDIC:
+						printf("EBCDIC");
+						break;
+					case FRM_BCD:
+						printf("BCD");
+						break;
+					case FRM_BIN:
+						printf("BIN");
+						break;
+					case FRM_ASCII:
+						printf("ASCII");
+						break;
+				}
 				break;
 			case FRM_TLVEMV:
 				printf("TLVEMV");
@@ -237,23 +247,6 @@ void fldformat::print_format(string numprefix)
 				break;
 		}
 
-		if(dataFormat==FRM_TLV1 || dataFormat==FRM_TLV2 || dataFormat==FRM_TLV3 || dataFormat==FRM_TLV4)
-			switch(tagFormat)
-			{
-				case FRM_EBCDIC:
-					printf("EBCDIC");
-					break;
-				case FRM_BCD:
-					printf("BCD");
-					break;
-				case FRM_BIN:
-					printf("BIN");
-					break;
-				case FRM_ASCII:
-					printf("ASCII");
-					break;
-			}
-
 		if(!data.empty())
 			printf("=%s", data.c_str());
 	}
@@ -264,10 +257,7 @@ void fldformat::print_format(string numprefix)
 	{
 		case FRM_SUBFIELDS:
 		case FRM_BCDSF:
-		case FRM_TLV1:
-		case FRM_TLV2:
-		case FRM_TLV3:
-		case FRM_TLV4:
+		case FRM_TLV:
 		case FRM_TLVEMV:
 			for(map<int,fldformat>::iterator i=subfields.begin(); i!=subfields.end(); ++i)
 				i->second.print_format((numprefix.empty() ? "" : numprefix + ".") + (i->first==-1? "*" : to_string(i->first)));
@@ -661,30 +651,36 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 
 	if(!strcmp(format+i, "SF"))
 		dataFormat=FRM_SUBFIELDS;
-	else if(!strncmp(format+i, "TLV1", 4))
-	{
-		dataFormat=FRM_TLV1;
-		i+=4;
-	}
-	else if(!strncmp(format+i, "TLV2",4))
-	{
-		dataFormat=FRM_TLV2;
-		i+=4;
-	}
-	else if(!strncmp(format+i, "TLV3",4))
-	{
-		dataFormat=FRM_TLV3;
-		i+=4;
-	}
-	else if(!strncmp(format+i, "TLV4",4))
-	{
-		dataFormat=FRM_TLV4;
-		i+=4;
-	}
 	else if(!strcmp(format+i, "TLVEMV"))
 	{
 		dataFormat=FRM_TLVEMV;
 		tagFormat=FRM_HEX;
+	}
+	else if(!strncmp(format+i, "TLV", 3))
+	{
+		dataFormat=FRM_TLV;
+		i+=3;
+		tagLength=atoi(format+i);
+		for(; format[i]>='0' && format[i]<='9'; i++);
+
+		if(!strcmp(format+i, "EBCDIC") || !strcmp(format+i, "EBC"))
+			tagFormat=FRM_EBCDIC;
+		else if(!strcmp(format+i, "BCD"))
+			tagFormat=FRM_BCD;
+/*		else if(!strcmp(format+i, "HEX"))
+			tagFormat=FRM_HEX;*/
+		else if(!strcmp(format+i, "BIN"))
+			tagFormat=FRM_BIN;
+		else if(!strcmp(format+i, "ASCII") || !strcmp(format+i, "ASC") || format[i]=='\0')
+			tagFormat=FRM_ASCII;
+		else
+		{
+			if(debug)
+				printf("Error: Unrecognized TLV tag format (%s)\n", format+i+4);
+			if(p)
+				*p='=';
+			return false;
+		}
 	}
 	else if(!strcmp(format+i, "BCDSF"))
 		dataFormat=FRM_BCDSF;
@@ -709,28 +705,6 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 		if(p)
 			*p='=';
 		return false;
-	}
-
-	if(dataFormat==FRM_TLV1 || dataFormat==FRM_TLV2 || dataFormat==FRM_TLV3 || dataFormat==FRM_TLV4)
-	{
-		if(!strcmp(format+i, "EBCDIC") || !strcmp(format+i, "EBC"))
-			tagFormat=FRM_EBCDIC;
-		else if(!strcmp(format+i, "BCD"))
-			tagFormat=FRM_BCD;
-/*		else if(!strcmp(format+i, "HEX"))
-			tagFormat=FRM_HEX;*/
-		else if(!strcmp(format+i, "BIN"))
-			tagFormat=FRM_BIN;
-		else if(!strcmp(format+i, "ASCII") || !strcmp(format+i, "ASC") || format[i]=='\0')
-			tagFormat=FRM_ASCII;
-		else
-		{
-			if(debug)
-				printf("Error: Unrecognized TLV tag format (%s)\n", format+i+4);
-			if(p)
-				*p='=';
-			return false;
-		}
 	}
 
 	if(p)
