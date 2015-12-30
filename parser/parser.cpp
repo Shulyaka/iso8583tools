@@ -164,7 +164,7 @@ int field::parse_field_length(const std::string::const_iterator &buf, const std:
 		return 0;
 	}
 
-	length=newlength;
+	flength=newlength;
 
 	return newlength;
 }
@@ -264,50 +264,50 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 		if(sflen<=0)
 			return sflen;
 
-		if(length > frm->maxLength)
+		if(flength > frm->maxLength)
 		{
 			if(debug)
 				printf("Warning: field length exceeds max\n");
 			return 0;
-//			length=frm->maxLength;
+//			flength=frm->maxLength;
 		}
 
 		if(frm->lengthInclusive)
-			length-=lenlen;
+			flength-=lenlen;
 
 		switch(frm->dataFormat)
 		{
 			case fldformat::fld_bitmap:
 			case fldformat::fld_bitstr:
-				newblength=(length+7)/8;
+				newblength=(flength+7)/8;
 				break;
 			case fldformat::fld_hex:
 //			case fldformat::fld_bcdsf:
-				length=length*2;
+				flength*=2;
 			case fldformat::fld_bcdsf:
 			case fldformat::fld_bcd:
-				newblength=(length+1)/2;
+				newblength=(flength+1)/2;
 				break;
 			default:
-				newblength=length;
+				newblength=flength;
 		}
 
 		if(lenlen + newblength > maxlength)
 		{
 			if(debug)
-				printf("Error: Field '%s'(%d) is bigger than buffer %d+%d>%d\n", frm->get_description().c_str(), length, lenlen, newblength, maxlength);
+				printf("Error: Field '%s'(%d) is bigger than buffer %d+%d>%d\n", frm->get_description().c_str(), flength, lenlen, newblength, maxlength);
 			return -(lenlen+newblength);
 		}
 //		else if(lenlen + newblength < maxlength)
 //		{
 //			if(debug)
-//				printf("Error: Field '%s'(%d) is smaller than buffer %d+%d<%d\n", frm->get_description().c_str(), length, lenlen, newblength, maxlength);
+//				printf("Error: Field '%s'(%d) is smaller than buffer %d+%d<%d\n", frm->get_description().c_str(), flength, lenlen, newblength, maxlength);
 //			return 0;
 //		}
 	}
 
 	//Now we know the length except for ISOBITMAP
-//	printf("Length is %d for %s\n", length, frm->get_description().c_str());
+//	printf("Length is %d for %s\n", flength, frm->get_description().c_str());
 	
 	switch(frm->dataFormat)
 	{
@@ -329,7 +329,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 				for(; pos!=maxlength;)
 				{
-					if(pos==length+lenlen) // Some subfields are missing or canceled by bitmap
+					if(pos==flength+lenlen) // Some subfields are missing or canceled by bitmap
 						break;
 
 					if(frm->dataFormat==fldformat::fld_subfields) // subfield number is defined by its position
@@ -420,11 +420,11 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 
 						if(curfrm->lengthFormat==fldformat::fll_unknown && curfrm->dataFormat!=fldformat::fld_isobitmap) //for unknown length, search for the smallest
 						{
-							sflen=-1;
-							for(unsigned int i=sf(curnum).blength+1; i<length+lenlen-pos+1; i=-sflen)
+							sflen=-1;	// TODO: Optimize for some cases when sf length can be known more precise
+							for(unsigned int i=sf(curnum).blength+1; i<flength+lenlen-pos+1; i=-sflen)
 							{
 								if(debug)
-									printf("trying pos %d length %d/%d for %s\n", pos, i, length+lenlen-pos, curfrm->get_description().c_str());
+									printf("trying pos %d length %d/%d for %s\n", pos, i, flength+lenlen-pos, curfrm->get_description().c_str());
 								sf(curnum).blength=0;
 								sflen=sf(curnum).parse_field(buf+pos, buf+pos+i);
 
@@ -438,7 +438,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 							}
 						}
 						else
-							sflen=sf(curnum).parse_field(buf+pos, buf+length+lenlen);
+							sflen=sf(curnum).parse_field(buf+pos, buf+flength+lenlen);
 
 						if(sflen==0 && sf(curnum).frm->maxLength==0)
 						{
@@ -483,10 +483,10 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 					}
 				}
 
-				if(!parse_failed && pos!=length+lenlen)
+				if(!parse_failed && pos!=flength+lenlen)
 				{
 					if(debug)
-						printf("Error: Not enough subfield formats (%d, %d) for %s\n", pos, length, frm->get_description().c_str());
+						printf("Error: Not enough subfield formats (%d, %d) for %s\n", pos, flength, frm->get_description().c_str());
 					parse_failed=1;
 				}
 
@@ -505,7 +505,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 						if(curnum==bitmap_start)
 							bitmap_start=-1;
 
-						if(sfexist(curnum) && ((sf(curnum).frm->lengthFormat==fldformat::fll_unknown && sf(curnum).frm->dataFormat!=fldformat::fld_isobitmap && sf(curnum).blength < length+lenlen-sf(curnum).start) || sf(curnum).frm->altformat))
+						if(sfexist(curnum) && ((sf(curnum).frm->lengthFormat==fldformat::fll_unknown && sf(curnum).frm->dataFormat!=fldformat::fld_isobitmap && sf(curnum).blength < flength+lenlen-sf(curnum).start) || sf(curnum).frm->altformat))
 						{
 							if(debug)
 								printf("Come back to sf %d of %s (%s)\n", curnum, frm->get_description().c_str(), sf(curnum).frm->get_description().c_str());
@@ -534,17 +534,17 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 			break;
 
 		case fldformat::fld_bcdsf:
-			if(!parse_bcdl(buf+lenlen, data, length))
+			if(!parse_bcdl(buf+lenlen, data, flength))
 			{
 				if(debug)
 					printf("Error: Not BCD field\n");
 				return 0;
 			}
 
-			tmpfrm.copyFrom(*frm);
+			tmpfrm=*frm;
 			tmpfrm.lengthFormat=fldformat::fll_fixed;
 			tmpfrm.lengthLength=0;
-			tmpfrm.maxLength=length;
+			tmpfrm.maxLength=flength;
 			tmpfrm.addLength=0;
 			tmpfrm.dataFormat=fldformat::fld_subfields;
 			frmold=frm;
@@ -555,8 +555,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 			sflen=parse_field(data.begin(), data.end());
 			
 			data.clear();
-			set_frm(firstfrmold);
-			change_format(frmold);
+			set_frm(firstfrmold, frmold);
 			altformat=altformatold;
 
 			if(sflen<=0)
@@ -571,7 +570,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 		case fldformat::fld_isobitmap:
 			for(unsigned int i=0; i==0 || buf[i*8-8]>>7; i++)
 			{
-				length=i*64+63;
+				flength=i*64+63;
 				newblength=i*8+8;
 				if((i+1)*8>maxlength)
 				{
@@ -591,20 +590,20 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 		case fldformat::fld_bitmap:
 		case fldformat::fld_bitstr:
 			data.clear();
-			for(unsigned int i=0; i<length;i++)
+			for(unsigned int i=0; i<flength;i++)
 				data.push_back(buf[lenlen + i/8] & (1<<(7-i%8)) ? '1':'0');
 			break;
 
 		case fldformat::fld_ascii:
-			data.assign(buf+lenlen, buf+lenlen+length);
+			data.assign(buf+lenlen, buf+lenlen+flength);
 			break;
 
 		case fldformat::fld_hex:
-			parse_hex(buf+lenlen, data, length);
+			parse_hex(buf+lenlen, data, flength);
 			break;
 
 		case fldformat::fld_bcd:
-			if(!parse_bcdr(buf+lenlen, data, length))
+			if(!parse_bcdr(buf+lenlen, data, flength))
 				return 0;
 			break;
 
@@ -629,7 +628,7 @@ int field::parse_field_alt(const std::string::const_iterator &buf, const std::st
 	blength=lenlen+newblength;
 
 	if(debug && !data.empty() && frm->dataFormat!=fldformat::fld_subfields)
-		printf("%s \t[%d(%d)] [%s]\n", frm->get_description().c_str(), length, blength, data.c_str());
+		printf("%s \t[%d(%d)] [%s]\n", frm->get_description().c_str(), flength, blength, data.c_str());
 
 	return lenlen+newblength;
 }

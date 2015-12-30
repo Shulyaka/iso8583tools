@@ -8,33 +8,53 @@ using namespace std;
 
 string to_string(unsigned int);
 
-field::field(void)
+field::field(const string &str)
 {
 	fill_default();
 	frm=new fldformat();
 	deletefrm=true;
 	firstfrm=frm;
+	data=str;
 }
 
-field::field(fldformat *format)
+field::field(fldformat *format, const string &str)
 {
 	fill_default();
 	frm=format;
 	firstfrm=frm;
+	data=str;
 }
 
-field::field(const std::string &filename)
+field::field(const std::string &filename, const string &str)
 {
 	fill_default();
 	frm=new fldformat(filename);
 	deletefrm=true;
 	firstfrm=frm;
+	data=str;
 }
 
 //copy constructor
 field::field(const field &from)
 {
-	copyFrom(from);
+	data=from.data;
+	start=from.start;
+	blength=from.blength;
+	flength=from.flength;
+	deletefrm=from.deletefrm;
+	frm=from.frm;
+	if(deletefrm)
+	{
+		firstfrm=new fldformat(*from.firstfrm);
+		frm=firstfrm;
+		for(fldformat *tmpfrm=from.firstfrm; tmpfrm!=NULL; tmpfrm=tmpfrm->get_altformat(), frm=frm->get_altformat())
+			if(tmpfrm==from.frm)
+				break;
+	}
+	else
+		firstfrm=from.firstfrm;
+	subfields=from.subfields;
+	altformat=from.altformat;
 }
 
 field::~field(void)
@@ -49,7 +69,7 @@ void field::fill_default(void)
 	data.clear();
 	start=0;
 	blength=0;
-	length=0;
+	flength=0;
 	frm=NULL;
 	subfields.clear();
 	altformat=0;
@@ -70,17 +90,24 @@ void field::clear(void)
 }
 
 //forks the field. All data and subfields are also copied so that all pointers except frm will have new values to newly copied data but non-pointers will have same values
-void field::copyFrom(const field &from)
+//If field is not empty, the format is retained
+field& field::operator= (const field &from)
 {
+	fldformat *tmpfrm=frm, *tmpfirstfrm=firstfrm;
+	bool keepfrm=false;
+
 	if(this==&from)
-		return;
+		return *this;
+
+	if(!empty())
+		keepfrm=true;
 
 	clear();
 
 	data=from.data;
 	start=from.start;
 	blength=from.blength;
-	length=from.length;
+	flength=from.flength;
 	deletefrm=from.deletefrm;
 	frm=from.frm;
 	if(deletefrm)
@@ -95,6 +122,11 @@ void field::copyFrom(const field &from)
 		firstfrm=from.firstfrm;
 	subfields=from.subfields;
 	altformat=from.altformat;
+
+	if(keepfrm)
+		set_frm(tmpfirstfrm, tmpfrm);
+
+	return *this;
 }
 
 //relink data from another field. The old field will become empty
@@ -103,8 +135,57 @@ void field::moveFrom(field &from)
 	if(this==&from)
 		return;
 
-	copyFrom(from);
+	*this=from;
 	from.clear();
+}
+
+void field::swap(field &from)
+{
+	if(this==&from)
+		return;
+
+	field tmpfld;
+	tmpfld.moveFrom(from);
+	from.moveFrom(*this);
+	moveFrom(tmpfld);
+}
+
+int field::compare (const field& other) const
+{
+	if(empty() && other.empty())
+		return 0;
+
+	switch(frm->dataFormat)
+	{
+		case fldformat::fld_subfields:
+		case fldformat::fld_bcdsf:
+		case fldformat::fld_tlv:
+			break;
+		default:
+			return data.compare(other.data);
+	}
+
+	for(const_iterator i=begin(), j=other.begin(); i!=end() && j!=other.end(); ++i, ++j)
+	{
+		while((!i->second.frm || i->second.frm->dataFormat==fldformat::fld_isobitmap || i->second.frm->dataFormat==fldformat::fld_bitmap) && i!=end()) //skip subfields without format and bitmaps
+			++i;
+		while((!j->second.frm || j->second.frm->dataFormat==fldformat::fld_isobitmap || j->second.frm->dataFormat==fldformat::fld_bitmap) && j!=other.end())
+			++j;
+		if(i==end() && j==other.end())
+			break;
+		if(i==end())
+			return 1;
+		if(j==other.end())
+			return -1;
+		if(i->first<j->first)
+			return 1;
+		if(j->first<i->first)
+			return -1;
+		int r=i->second.compare(j->second);
+		if(r)
+			return r;
+	}
+	return 0;
 }
 
 void field::print_message(string numprefix) const
@@ -115,7 +196,7 @@ void field::print_message(string numprefix) const
 	printf("%s", frm->get_description().c_str());
 
 	if(!data.empty())
-		printf(" (%d): [%s]\n", length, data.c_str());
+		printf(" (%d): [%s]\n", flength, data.c_str());
 	else
 		printf(":\n");
 
@@ -132,9 +213,9 @@ void field::print_message(string numprefix) const
 	}
 }
 
-bool field::is_empty(void) const
+bool field::empty(void) const
 {
-	if(frm->is_empty())
+	if(frm->empty())
 		return true;
 
 	switch(frm->dataFormat)
@@ -154,7 +235,7 @@ bool field::is_empty(void) const
 		return true;
 
 	for(const_iterator i=begin(); i!=end(); ++i)
-		if(i->second.frm && i->second.frm->dataFormat!=fldformat::fld_isobitmap && i->second.frm->dataFormat!=fldformat::fld_bitmap && !i->second.is_empty())
+		if(i->second.frm && i->second.frm->dataFormat!=fldformat::fld_isobitmap && i->second.frm->dataFormat!=fldformat::fld_bitmap && !i->second.empty())
 			return false;
 
 	return true;
@@ -193,7 +274,8 @@ bool field::reset_altformat(void)
 }
 
 // Assigns a new format to the field. Not to be used to switch to an altformat because it assumes the new format to be the root of altformat, so the information about the first altformat is lost and reset_altformat() would not reset to original altformat, use switch_altformat() instead.
-bool field::set_frm(fldformat *frmnew)
+// If frmaltnew is not null, it must be an altformat of frmnew
+bool field::set_frm(fldformat *frmnew, fldformat *frmaltnew)
 {
 	fldformat *frmtmp=frmnew;
 
@@ -214,6 +296,17 @@ bool field::set_frm(fldformat *frmnew)
 	}
 
 	firstfrm=frmnew;
+
+	if(frmaltnew)
+	{
+		frmtmp=frm;
+		for(unsigned int i=altformat; frmtmp!=NULL; frmtmp=frmtmp->get_altformat(), i++)
+			if(frmtmp==frmaltnew)
+			{
+				altformat=i;
+				return change_format(frmaltnew);
+			}
+	}
 
 	return true;
 }
@@ -452,7 +545,7 @@ field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7,
 			exit(1);
 		}
 
-		if(subfields[n0].is_empty())
+		if(subfields[n0].empty())
 			subfields[n0].set_frm(&frm->sf(n0));
 	}
 

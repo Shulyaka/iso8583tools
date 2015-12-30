@@ -42,7 +42,7 @@ unsigned int field::get_flength(void)
 			break;
 
 		case fldformat::fld_bcdsf:
-			tmpfrm.copyFrom(*frm);
+			tmpfrm=*frm;
 			tmpfrm.lengthFormat=fldformat::fll_unknown;
 			tmpfrm.lengthLength=0;
 			tmpfrm.dataFormat=fldformat::fld_subfields;
@@ -53,8 +53,7 @@ unsigned int field::get_flength(void)
 
 			flength=get_blength();
 
-			set_frm(firstfrmold);
-			change_format(frmold);
+			set_frm(firstfrmold, frmold);
 			altformat=altformatold;
 			break;
 
@@ -106,7 +105,7 @@ unsigned int field::get_blength(void)
 				for(fldformat::iterator i=frm->begin(); i!=frm->end(); ++i)
 					if(i->second.dataFormat==fldformat::fld_isobitmap || i->second.dataFormat==fldformat::fld_bitmap)
 						for(field::iterator j=begin(); j!=end(); ++j)
-							if(j->first > i->first && !j->second.is_empty())
+							if(j->first > i->first && !j->second.empty())
 							{
 								sf(i->first); //ensure bit map fields are present
 								break;
@@ -138,7 +137,7 @@ unsigned int field::get_blength(void)
 						bitmap_found=i->first;
 						sflen=(frm->sf(i->first).maxLength+7)/8;
 					}
-					else if(i->second.is_empty())
+					else if(i->second.empty())
 						continue;
 					else
 						sflen=i->second.get_blength();
@@ -447,7 +446,7 @@ unsigned int field::build_field_alt(string &buf)
 				for(fldformat::iterator i=frm->begin(); i!=frm->end(); ++i)
 					if(i->second.dataFormat==fldformat::fld_isobitmap || i->second.dataFormat==fldformat::fld_bitmap)
 						for(field::iterator j=begin(); j!=end(); ++j)
-							if(j->first > i->first && !j->second.is_empty())
+							if(j->first > i->first && !j->second.empty())
 							{
 								sf(i->first); //ensure bit map fields are present
 								break;
@@ -483,7 +482,7 @@ unsigned int field::build_field_alt(string &buf)
 						bitmap_found=i->first;
 						sflen=build_bitmap(buf, i->first);
 					}
-					else if(i->second.is_empty())
+					else if(i->second.empty())
 					{
 						if(debug)
 							printf("Warning: Empty subfield %d\n", i->first);
@@ -580,7 +579,7 @@ unsigned int field::build_field_alt(string &buf)
 		case fldformat::fld_bcdsf:
 			data.clear();
 
-			tmpfrm.copyFrom(*frm);
+			tmpfrm=*frm;
 			tmpfrm.lengthFormat=fldformat::fll_unknown;
 			tmpfrm.lengthLength=0;
 			tmpfrm.dataFormat=fldformat::fld_subfields;
@@ -591,8 +590,7 @@ unsigned int field::build_field_alt(string &buf)
 
 			flength=build_field(data);
 
-			set_frm(firstfrmold);
-			change_format(frmold);
+			set_frm(firstfrmold, frmold);
 			altformat=altformatold;
 
 			if(!flength)
@@ -878,7 +876,7 @@ unsigned int field::build_isobitmap(string &buf, unsigned int index)
 
 		for(unsigned int j=1; j<64; j++)
 		{
-			if(sfexist(i*64+j+index) && !sf(i*64+j+index).is_empty())
+			if(sfexist(i*64+j+index) && !sf(i*64+j+index).empty())
 				tmpc|=1<<(7-j%8);
 			if((j+1)/8*8==j+1)
 			{
@@ -902,7 +900,7 @@ unsigned int field::build_bitmap(string &buf, unsigned int index)
 
 	for(unsigned int i=0; i<flength && i<fields-index-1; i++)
 	{
-		if(sfexist(index+1+i) && !sf(index+1+i).is_empty())
+		if(sfexist(index+1+i) && !sf(index+1+i).empty())
 			tmpc|=1<<(7-i%8);
 		if((i+1)/8*8==i+1 || i==flength-1 || i==fields-index-2)
 		{

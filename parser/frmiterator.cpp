@@ -69,7 +69,7 @@ std::pair<const int, fldformat>* frmiterator::operator->(void)
 		return it.operator->();
 	else
 	{
-		tmpmap[curnum].copyFrom(*wildcard); //construct a temporary map of the missing references
+		tmpmap[curnum]=*wildcard; //construct a temporary map of the missing references
 		return tmpmap.find(curnum).operator->();
 	}
 }

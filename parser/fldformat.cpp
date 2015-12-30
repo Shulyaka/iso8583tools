@@ -29,7 +29,7 @@ fldformat::fldformat(const string &filename)
 fldformat::fldformat(const fldformat &from)
 {
 	fill_default();
-	copyFrom(from);
+	*this=from;
 }
 
 //destructor
@@ -47,7 +47,7 @@ fldformat::~fldformat(void)
 }
 
 //default format
-void fldformat::fill_default(void)
+void fldformat::fill_default(void) //TODO: When API stabilizes, enhance constructors to use initializers instead of this function
 {
 	description.clear();
 	lengthFormat=fll_unknown;
@@ -55,7 +55,7 @@ void fldformat::fill_default(void)
 	lengthInclusive=0;
 	maxLength=1024;
 	addLength=0;
-	dataFormat=fld_subfields;
+	dataFormat=fld_ascii;
 	tagFormat=flt_ascii;
 	tagLength=0;
 	data.clear();
@@ -76,7 +76,7 @@ void fldformat::clear(void)
 	parent=tmpfrm; //make parent immune to clear
 }
 
-bool fldformat::is_empty(void) const
+bool fldformat::empty(void) const
 {
 	return description.empty()
 	    && lengthFormat==fll_unknown
@@ -84,7 +84,7 @@ bool fldformat::is_empty(void) const
 	    && lengthInclusive==0
 	    && maxLength==1024
 	    && addLength==0
-	    && dataFormat==fld_subfields
+	    && dataFormat==fld_ascii
 	    && tagFormat==flt_ascii
 	    && tagLength==0
 	    && data==""
@@ -93,10 +93,10 @@ bool fldformat::is_empty(void) const
 }
 
 //forks the format. All data and subformat are also copied so that all pointers will have new values to newly copied data but non-pointers will have same values
-void fldformat::copyFrom(const fldformat &from)
+fldformat& fldformat::operator= (const fldformat &from)
 {
 	if(this==&from)
-		return;
+		return *this;
 
 	clear();
 
@@ -116,11 +116,11 @@ void fldformat::copyFrom(const fldformat &from)
 		i->second.parent=this;
 
 	if(from.altformat)
-	{
-		altformat=new fldformat;
-		altformat->copyFrom(*from.altformat);
-	}
+		altformat=new fldformat(*from.altformat);
+
+	return *this;
 }
+
 
 //relink data from another format. The old format will become empty
 void fldformat::moveFrom(fldformat &from)
@@ -328,7 +328,7 @@ bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength f
 		frmnew=orphans["message"].get_by_number(number, orphans);
 		if(frmnew)
 		{
-			if(!frmnew->is_empty())
+			if(!frmnew->empty())
 			{
 				frmnew->altformat=frmtmp;
 				frmnew->altformat->parent=frmnew;
@@ -341,7 +341,7 @@ bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength f
 		}
 		else
 		{
-			if(orphans.count(number) && !orphans[number].is_empty())
+			if(orphans.count(number) && !orphans[number].empty())
 			{
 				frmnew=orphans[number].get_lastaltformat();
 				frmnew->altformat=frmtmp;
@@ -365,7 +365,7 @@ bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength f
 			orphans["message"].description.assign("No description");
 		}
 
-		if(!is_empty())
+		if(!empty())
 		{
 			frmtmp=get_lastaltformat();
 			frmtmp->altformat=new fldformat;
@@ -567,7 +567,7 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			{
 				if(orphans.count(format+1))
 				{
-					copyFrom(*orphans[format+1].get_lastaltformat());
+					*this=*orphans[format+1].get_lastaltformat();
 				}
 				else
 				{
@@ -576,7 +576,7 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 					return false;
 				}
 			}
-			else if(tmpfrm->is_empty())
+			else if(tmpfrm->empty())
 			{
 				if(debug)
 					printf("Error: Unable to find referenced format (%s) (parent loaded)\n", format+1);
@@ -584,7 +584,7 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 				return false;
 			}
 			else
-				copyFrom(*tmpfrm);
+				*this=*tmpfrm;
 
 			description.clear();
 

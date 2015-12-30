@@ -36,7 +36,7 @@ class fldformat
 		fll_bin,	// 12345			B
 		fll_ascii,	// "12345"			L
 		fll_fixed,	// Fixed length			F
-		fll_ber		// Length format for EMV tags	R
+		fll_ber		// Length format for EMV tags	M
 	} lengthFormat;
 	unsigned int lengthLength;
 	unsigned short lengthInclusive;
@@ -75,9 +75,9 @@ class fldformat
 	~fldformat(void);
 	void print_format(std::string prefix="");
 	void clear(void);
-	bool is_empty(void) const;
+	bool empty(void) const;
 	bool load_format(const std::string &filename);
-	void copyFrom(const fldformat &from);
+	fldformat& operator= (const fldformat &from);
 	void moveFrom(fldformat &from);
 	inline fldformat *get_altformat(void) const {return altformat;};
 	inline const std::string& get_description(void) const {return description;};
@@ -93,7 +93,7 @@ class field
 	std::string data;  //parsed data
 	unsigned int start;  //start position inside the message binary data relative to the parent field
 	unsigned int blength;  //length of the field inside the message binary data (including length length)
-	unsigned int length;  //parsed data length
+	unsigned int flength;  //parsed data length
 	fldformat *frm;  //field format
 	fldformat *firstfrm;
 	bool deletefrm;
@@ -128,19 +128,20 @@ class field
 	reverse_iterator rend(void) { return subfields.rend();};
 	const_reverse_iterator rend(void) const { return subfields.rend();};
 
-	field(void);
-	field(fldformat *frm);
-	field(const std::string &filename);
+	field(const std::string &str="");
+	field(fldformat *frm, const std::string &str="");
+	field(const std::string &filename, const std::string &str="");
 	field(const field&);
 	~field(void);
 	void print_message(std::string prefix="") const;
 	void clear(void);
-	bool is_empty(void) const;
-	bool set_frm(fldformat*);
+	bool empty(void) const;
+	bool set_frm(fldformat* firstfrm, fldformat* altfrm=NULL);
 	bool switch_altformat(void);
 	bool reset_altformat(void);
-	void copyFrom(const field &from);
 	void moveFrom(field &from);
+	void swap(field &from);
+	field& operator= (const field &from);
 
 	int parse_message(const std::string&);
 	inline unsigned int build_message(std::string& buf) {return build_field(buf);};
@@ -149,9 +150,11 @@ class field
 	unsigned int get_mlength(void);
 
 	inline const std::string& get_description(void) const {return frm->get_description();};
-	inline const int get_parsed_blength(void) const {return blength;};
+	inline const int get_cached_blength(void) const {return blength;};
 	inline const int get_lengthLength(void) const {return frm?frm->get_lengthLength():0;};
 	field& sf(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	inline field& operator() (int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1)
+		{return sf(n0, n1, n2, n3, n4, n5, n6, n7, n8, n9);};
 	bool sfexist(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1) const;
 
 	const std::string& get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
@@ -159,6 +162,174 @@ class field
 	int field_format(unsigned int altformat, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	void remove_field(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	bool has_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+
+	//std::string API:
+	inline field& operator= (const std::string& str) {data=str; return *this;};
+	inline field& operator= (const char* s) {data=s; return *this;};
+	inline field& operator= (char c) {data=c; return *this;};
+
+	inline std::string::iterator dbegin(void) {return data.begin();};
+	inline std::string::const_iterator dbegin(void) const {return data.begin();};
+	inline std::string::iterator dend(void) {return data.end();};
+	inline std::string::const_iterator dend(void) const {return data.end();};
+	inline std::string::reverse_iterator drbegin(void) {return data.rbegin();};
+	inline std::string::const_reverse_iterator drbegin(void) const {return data.rbegin();};
+	inline std::string::reverse_iterator drend(void) {return data.rend();};
+	inline std::string::const_reverse_iterator drend(void) const {return data.rend();};
+
+	inline size_t length(void) {return get_flength();};
+	inline size_t size(void) {return get_flength();};
+	inline size_t max_size(void) const {return data.max_size()<=frm->maxLength ? data.max_size() : frm->maxLength;};
+	inline void resize(size_t n) {data.resize(n);};
+	inline void resize(size_t n, char c) {data.resize(n, c);};
+	inline size_t capacity(void) const {return data.capacity();};
+	inline void reserve(size_t n=0) {data.reserve(n);};
+
+	inline char& operator[] (size_t pos) {return data[pos];};
+	inline const char& operator[] (size_t pos) const {return data[pos];};
+	inline char& at (size_t pos) {return data.at(pos);};
+	inline const char& at (size_t pos) const {return data.at(pos);};
+
+	inline field& operator+= (const field& f) {data+=f.data; return *this;};
+	inline field& operator+= (const std::string& str) {data+=str; return *this;};
+	inline field& operator+= (const char* s) {data+=s; return *this;};
+	inline field& operator+= (char c) {data+=c; return *this;};
+
+	inline field& append (const field& f) {data.append(f.data); return *this;};
+	inline field& append (const std::string& str) {data.append(str); return *this;};
+	inline field& append (const field& f, size_t subpos, size_t sublen) {data.append(f.data, subpos, sublen); return *this;};
+	inline field& append (const std::string& str, size_t subpos, size_t sublen) {data.append(str, subpos, sublen); return *this;};
+	inline field& append (const char* s) {data.append(s); return *this;};
+	inline field& append (const char* s, size_t n) {data.append(s, n); return *this;};
+	inline field& append (size_t n, char c) {data.append(n, c); return *this;};
+	template <class InputIterator>
+		inline field& append (InputIterator first, InputIterator last) {data.append(first, last); return *this;};
+	inline void push_back (char c) {data.push_back(c);};
+	inline field& assign (const field& f) {data.assign(f.data); return *this;};
+	inline field& assign (const std::string& str) {data.assign(str); return *this;};
+	inline field& assign (const field& f, size_t subpos, size_t sublen) {data.assign(f.data, subpos, sublen); return *this;};
+	inline field& assign (const std::string& str, size_t subpos, size_t sublen) {data.assign(str, subpos, sublen); return *this;};
+	inline field& assign (const char* s) {data.assign(s); return *this;};
+	inline field& assign (const char* s, size_t n) {data.assign(s, n); return *this;};
+	inline field& assign (size_t n, char c) {data.assign(n, c); return *this;};
+	template <class InputIterator>
+		inline field& assign (InputIterator first, InputIterator last) {data.assign(first, last); return *this;};
+	inline field& insert (size_t pos, const field& f) {data.insert(pos, f.data); return *this;};
+	inline field& insert (size_t pos, const std::string& str) {data.insert(pos, str); return *this;};
+	inline field& insert (size_t pos, const field& f, size_t subpos, size_t sublen) {data.insert(pos, f.data, subpos, sublen); return *this;};
+	inline field& insert (size_t pos, const std::string& str, size_t subpos, size_t sublen) {data.insert(pos, str, subpos, sublen); return *this;};
+	inline field& insert (size_t pos, const char* s) {data.insert(pos, s); return *this;};
+	inline field& insert (size_t pos, const char* s, size_t n) {data.insert(pos, s, n); return *this;};
+	inline field& insert (size_t pos, size_t n, char c) {data.insert(pos, n, c); return *this;};
+	inline void insert (std::string::iterator p, size_t n, char c) {data.insert(p, n, c);};
+	inline std::string::iterator insert (std::string::iterator p, char c) {return data.insert(p, c);};
+	template <class InputIterator>
+		inline void insert (iterator p, InputIterator first, InputIterator last) {data.insert(p, first, last);};
+	inline field& erase (size_t pos = 0, size_t len = npos) {data.erase(pos, len); return *this;};
+	inline std::string::iterator erase (std::string::iterator p) {return data.erase(p);};
+	inline std::string::iterator erase (std::string::iterator first, std::string::iterator last) {return data.erase(first, last);};
+	inline field& replace (size_t pos, size_t len, const field& f) {data.replace(pos, len, f.data); return *this;};
+	inline field& replace (size_t pos, size_t len, const std::string& str) {data.replace(pos, len, str); return *this;};
+	inline field& replace (std::string::iterator i1, std::string::iterator i2, const field& f) {data.replace(i1, i2, f.data); return *this;};
+	inline field& replace (std::string::iterator i1, std::string::iterator i2, const std::string& str) {data.replace(i1, i2, str); return *this;};
+	inline field& replace (size_t pos, size_t len, const field& f, size_t subpos, size_t sublen) {data.replace(pos, len, f.data, subpos, sublen); return *this;};
+	inline field& replace (size_t pos, size_t len, const std::string& str, size_t subpos, size_t sublen) {data.replace(pos, len, str, subpos, sublen); return *this;};
+	inline field& replace (size_t pos, size_t len, const char* s) {data.replace(pos, len, s); return *this;};
+	inline field& replace (std::string::iterator i1, std::string::iterator i2, const char* s) {data.replace(i1, i2, s); return *this;};
+	inline field& replace (size_t pos, size_t len, const char* s, size_t n) {data.replace(pos, len, s, n); return *this;};
+	inline field& replace (std::string::iterator i1, std::string::iterator i2, const char* s, size_t n) {data.replace(i1, i2, s, n); return *this;};
+	inline field& replace (size_t pos, size_t len, size_t n, char c) {data.replace(pos, len, n, c); return *this;};
+	inline field& replace (std::string::iterator i1, std::string::iterator i2, size_t n, char c) {data.replace(i1, i2, n, c); return *this;};
+	template <class InputIterator>
+		inline field& replace (std::string::iterator i1, std::string::iterator i2, InputIterator first, InputIterator last) {data.replace(i1, i2, first, last); return *this;};
+
+	inline const char* c_str() const {return data.c_str();};
+	inline size_t copy (char* s, size_t len, size_t pos = 0) const {return data.copy(s, len, pos);};
+	inline size_t find (const field& f, size_t pos = 0) const {return data.find(f.data, pos);};
+	inline size_t find (const std::string& str, size_t pos = 0) const {return data.find(str, pos);};
+	inline size_t find (const char* s, size_t pos = 0) const {return data.find(s, pos);};
+	inline size_t find (const char* s, size_t pos, size_t n) const {return data.find(s, pos, n);};
+	inline size_t find (char c, size_t pos = 0) const {return data.find(c, pos);};
+	inline size_t rfind (const field& f, size_t pos = npos) const {return data.rfind(f.data, pos);};
+	inline size_t rfind (const std::string& str, size_t pos = npos) const {return data.rfind(str, pos);};
+	inline size_t rfind (const char* s, size_t pos = npos) const {return data.rfind(s, pos);};
+	inline size_t rfind (const char* s, size_t pos, size_t n) const {return data.rfind(s, pos, n);};
+	inline size_t rfind (char c, size_t pos = npos) const {return data.rfind(c, pos);};
+	inline size_t find_first_of (const field& f, size_t pos = 0) const {return data.find_first_of(f.data, pos);};
+	inline size_t find_first_of (const std::string& str, size_t pos = 0) const {return data.find_first_of(str, pos);};
+	inline size_t find_first_of (const char* s, size_t pos = 0) const {return data.find_first_of(s, pos);};
+	inline size_t find_first_of (const char* s, size_t pos, size_t n) const {return data.find_first_of(s, pos, n);};
+	inline size_t find_first_of (char c, size_t pos = 0) const {return data.find_first_of(c, pos);};
+	inline size_t find_last_of (const field& f, size_t pos = npos) const {return data.find_last_of(f.data, pos);};
+	inline size_t find_last_of (const std::string& str, size_t pos = npos) const {return data.find_last_of(str, pos);};
+	inline size_t find_last_of (const char* s, size_t pos = npos) const {return data.find_last_of(s, pos);};
+	inline size_t find_last_of (const char* s, size_t pos, size_t n) const {return data.find_last_of(s, pos, n);};
+	inline size_t find_last_of (char c, size_t pos = npos) const {return data.find_last_of(c, pos);};
+	inline size_t find_first_not_of (const field& f, size_t pos = 0) const {return data.find_first_not_of(f.data, pos);};
+	inline size_t find_first_not_of (const std::string& str, size_t pos = 0) const {return data.find_first_not_of(str, pos);};
+	inline size_t find_first_not_of (const char* s, size_t pos = 0) const {return data.find_first_not_of(s, pos);};
+	inline size_t find_first_not_of (const char* s, size_t pos, size_t n) const {return data.find_first_not_of(s, pos, n);};
+	inline size_t find_first_not_of (char c, size_t pos = 0) const {return data.find_first_not_of(c, pos);};
+	inline size_t find_last_not_of (const field& f, size_t pos = npos) const {return data.find_last_not_of(f.data, pos);};
+	inline size_t find_last_not_of (const std::string& str, size_t pos = npos) const {return data.find_last_not_of(str, pos);};
+	inline size_t find_last_not_of (const char* s, size_t pos = npos) const {return data.find_last_not_of(s, pos);};
+	inline size_t find_last_not_of (const char* s, size_t pos, size_t n) const {return data.find_last_not_of(s, pos, n);};
+	inline size_t find_last_not_of (char c, size_t pos = npos) const {return data.find_last_not_of(c, pos);};
+	inline std::string substr (size_t pos = 0, size_t len = npos) const {return data.substr(pos, len);};
+	int compare (const field& f) const;
+	inline int compare (const std::string& str) const {return data.compare(str);};
+	inline int compare (size_t pos, size_t len, const field& f) const {return data.compare(pos, len, f.data);};
+	inline int compare (size_t pos, size_t len, const std::string& str) const {return data.compare(pos, len, str);};
+	inline int compare (size_t pos, size_t len, const field& f, size_t subpos, size_t sublen) const {return data.compare(pos, len, f.data, subpos, sublen);};
+	inline int compare (size_t pos, size_t len, const std::string& str, size_t subpos, size_t sublen) const {return data.compare(pos, len, str, subpos, sublen);};
+	inline int compare (const char* s) const {return data.compare(s);};
+	inline int compare (size_t pos, size_t len, const char* s) const {return data.compare(pos, len, s);};
+	inline int compare (size_t pos, size_t len, const char* s, size_t n) const {return data.compare(pos, len, s, n);};
+
+	static const size_t npos = std::string::npos;
+
+	friend inline field operator+ (const field& lhs, const field& rhs) {field res(lhs); return res+=rhs.data;};
+	friend inline field operator+ (const field& lhs, const std::string rhs) {field res(lhs); return res+=rhs;};
+	friend inline field operator+ (const std::string lhs, const field& rhs) {field res(rhs); res.data=lhs+rhs.data; return res;};
+	friend inline field operator+ (const field& lhs, const char* rhs) {field res(lhs); return res+=rhs;};
+	friend inline field operator+ (const char* lhs, const field& rhs) {field res(rhs); res.data=lhs+rhs.data; return res;};
+	friend inline field operator+ (const field& lhs, char rhs) {field res(lhs); return res+=rhs;};
+	friend inline field operator+ (char lhs, const field& rhs) {field res(rhs); res.data=lhs+rhs.data; return res;};
+	friend inline bool operator== (const field&  lhs, const field&  rhs) {return !lhs.compare(rhs);};
+	friend inline bool operator== (const field&  lhs, const std::string& rhs) {return lhs.data==rhs;};
+	friend inline bool operator== (const std::string& lhs, const field&  rhs) {return lhs==rhs.data;};
+	friend inline bool operator== (const char*   lhs, const field&  rhs) {return lhs==rhs.data;};
+	friend inline bool operator== (const field&  lhs, const char*   rhs) {return lhs.data==rhs;};
+	friend inline bool operator!= (const field&  lhs, const field&  rhs) {return lhs.compare(rhs);};
+	friend inline bool operator!= (const field&  lhs, const std::string& rhs) {return lhs.data!=rhs;};
+	friend inline bool operator!= (const std::string& lhs, const field&  rhs) {return lhs!=rhs.data;};
+	friend inline bool operator!= (const char*   lhs, const field&  rhs) {return lhs!=rhs.data;};
+	friend inline bool operator!= (const field&  lhs, const char*   rhs) {return lhs.data!=rhs;};
+	friend inline bool operator<  (const field&  lhs, const field&  rhs) {return lhs.compare(rhs)>0;};
+	friend inline bool operator<  (const field&  lhs, const std::string& rhs) {return lhs.data<rhs;};
+	friend inline bool operator<  (const std::string& lhs, const field&  rhs) {return lhs<rhs.data;};
+	friend inline bool operator<  (const char*   lhs, const field&  rhs) {return lhs<rhs.data;};
+	friend inline bool operator<  (const field&  lhs, const char*   rhs) {return lhs.data<rhs;};
+	friend inline bool operator<= (const field&  lhs, const field&  rhs) {return lhs.compare(rhs)>=0;};
+	friend inline bool operator<= (const field&  lhs, const std::string& rhs) {return lhs.data<=rhs;};
+	friend inline bool operator<= (const std::string& lhs, const field&  rhs) {return lhs<=rhs.data;};
+	friend inline bool operator<= (const char*   lhs, const field&  rhs) {return lhs<=rhs.data;};
+	friend inline bool operator<= (const field&  lhs, const char*   rhs) {return lhs.data<=rhs;};
+	friend inline bool operator>  (const field&  lhs, const field&  rhs) {return lhs.compare(rhs)<0;};
+	friend inline bool operator>  (const field&  lhs, const std::string& rhs) {return lhs.data>rhs;};
+	friend inline bool operator>  (const std::string& lhs, const field&  rhs) {return lhs>rhs.data;};
+	friend inline bool operator>  (const char*   lhs, const field&  rhs) {return lhs>rhs.data;};
+	friend inline bool operator>  (const field&  lhs, const char*   rhs) {return lhs.data>rhs;};
+	friend inline bool operator>= (const field&  lhs, const field&  rhs) {return lhs.compare(rhs)<=0;};
+	friend inline bool operator>= (const field&  lhs, const std::string& rhs) {return lhs.data>=rhs;};
+	friend inline bool operator>= (const std::string& lhs, const field&  rhs) {return lhs>=rhs.data;};
+	friend inline bool operator>= (const char*   lhs, const field&  rhs) {return lhs>=rhs.data;};
+	friend inline bool operator>= (const field&  lhs, const char*   rhs) {return lhs.data>=rhs;};
+
+	friend inline std::istream& operator>> (std::istream& is, field& f) {return is>>f.data;}; //TODO: parse from istream
+	friend inline std::ostream& operator<< (std::ostream& os, const field& f) {return os<<f.data;}; //TODO: build to ostream
+	friend inline std::istream& getline (std::istream& is, field& f, char delim) {return getline(is, f.data, delim);};
+	//friend inline std::istream& getline (std::istream& is, field& f) {return getline(is, f.data);};
 };
 
 class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pair<int,fldformat> >
