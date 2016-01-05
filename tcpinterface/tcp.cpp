@@ -225,6 +225,8 @@ long int tcpsend(int sfd, field &message)
 			printf("Error: %lu of %lu bytes sent: Unable to send the message to network: %s\n", numwritten, length, strerror(errno));
 			return -1;
 		}
+
+		numwritten+=i;
 	}
 
 	return numwritten;

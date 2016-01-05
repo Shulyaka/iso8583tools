@@ -381,8 +381,8 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 							case fldformat::flt_ber:
 							case fldformat::flt_bin:
 								curnum=0;
-								for(size_t i=0; i<taglength; curnum++)
-									*(((char*)(&curnum))+3-i)=buf[pos+i];
+								for(size_t i=0; i<taglength; i++)
+									*(((char*)(&curnum))+taglength-1-i)=buf[pos+i];
 								break;
 							case fldformat::flt_ascii:
 								lengthbuf.assign(buf+pos, buf+pos+taglength);

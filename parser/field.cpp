@@ -207,7 +207,8 @@ void field::print_message(string numprefix) const
 		case fldformat::fld_bcdsf:
 		case fldformat::fld_tlv:
 			for(const_iterator i=begin(); i!=end(); ++i)
-				i->second.print_message(numprefix + to_string(i->first) + ".");
+				if(!i->second.empty())
+					i->second.print_message(numprefix + to_string(i->first) + ".");
 			break;
 		default:
 			break;
@@ -396,10 +397,10 @@ bool field::sfexist(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int 
 
 int field::vsnprintf(size_t pos, size_t size, const char *format, va_list ap)
 {
-	static char tmpstr[255];
-	char *strptr = size>sizeof(tmpstr)/sizeof(char) ? (char*)malloc(size*sizeof(char)) : tmpstr;
+	static char tmpstr[256];
+	char *strptr = size+1>sizeof(tmpstr)/sizeof(char) ? (char*)malloc((size+1)*sizeof(char)) : tmpstr;
 
-	int count=std::vsnprintf(strptr, size, format, ap);
+	int count=std::vsnprintf(strptr, size+1, format, ap);
 
 	if(count<0)
 	{
@@ -418,10 +419,10 @@ int field::vsnprintf(size_t pos, size_t size, const char *format, va_list ap)
 
 size_t field::strftime(size_t max, const char *format, const struct tm *tm)
 {
-	static char tmpstr[255];
-	char *strptr = max>sizeof(tmpstr)/sizeof(char) ? (char*)malloc(max*sizeof(char)) : tmpstr;
+	static char tmpstr[256];
+	char *strptr = max+1>sizeof(tmpstr)/sizeof(char) ? (char*)malloc((max+1)*sizeof(char)) : tmpstr;
 
-	size_t count=std::strftime(strptr, max, format, tm);
+	size_t count=std::strftime(strptr, max+1, format, tm);
 
 	if(count==0)
 	{

@@ -5,7 +5,7 @@
 #include <time.h>
 #include "visa.pb.h"
 
-int debug=1;
+int debug=0;
 
 using namespace std;
 
@@ -65,7 +65,7 @@ size_t serializeNetMsg(char *buf, size_t maxlength, field &message)
 
 	length=message.get_blength();
 
-	if(length==0 || message(1,4).snprintf(5, "%04X", length - message.get_lengthLength()) > 4)
+	if(length==0 || message(1,4).snprintf(4, "%04X", length - message.get_lengthLength() - message(0).get_blength()) > 4)
 	{
 		printf("Error: Unable to calculate the message length (%lu)\n", length);
 		return 0;
@@ -1113,13 +1113,13 @@ int processOutgoing(field &fullmessage, isomessage *visamsg, fldformat *frm, Vis
 	}
 	else
 	{
-		header(5)=context->sourcestationid().c_str();
-		header(7)=context->visaroundtripinf().c_str();
-		header(8)=context->visabaseiflags().c_str();
-		header(9)=context->visamsgstatusflags().c_str();
-		header(10)=context->visamsgstatusflags().c_str();
-		header(11)=context->visareserved().c_str();
-		header(12)=context->visauserinfo().c_str();
+		header(5)=context->sourcestationid();
+		header(7)=context->visaroundtripinf();
+		header(8)=context->visabaseiflags();
+		header(9)=context->visamsgstatusflags();
+		header(10)=context->batchnumber();
+		header(11)=context->visareserved();
+		header(12)=context->visauserinfo();
 	}
 	
 	header(6)=stationid;
