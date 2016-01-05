@@ -215,7 +215,7 @@ int tcpsend(int sfd, field &message)
 	static char buf[10000];
 	int i;
 
-	length=buildNetMsg(buf, sizeof(buf), &message);
+	length=buildNetMsg(buf, sizeof(buf), message);
 
 	while(length!=numwritten)
 	{

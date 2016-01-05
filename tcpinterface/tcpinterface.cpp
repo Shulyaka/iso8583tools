@@ -42,7 +42,7 @@ int main(void)
 		return 1;
 	}
 
-	pmessage.change_format(&frm);
+	pmessage.set_frm(&frm);
 
 	printf("Message format loaded\n");
 
@@ -141,11 +141,11 @@ int main(void)
 
 				pmessage.print_message();
 
-				if(isNetMgmt(&pmessage))
+				if(isNetMgmt(pmessage))
 				{
-					if(isNetRequest(&pmessage))
+					if(isNetRequest(pmessage))
 					{
-						if(!processNetMgmt(&pmessage))
+						if(!processNetMgmt(pmessage))
 						{
 							printf("Error: Unable to process Network Management request. Message dropped.\n");
 							continue;
@@ -169,13 +169,13 @@ int main(void)
 					continue;
 				}
 
-				if(translateNetToSwitch(&smessage, &pmessage)!=0)
+				if(translateNetToSwitch(&smessage, pmessage)!=0)
 				{
 					printf("Error: Unable to translate the message to format-independent representation.\n");
 
-					if(isNetRequest(&pmessage))
+					if(isNetRequest(pmessage))
 					{
-						if(!declineNetMsg(&pmessage))
+						if(!declineNetMsg(pmessage))
 						{
 							printf("Error: Unable to decline the request. Message dropped.\n");
 							continue;
@@ -208,9 +208,9 @@ int main(void)
 				{
 					printf("Error: Unable to send the message to switch\n");
 
-					if(isNetRequest(&pmessage))
+					if(isNetRequest(pmessage))
 					{
-						if(!declineNetMsg(&pmessage))
+						if(!declineNetMsg(pmessage))
 						{
 							printf("Error: Unable to decline the request. Message dropped.\n");
 							continue;
@@ -247,7 +247,7 @@ int main(void)
 				printf("\nOutgoingMessage:\n");
 		                smessage.PrintDebugString();
 
-				if(!translateSwitchToNet(&pmessage, &smessage, &frm))
+				if(!translateSwitchToNet(pmessage, &smessage, &frm))
 				{
 					printf("Error: Unable to translate the message from format-independent representation.\n");
 
