@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <sstream>
+#include <cstring>
 
 #include "parser.h"
 
@@ -10,6 +11,18 @@ unsigned int build_hex(const string::const_iterator&, string&, unsigned int);
 unsigned int build_bcdl(const string::const_iterator&, string&, unsigned int);
 unsigned int build_bcdr(const string::const_iterator&, string&, unsigned int);
 string to_string(unsigned int);
+
+unsigned int field::build_message(char *s, size_t n) //TODO: invent something more zero-copy
+{
+	string buf;
+	unsigned int res=build_message(buf);
+	if(res>n)
+		return 0;
+
+	memcpy(s, buf.data(), res);
+
+	return res;
+}
 
 //On success, returns field data length. If field has subfields, their total size is returned
 //On failure, returns 0

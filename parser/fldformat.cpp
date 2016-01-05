@@ -653,12 +653,12 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 		dataFormat=fld_subfields;
 	else if(!strncmp(format+i, "TLV", 3))
 	{
+		i+=3;
 		dataFormat=fld_tlv;
 		if(!strcmp(format+i, "BER"))
 			tagFormat=flt_ber;
 		else
 		{
-			i+=3;
 			tagLength=atoi(format+i);
 			for(; format[i]>='0' && format[i]<='9'; i++);
 
@@ -673,7 +673,7 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			else
 			{
 				if(debug)
-					printf("Error: Unrecognized TLV tag format (%s)\n", format+i+4);
+					printf("Error: Unrecognized TLV tag format (%s)\n", format+i);
 				if(p)
 					*p='=';
 				return false;

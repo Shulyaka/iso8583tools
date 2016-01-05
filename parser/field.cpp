@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib> //for exit(). TODO: Remove exit() and introduce exceptions
 #include <sstream>
+#include <ctime>
 
 #include "parser.h"
 
@@ -350,184 +351,6 @@ bool field::change_format(fldformat *frmnew)
 	return true;
 }
 
-//a segfault-safe accessor function. Returns a pointer to the field contents. If the field does not exist, it would be created. If it cannot be created, a valid pointer to a dummy array is returned.
-string& field::add_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
-{
-	static string def="";
-	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	unsigned int i;
-	field *curfld=this;
-
-	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
-	{
-		if(n[i]==-1)
-			break;
-
-		if(!curfld || !curfld->frm)
-			return def;
-
-		curfld=&curfld->sf(n[i]);
-	}
-
-	if(!curfld || !curfld->frm)
-		return def;
-
-	return curfld->data;
-}
-
-int field::field_format(unsigned int newaltformat, int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
-{
-	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	unsigned int i;
-	fldformat *tmpfrm;
-	field *curfld=this;
-
-	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
-	{
-		if(n[i]==-1)
-			break;
-
-		if(!curfld || !curfld->frm)
-			return 2;
-
-		tmpfrm=curfld->frm;
-
-		curfld=&curfld->sf(n[i]);
-	}
-
-	if(!curfld || !curfld->frm)
-		return 2;
-
-	if(i==0)
-	{
-		if(curfld->altformat>=newaltformat || newaltformat==0) //no need or unable to go back in the list
-		{
-			if(newaltformat==0 && curfld->altformat==1)
-				curfld->altformat=0;
-
-			return 3;
-		}
-
-		if(newaltformat==1 && curfld->altformat==0)
-		{
-			curfld->altformat=1;
-			return 0;
-		}
-
-		tmpfrm=curfld->frm;
-
-		for(i=curfld->altformat==0?1:curfld->altformat; i<newaltformat; i++)
-			if(!tmpfrm->altformat)
-				return 4;
-			else
-				tmpfrm=tmpfrm->altformat;
-
-		if(curfld->change_format(tmpfrm))
-			curfld->altformat=newaltformat;
-		else
-			return 1;
-
-		return 0;
-	}
-
-	tmpfrm=&tmpfrm->sf(n[i-1]);
-
-	for(i=1; i<altformat; i++)
-		if(!tmpfrm->altformat)
-			return 4;
-		else
-			tmpfrm=tmpfrm->altformat;
-
-	if(curfld->change_format(tmpfrm))
-		curfld->altformat=newaltformat;
-	else
-		return 1;
-
-	return 0;
-} 
-
-//a segfault-safe accessor function. Return a pointer to the fields contents. If the field does not exist, returns a valid pointer to an empty string. The field structure is not modified.
-const string& field::get_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
-{
-	static const string def="";
-	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	unsigned int i;
-	field *curfld=this;
-
-	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
-	{
-		if(n[i]==-1)
-			break;
-
-		if(!curfld || !curfld->sfexist(n[i]))
-			return def;
-
-		curfld=&curfld->sf(n[i]);
-	}
-
-	if(!curfld)
-		return def;
-
-	return curfld->data;
-}
-
-void field::remove_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
-{
-	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	unsigned int i;
-	field *curfld=this;
-
-	for(i=0; i<sizeof(n)/sizeof(n[0])-1; i++)
-	{
-		if(n[i+1]==-1)
-			break;
-
-		if(!curfld || !curfld->sfexist(n[i]))
-			return;
-
-		curfld=&curfld->sf(n[i]);
-	}
-
-	if(!curfld || !curfld->sfexist(n[i]))
-		return;
-
-	subfields.erase(n[i]);
-	return;
-}
-
-//returns false if fields does not exists or has no subfields or empty.
-//otherwise, returns true
-bool field::has_field(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
-{
-	int n[]={n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
-	unsigned int i;
-	field *curfld=this;
-
-	for(i=0; i<sizeof(n)/sizeof(n[0]); i++)
-	{
-		if(n[i]==-1)
-			break;
-
-		if(!curfld || !curfld->sfexist(n[i]))
-			return false;
-
-		curfld=&curfld->sf(n[i]);
-	}
-
-	if(!curfld)
-		return false;
-
-	switch(curfld->frm->dataFormat)
-	{
-		case fldformat::fld_subfields:
-		case fldformat::fld_tlv:
-		case fldformat::fld_bcdsf:
-			return subfields.empty();
-		default:
-			return data.empty();
-	}
-}
-
 //returns reference to subfield. If it does not exists, it will be added.
 field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
@@ -569,6 +392,50 @@ bool field::sfexist(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int 
 		return true;
 	else
 		return it->second.sfexist(n1, n2, n3, n4, n5, n6, n7, n8, n9);
+}
+
+int field::vsnprintf(size_t pos, size_t size, const char *format, va_list ap)
+{
+	static char tmpstr[255];
+	char *strptr = size>sizeof(tmpstr)/sizeof(char) ? (char*)malloc(size*sizeof(char)) : tmpstr;
+
+	int count=std::vsnprintf(strptr, size, format, ap);
+
+	if(count<0)
+	{
+		if(strptr!=tmpstr)
+			free(strptr);
+		return count;
+	}
+
+	data.replace(pos, string::npos, strptr, size<(size_t)count ? size : count);
+
+	if(strptr!=tmpstr)
+		free(strptr);
+
+	return count;
+}
+
+size_t field::strftime(size_t max, const char *format, const struct tm *tm)
+{
+	static char tmpstr[255];
+	char *strptr = max>sizeof(tmpstr)/sizeof(char) ? (char*)malloc(max*sizeof(char)) : tmpstr;
+
+	size_t count=std::strftime(strptr, max, format, tm);
+
+	if(count==0)
+	{
+		if(strptr!=tmpstr)
+			free(strptr);
+		return count;
+	}
+
+	data.assign(strptr, count);
+
+	if(strptr!=tmpstr)
+		free(strptr);
+
+	return count;
 }
 
 string to_string(unsigned int n)

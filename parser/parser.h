@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <cstdarg>
 
 extern int debug;
 
@@ -39,8 +40,8 @@ class fldformat
 		fll_ber		// Length format for EMV tags	M
 	} lengthFormat;
 	unsigned int lengthLength;
-	unsigned short lengthInclusive;
-	unsigned int maxLength;
+	unsigned short lengthInclusive; //TODO: bool
+	unsigned int maxLength; //TODO: size_t
 	int addLength;
 	enum tagformat
 	{
@@ -128,7 +129,7 @@ class field
 	reverse_iterator rend(void) { return subfields.rend();};
 	const_reverse_iterator rend(void) const { return subfields.rend();};
 
-	field(const std::string &str="");
+	field(const std::string &str=""); //TODO: add more constructors
 	field(fldformat *frm, const std::string &str="");
 	field(const std::string &filename, const std::string &str="");
 	field(const field&);
@@ -144,10 +145,13 @@ class field
 	field& operator= (const field &from);
 
 	int parse_message(const std::string&);
-	inline unsigned int build_message(std::string& buf) {return build_field(buf);};
+	int parse_message(const char*, size_t);
+	inline unsigned int build_message(std::string& buf) {return build_field(buf);}; //TODO: Consider changing the return type to std::string or at least to size_t
+	unsigned int build_message(char*, size_t); //TODO: rename to serialize
 	unsigned int get_blength(void);
 	unsigned int get_flength(void);
 	unsigned int get_mlength(void);
+	inline size_t get_maxLength(void) {return frm->maxLength;}; //TODO: Loop through all altformats
 
 	inline const std::string& get_description(void) const {return frm->get_description();};
 	inline const int get_cached_blength(void) const {return blength;};
@@ -157,13 +161,21 @@ class field
 		{return sf(n0, n1, n2, n3, n4, n5, n6, n7, n8, n9);};
 	bool sfexist(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1) const;
 
-	const std::string& get_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	std::string& add_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	int field_format(unsigned int altformat, int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	void remove_field(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
-	bool has_field(int n0=-1, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
+	//cstdio API:
+	//operator const char*() const { return c_str(); } //removed to avoid ambigous overloads. Use c_str() directly instead.
+	inline int sprintf(const char *format, ...) {va_list args; va_start(args, format); int count=vsprintf(format, args); va_end(args); return count;};
+	inline int sprintf(size_t pos, const char *format, ...) {va_list args; va_start(args, format); int count=vsprintf(pos, format, args); va_end(args); return count;};
+	inline int snprintf(size_t size, const char *format, ...) {va_list args; va_start(args, format); int count=vsnprintf(size, format, args); va_end(args); return count;};
+	inline int snprintf(size_t pos, size_t size, const char *format, ...) {va_list args; va_start(args, format); int count=vsnprintf(pos, size, format, args); va_end(args); return count;};
+	inline int vsprintf(const char *format, va_list ap) {return vsprintf(0, format, ap);};
+	inline int vsprintf(size_t pos, const char *format, va_list ap) {return vsnprintf(pos, get_maxLength(), format, ap);};
+	inline int vsnprintf(size_t size, const char *format, va_list ap) {return vsnprintf(0, size, format, ap);};
+	int vsnprintf(size_t pos, size_t size, const char *format, va_list ap);
+	inline size_t strftime(const char *format, const struct tm *tm) {return strftime(get_maxLength(), format, tm);};
+	size_t strftime(size_t max, const char *format, const struct tm *tm);
 
 	//std::string API:
+	operator std::string() const { return data; }
 	inline field& operator= (const std::string& str) {data=str; return *this;};
 	inline field& operator= (const char* s) {data=s; return *this;};
 	inline field& operator= (char c) {data=c; return *this;};

@@ -37,6 +37,11 @@ int field::parse_message(const string &msgbuf)
 	return parsedlength;
 }
 
+int field::parse_message(const char *s, size_t n) //TODO: Revert parse_field to use char* buf instead of iterator
+{
+	return parse_message(string(s,n));
+}
+
 int field::parse_field_length(const std::string::const_iterator &buf, const std::string::const_iterator &bufend)
 {
 	unsigned int lenlen=0;
