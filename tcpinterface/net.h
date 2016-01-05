@@ -8,8 +8,8 @@
 int isRequest(isomessage*);
 int isDomestic(isomessage*);
 
-int parseNetMsg(field&, char*, size_t);
-unsigned int buildNetMsg(char*, size_t, field&);
+long int parseNetMsg(field&, char*, size_t);
+size_t serializeNetMsg(char*, size_t, field&);
 int translateNetToSwitch(isomessage*, field&);
 int translateSwitchToNet(field&, isomessage*, fldformat*);
 int loadNetFormat(fldformat&);

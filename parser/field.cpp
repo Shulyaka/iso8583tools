@@ -197,7 +197,7 @@ void field::print_message(string numprefix) const
 	printf("%s", frm->get_description().c_str());
 
 	if(!data.empty())
-		printf(" (%d): [%s]\n", flength, data.c_str());
+		printf(" (%lu): [%s]\n", flength, data.c_str());
 	else
 		printf(":\n");
 

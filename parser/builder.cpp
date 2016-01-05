@@ -6,16 +6,16 @@
 
 using namespace std;
 
-unsigned int build_ebcdic(const string::const_iterator&, string&, unsigned int);
-unsigned int build_hex(const string::const_iterator&, string&, unsigned int);
-unsigned int build_bcdl(const string::const_iterator&, string&, unsigned int);
-unsigned int build_bcdr(const string::const_iterator&, string&, unsigned int);
+size_t build_ebcdic(const string::const_iterator&, string&, size_t);
+size_t build_hex(const string::const_iterator&, string&, size_t);
+size_t build_bcdl(const string::const_iterator&, string&, size_t);
+size_t build_bcdr(const string::const_iterator&, string&, size_t);
 string to_string(unsigned int);
 
-unsigned int field::build_message(char *s, size_t n) //TODO: invent something more zero-copy
+size_t field::serialize(char *s, size_t n) //TODO: invent something more zero-copy
 {
 	string buf;
-	unsigned int res=build_message(buf);
+	size_t res=serialize(buf);
 	if(res>n)
 		return 0;
 
@@ -26,10 +26,10 @@ unsigned int field::build_message(char *s, size_t n) //TODO: invent something mo
 
 //On success, returns field data length. If field has subfields, their total size is returned
 //On failure, returns 0
-unsigned int field::get_flength(void)
+size_t field::get_flength(void)
 {
-	unsigned int lenlen=0;
-	unsigned int flength=data.length();
+	size_t lenlen=0;
+	size_t flength=data.length();
 	fldformat tmpfrm;
 	fldformat *frmold, *firstfrmold;
 	unsigned int altformatold;
@@ -90,12 +90,12 @@ unsigned int field::get_flength(void)
 
 //On success, returns field binary size including length field if present
 //On failure, returns 0
-unsigned int field::get_blength(void)
+size_t field::get_blength(void)
 {
-	unsigned int lenlen=0;
-	unsigned int newblength=0;
-	unsigned int flength=data.length();
-	unsigned int pos, sflen, taglength=0;
+	size_t lenlen=0;
+	size_t newblength=0;
+	size_t flength=data.length();
+	size_t pos, sflen, taglength=0;
 	int bitmap_found=-1;
 	fldformat tmpfrm;
 
@@ -132,13 +132,13 @@ unsigned int field::get_blength(void)
 				if(pos==frm->maxLength+lenlen)
 					break;
 
-				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=fldformat::fld_isobitmap && frm->sf(bitmap_found).maxLength < i->first-(unsigned int)bitmap_found)
+				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=fldformat::fld_isobitmap && frm->sf(bitmap_found).maxLength < (unsigned int)(i->first-bitmap_found))
 					break;
 
 				if(!frm->sfexist(i->first))
 					return 0;
 
-				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==fldformat::fld_isobitmap || frm->sf(bitmap_found).maxLength > i->first-(unsigned int)bitmap_found-1)
+				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==fldformat::fld_isobitmap || frm->sf(bitmap_found).maxLength > (unsigned int)(i->first-bitmap_found-1))
 				{
 					if(frm->dataFormat==fldformat::fld_subfields && frm->sf(i->first).dataFormat==fldformat::fld_isobitmap)
 					{
@@ -215,10 +215,10 @@ unsigned int field::get_blength(void)
 
 //On success, returns field length as represented in the message
 //On failure, returns 0
-unsigned int field::get_mlength(void)
+size_t field::get_mlength(void)
 {
-	unsigned int lenlen=0;
-	unsigned int mlength=0;
+	size_t lenlen=0;
+	size_t mlength=0;
 
 	if(frm->lengthFormat==fldformat::fll_ber)
 		if(frm->dataFormat==fldformat::fld_bcd || frm->dataFormat==fldformat::fld_hex)
@@ -263,10 +263,10 @@ unsigned int field::get_mlength(void)
 	return mlength+frm->addLength;
 }
 
-unsigned int field::build_field_length(string &buf)
+size_t field::build_field_length(string &buf)
 {
-	unsigned int lenlen=0;
-	unsigned int mlength=0;
+	size_t lenlen=0;
+	size_t mlength=0;
 	string lengthbuf;
 	fldformat tmpfrm;
 
@@ -286,7 +286,7 @@ unsigned int field::build_field_length(string &buf)
 			if(frm->maxLength != mlength)
 			{
 				if(debug)
-					printf("Error: Bad length for fixed-length field! %d (field) != %d (format) for %s\n", mlength, frm->maxLength, frm->get_description().c_str());
+					printf("Error: Bad length for fixed-length field! %lu (field) != %lu (format) for %s\n", mlength, frm->maxLength, frm->get_description().c_str());
 				return 0;
 			}
 			break;
@@ -295,7 +295,7 @@ unsigned int field::build_field_length(string &buf)
 			if(lenlen>4)
 				buf.append(lenlen-4, '\0');
 
-			for(unsigned int i=0; i<(lenlen>4?4:lenlen); i++)
+			for(size_t i=0; i<(lenlen>4?4:lenlen); i++)
 				buf.push_back(((unsigned char *)(&mlength))[(lenlen>4?4:lenlen)-i-1]);  //TODO: htonl()
 
 			break;
@@ -315,7 +315,7 @@ unsigned int field::build_field_length(string &buf)
 			if(lengthbuf.length()>lenlen*2)
 			{
 				if(debug)
-					printf("Error: Length of length is too small (%d)\n", lenlen);
+					printf("Error: Length of length is too small (%lu)\n", lenlen);
 				return 0;
 			}
 
@@ -331,7 +331,7 @@ unsigned int field::build_field_length(string &buf)
 			if(lengthbuf.length()>lenlen)
 			{
 				if(debug)
-					printf("Error: Length of length is too small (%d)\n", lenlen);
+					printf("Error: Length of length is too small (%lu)\n", lenlen);
 				return 0;
 			}
 
@@ -346,7 +346,7 @@ unsigned int field::build_field_length(string &buf)
 			if(lengthbuf.length()>lenlen)
 			{
 				if(debug)
-					printf("Error: Length of length is too small (%d)\n", lenlen);
+					printf("Error: Length of length is too small (%lu)\n", lenlen);
 				return 0;
 			}
 
@@ -370,14 +370,14 @@ unsigned int field::build_field_length(string &buf)
 	}
 
 	if(debug && lenlen)
-		printf("build_field_length: %s, lenlen %d, mlength %d, total length %ld\n", frm->get_description().c_str(), lenlen, mlength, buf.length());
+		printf("build_field_length: %s, lenlen %lu, mlength %lu, total length %lu\n", frm->get_description().c_str(), lenlen, mlength, buf.length());
 
 	return lenlen;
 }
 
-unsigned int field::build_field(string &buf)  //TODO: remove build_field_alt() and make sure altformat is set during filling of the field
+size_t field::build_field(string &buf)  //TODO: remove build_field_alt() and make sure altformat is set during filling of the field
 {
-	unsigned int newlength;
+	size_t newlength;
 	fldformat *frmold=frm;
 
 	do
@@ -418,13 +418,13 @@ unsigned int field::build_field(string &buf)  //TODO: remove build_field_alt() a
 	return 0;
 }
 
-unsigned int field::build_field_alt(string &buf)
+size_t field::build_field_alt(string &buf)
 {
-	unsigned int lenlen=0;
-	unsigned int newblength=0;
-	unsigned int flength=0;
+	size_t lenlen=0;
+	size_t newblength=0;
+	size_t flength=0;
 	string lengthbuf;
-	unsigned int pos, sflen, taglength=0;
+	size_t pos, sflen, taglength=0;
 	int bitmap_found=-1;
 	fldformat tmpfrm;
 	fldformat *frmold, *firstfrmold;
@@ -544,7 +544,7 @@ unsigned int field::build_field_alt(string &buf)
 									if(taglength>4)
 										buf.append(taglength-4, '\0');
 
-									for(unsigned int j=0; j<(taglength>4?4:taglength); j++)
+									for(size_t j=0; j<(taglength>4?4:taglength); j++)
 										buf.push_back(((unsigned char *)(&(i->first)))[(taglength>4?4:taglength)-j-1]);  //TODO: htonl()
 									break;
 
@@ -632,7 +632,7 @@ unsigned int field::build_field_alt(string &buf)
 			if(flength==0)
 				return 0;
 
-			for(unsigned int i=0; i<flength/64+1; newblength=(++i)*8)
+			for(size_t i=0; i<flength/64+1; newblength=(++i)*8)
 			{
 				if(i!=flength/64)
 					tmpc=0x80;
@@ -646,7 +646,7 @@ unsigned int field::build_field_alt(string &buf)
 					return 0;
 				}
 
-				for(unsigned int j=1; j<64 && i*64+j-1<flength; j++)
+				for(size_t j=1; j<64 && i*64+j-1<flength; j++)
 				{
 					if(data[i*64+j-1]=='1')
 						tmpc|=1<<(7-j%8);
@@ -676,7 +676,7 @@ unsigned int field::build_field_alt(string &buf)
 			newblength=(flength+7)/8;
 
 			tmpc=0;
-			for(unsigned int i=0; i<flength;i++)
+			for(size_t i=0; i<flength;i++)
 			{
 				if(data[i]=='1')
 					tmpc|=1<<(7-i%8);
@@ -722,28 +722,28 @@ unsigned int field::build_field_alt(string &buf)
 	}
 
 	if(debug)
-		printf("build_field: %s, length %d, total length %ld\n", frm->get_description().c_str(), newblength, buf.length());
+		printf("build_field: %s, length %lu, total length %lu\n", frm->get_description().c_str(), newblength, buf.length());
 
 	return lenlen+newblength;
 }
 
-unsigned int build_ebcdic(const string::const_iterator &from, string &to, unsigned int len)
+size_t build_ebcdic(const string::const_iterator &from, string &to, size_t len)
 {
 	const string ascii2ebcdic("\0\x001\x002\x003\x037\x02D\x02E\x02F\x016\x005\x025\x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013\x03C\x03D\x032\x026\x018\x019\x03F\x027\x022\x01D\x01E\x01F\x040\x05A\x07F\x07B\x05B\x06C\x050\x07D\x04D\x05D\x05C\x04E\x06B\x060\x04B\x061\x0F0\x0F1\x0F2\x0F3\x0F4\x0F5\x0F6\x0F7\x0F8\x0F9\x07A\x05E\x04C\x07E\x06E\x06F\x07C\x0C1\x0C2\x0C3\x0C4\x0C5\x0C6\x0C7\x0C8\x0C9\x0D1\x0D2\x0D3\x0D4\x0D5\x0D6\x0D7\x0D8\x0D9\x0E2\x0E3\x0E4\x0E5\x0E6\x0E7\x0E8\x0E9\x0BA\x0E0\x0BB\x0B0\x06D\x079\x081\x082\x083\x084\x085\x086\x087\x088\x089\x091\x092\x093\x094\x095\x096\x097\x098\x099\x0A2\x0A3\x0A4\x0A5\x0A6\x0A7\x0A8\x0A9\x0C0\x04F\x0D0\x0A1\x007\x020\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x0FF\x040\x040\x04A\x0B1\x040\x0B2\x06A\x040\x040\x0C3\x040\x040\x05F\x040\x0D9\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x040\x07F\x040\x040\x040\x040\x064\x065\x062\x066\x063\x067\x09C\x068\x074\x071\x072\x073\x078\x075\x076\x077\x040\x069\x0ED\x0EE\x0EB\x0EF\x0EC\x040\x080\x0FD\x0FE\x0FB\x0FC\x0AD\x040\x059\x044\x045\x042\x046\x043\x047\x09E\x048\x054\x051\x052\x053\x058\x055\x056\x057\x040\x049\x0CD\x0CE\x0CF\x0CB\x0CC\x040\x070\x0DD\x0DE\x0DB\x0DC\x08D\x040\x0DF", 256);
 
-	for(unsigned int i=0; i<len; i++)
+	for(size_t i=0; i<len; i++)
 		to.push_back(ascii2ebcdic[(unsigned char)from[i]]);
 	
 	return len;
 }
 
-unsigned int build_bcdr(const string::const_iterator &from, string &to, unsigned int len)
+size_t build_bcdr(const string::const_iterator &from, string &to, size_t len)
 {
 	unsigned char t, tmpc=0;
-	unsigned int u=len/2*2==len?0:1;
-	unsigned int separator_found=0;
+	size_t u=len/2*2==len?0:1;
+	size_t separator_found=0;
 
-	for(unsigned int i=0; i<(len+1)/2; i++)
+	for(size_t i=0; i<(len+1)/2; i++)
 	{
 		if(i!=0 || u==0)
 		{
@@ -783,13 +783,13 @@ unsigned int build_bcdr(const string::const_iterator &from, string &to, unsigned
 	return (len+1)/2;
 }
 
-unsigned int build_bcdl(const string::const_iterator &from, string &to, unsigned int len)
+size_t build_bcdl(const string::const_iterator &from, string &to, size_t len)
 {
 	unsigned char t, tmpc=0;
-	unsigned int u=len/2*2==len?0:1;
-	unsigned int separator_found=0;
+	size_t u=len/2*2==len?0:1;
+	size_t separator_found=0;
 
-	for(unsigned int i=0; i<(len+1)/2; i++)
+	for(size_t i=0; i<(len+1)/2; i++)
 	{
 		t=(unsigned char)from[i*2];
 		if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
@@ -829,12 +829,12 @@ unsigned int build_bcdl(const string::const_iterator &from, string &to, unsigned
 	return (len+1)/2;
 }
 
-unsigned int build_hex(const string::const_iterator &from, string &to, unsigned int len)
+size_t build_hex(const string::const_iterator &from, string &to, size_t len)
 {
 	unsigned char t, tmpc=0;
-	unsigned int u=len/2*2==len?0:1;
+	size_t u=len/2*2==len?0:1;
 
-	for(unsigned int i=0; i<(len+1)/2; i++)
+	for(size_t i=0; i<(len+1)/2; i++)
 	{
 		if(i!=0 || u==0)
 		{
@@ -872,22 +872,22 @@ unsigned int build_hex(const string::const_iterator &from, string &to, unsigned 
 	return (len+1)/2;
 }
 
-unsigned int field::build_isobitmap(string &buf, unsigned int index)
+size_t field::build_isobitmap(string &buf, unsigned int index)
 {
-	unsigned int newblength=0;
+	size_t newblength=0;
 	unsigned char tmpc=0;
 
 	int fields=subfields.empty()?0:subfields.rbegin()->first+1;
-	//printf("ISOBITMAP: %d %d %d\n", fields, index, (fields-index-1)/64+1);
+	//printf("ISOBITMAP: %d %u %d\n", fields, index, (fields-index-1)/64+1);
 
-	for(unsigned int i=0; i<(fields-index-1)/64+1; newblength=(++i)*8)
+	for(size_t i=0; i<(fields-index-1)/64+1; newblength=(++i)*8)
 	{
 		if(i!=(fields-index-1)/64)
 			tmpc=0x80;
 		else
 			tmpc=0;
 
-		for(unsigned int j=1; j<64; j++)
+		for(unsigned char j=1; j<64; j++)
 		{
 			if(sfexist(i*64+j+index) && !sf(i*64+j+index).empty())
 				tmpc|=1<<(7-j%8);
@@ -901,9 +901,9 @@ unsigned int field::build_isobitmap(string &buf, unsigned int index)
 	return newblength;
 }
 
-unsigned int field::build_bitmap(string &buf, unsigned int index)
+size_t field::build_bitmap(string &buf, unsigned int index)
 {
-	unsigned int newblength, flength;
+	size_t newblength, flength;
 	unsigned char tmpc=0;
 
 	int fields=subfields.empty()?0:subfields.rbegin()->first+1;
@@ -911,7 +911,7 @@ unsigned int field::build_bitmap(string &buf, unsigned int index)
 
 	newblength=(flength+7)/8;
 
-	for(unsigned int i=0; i<flength && i<fields-index-1; i++)
+	for(size_t i=0; i<flength && i<fields-index-1; i++)
 	{
 		if(sfexist(index+1+i) && !sf(index+1+i).empty())
 			tmpc|=1<<(7-i%8);

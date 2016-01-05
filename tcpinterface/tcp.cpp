@@ -137,13 +137,13 @@ int tcpserverconnect(int sct, std::string &host, std::string &port) //blocking
 //-2: Connection is broken
 //-3: Other error (see errno)
 //>0: Valid message received
-int tcprecv(int sfd, field &message)
+long int tcprecv(int sfd, field &message)
 {
 	static char buf[10000];
-	unsigned int maxlen=sizeof(buf);
-	static unsigned int toread=1;
-	static unsigned int numread=0;
-	int i;
+	size_t maxlen=sizeof(buf);
+	static size_t toread=1;
+	static size_t numread=0;
+	long int i;
 
 	while(true)
 	{
@@ -185,7 +185,7 @@ int tcprecv(int sfd, field &message)
 			if(i<0)
 			{
 				toread=-i-numread;
-				if(-i>maxlen) //shouldn't happen, parseNetMsg() should return reasonable values
+				if((size_t)-i>maxlen) //shouldn't happen, parseNetMsg() should return reasonable values
 				{
 					numread=0;
 					toread=1;
@@ -208,14 +208,13 @@ int tcprecv(int sfd, field &message)
 //0: Message error
 //-1: Tcp error
 //otherwise, message size is returned
-int tcpsend(int sfd, field &message)
+long int tcpsend(int sfd, field &message)
 {
-	unsigned int length;
-	int numwritten=0;
+	size_t length, numwritten=0;
 	static char buf[10000];
 	int i;
 
-	length=buildNetMsg(buf, sizeof(buf), message);
+	length=serializeNetMsg(buf, sizeof(buf), message);
 
 	while(length!=numwritten)
 	{
@@ -223,7 +222,7 @@ int tcpsend(int sfd, field &message)
 
 		if(i==-1 || i==0)
 		{
-			printf("Error: %d of %d bytes sent: Unable to send the message to network: %s\n", numwritten, length, strerror(errno));
+			printf("Error: %lu of %lu bytes sent: Unable to send the message to network: %s\n", numwritten, length, strerror(errno));
 			return -1;
 		}
 	}

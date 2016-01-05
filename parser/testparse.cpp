@@ -25,9 +25,9 @@ int main(int argc, char **argv)
 	int frmcounter=0;
 	string msgbuf;
 	string msgbuf2;
-	unsigned int msglen=0;
-	unsigned int msglen1=0;
-	unsigned int msglen2=0;
+	size_t msglen=0;
+	size_t msglen1=0;
+	size_t msglen2=0;
 	FILE *outfile;
 	
 
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 
 	msglen1=msglen;
 
-	if(message.parse_message(msgbuf)<=0)
+	if(message.parse(msgbuf)<=0)
 	{
 		printf("Error: Unable to parse message\n");
 
@@ -116,16 +116,16 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s parsed, length: %d\n", message.get_description().c_str(), message.get_cached_blength());
+		printf("%s parsed, length: %lu\n", message.get_description().c_str(), message.get_cached_blength());
 
 	message.print_message();
 
 	message.reset_altformat();
 
 	if(debug)
-		printf("Building %s, estimated length: %d\n", message.get_description().c_str(), message.get_blength());
+		printf("Building %s, estimated length: %lu\n", message.get_description().c_str(), message.get_blength());
 
-	msglen2=message.build_message(msgbuf2);
+	msglen2=message.serialize(msgbuf2);
 
 	if(!msglen2)
 	{
@@ -143,19 +143,19 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s built. Length: %d/%ld\n", message.get_description().c_str(), msglen2, msgbuf2.length());
+		printf("%s built. Length: %lu/%lu\n", message.get_description().c_str(), msglen2, msgbuf2.length());
 
 	if(msglen2!=msglen)
 	{
 		if(debug)
-			printf("Warning: Total length mismatch (%d != %d)\n", msglen, msglen2);
+			printf("Warning: Total length mismatch (%lu != %lu)\n", msglen, msglen2);
 	}
 	else
 		for(msglen=0; msglen<msglen2; msglen++)
 			if(msgbuf[msglen]!=msgbuf2[msglen])
 			{
 				if(debug)
-					printf("Warning: Messages don't match (starting from byte %d)\n", msglen);
+					printf("Warning: Messages don't match (starting from byte %lu)\n", msglen);
 				break;
 			}
 

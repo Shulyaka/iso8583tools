@@ -52,7 +52,7 @@ void fldformat::fill_default(void) //TODO: When API stabilizes, enhance construc
 	description.clear();
 	lengthFormat=fll_unknown;
 	lengthLength=0;
-	lengthInclusive=0;
+	lengthInclusive=false;
 	maxLength=1024;
 	addLength=0;
 	dataFormat=fld_ascii;
@@ -81,7 +81,7 @@ bool fldformat::empty(void) const
 	return description.empty()
 	    && lengthFormat==fll_unknown
 	    && lengthLength==0
-	    && lengthInclusive==0
+	    && lengthInclusive==false
 	    && maxLength==1024
 	    && addLength==0
 	    && dataFormat==fld_ascii
@@ -169,7 +169,7 @@ void fldformat::print_format(string numprefix)
 		else if(lengthFormat==fll_ber)
 			printf("M");
 		else
-			for(unsigned int i=0; i<lengthLength; i++)
+			for(size_t i=0; i<lengthLength; i++)
 				switch(lengthFormat)
 			        {
 					case fll_ascii:
@@ -193,10 +193,10 @@ void fldformat::print_format(string numprefix)
 		if(lengthInclusive)
 			printf("I");
 
-		printf("%d", maxLength);
+		printf("%lu", maxLength);
 
 		if(addLength)
-			printf("%+d", addLength);
+			printf("%+ld", addLength);
 
 		switch(dataFormat)
 	        {
@@ -207,16 +207,16 @@ void fldformat::print_format(string numprefix)
 				switch(tagFormat)
 				{
 					case flt_ebcdic:
-						printf("TLV%dEBCDIC", tagLength);
+						printf("TLV%luEBCDIC", tagLength);
 						break;
 					case flt_bcd:
-						printf("TLV%dBCD", tagLength);
+						printf("TLV%luBCD", tagLength);
 						break;
 					case flt_bin:
-						printf("TLV%dBIN", tagLength);
+						printf("TLV%luBIN", tagLength);
 						break;
 					case flt_ascii:
-						printf("TLV%dASCII", tagLength);
+						printf("TLV%luASCII", tagLength);
 						break;
 					case flt_ber:
 						printf("TLVBER");
@@ -279,7 +279,7 @@ bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength f
 	char number[256];
 	char format[256];
 	char descr[256];
-	unsigned int j=0;
+	size_t j=0;
 	int k=0;
 	fldformat *frmtmp, *frmnew;
 	map<string,fldformat> orphans;
@@ -394,7 +394,7 @@ bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength f
 // During parent search, always choses latest altformat wherever possible
 fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &orphans)
 {
-	unsigned int i, l;
+	size_t i, l;
 	int n;
 	string key;
 
@@ -476,7 +476,7 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 //parses format string
 bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 {
-	unsigned int i, j=0;
+	size_t i, j=0;
 	char *p;
 	fldformat *tmpfrm;
 
@@ -599,11 +599,11 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 
 	if(format[j]=='I')
 	{
-		lengthInclusive=1;
+		lengthInclusive=true;
 		j++;
 	}
 	else
-		lengthInclusive=0;
+		lengthInclusive=false;
 
 	for(i=j; i<strlen(format); i++)
 		if (format[i]<'0' || format[i]>'9')

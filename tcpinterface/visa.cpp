@@ -29,9 +29,9 @@ int loadNetFormat(fldformat &frm)
 	return frm.load_format((char*)"../parser/formats/fields_visa.frm");
 }
 
-int parseNetMsg(field &message, char *buf, size_t length)
+long int parseNetMsg(field &message, char *buf, size_t length)
 {
-	int i;
+	long int i;
 
 	if(!buf)
 	{
@@ -39,11 +39,11 @@ int parseNetMsg(field &message, char *buf, size_t length)
 		return 0;
 	}
 
-	i=message.parse_message(buf, length);   //TODO: For Visa, parse header (frm->fld[0]) and message(frm->fld[2]) separately to handle reject header properly.
+	i=message.parse(buf, length);   //TODO: For Visa, parse header (frm->fld[0]) and message(frm->fld[2]) separately to handle reject header properly.
 	if(i<0)
 		return i;
 
-	printf("\nMessage received, length %d\n", length);
+	printf("\nMessage received, length %lu\n", length);
 
 	if(i==0)
 		printf("Error: Unable to parse\n");
@@ -51,9 +51,9 @@ int parseNetMsg(field &message, char *buf, size_t length)
 	return i;
 }
 
-unsigned int buildNetMsg(char *buf, size_t maxlength, field &message)
+size_t serializeNetMsg(char *buf, size_t maxlength, field &message)
 {
-	unsigned int length;
+	size_t length;
 
 	if(!buf)
 	{
@@ -67,11 +67,11 @@ unsigned int buildNetMsg(char *buf, size_t maxlength, field &message)
 
 	if(length==0 || message(1,4).snprintf(5, "%04X", length - message.get_lengthLength()) > 4)
 	{
-		printf("Error: Unable to calculate the message length (%d)\n", length);
+		printf("Error: Unable to calculate the message length (%lu)\n", length);
 		return 0;
 	}
 
-	return message.build_message(buf, maxlength);
+	return message.serialize(buf, maxlength);
 	
 }
 
@@ -185,7 +185,7 @@ int processIncoming(isomessage *visamsg, field &fullmessage, VisaContext *contex
 			visamsg->set_messagetype(isomessage::AUTHORIZATION | isomessage::REVERSAL);
 			break;
 		default:
-			printf("Error: Unknown message type: '%s'\n", message(0));
+			printf("Error: Unknown message type: '%s'\n", message(0).c_str());
 	}
 
 	switch(message(0)[2]-'0')
@@ -202,7 +202,7 @@ int processIncoming(isomessage *visamsg, field &fullmessage, VisaContext *contex
 			visamsg->set_messagetype(visamsg->messagetype() | isomessage::ADVICE | isomessage::RESPONSE);
 			break;
 		default:
-			printf("Error: Unknown message type: '%s'\n", message(0));
+			printf("Error: Unknown message type: '%s'\n", message(0).c_str());
 	}
 
 	switch(message(0)[3]-'0')
@@ -219,7 +219,7 @@ int processIncoming(isomessage *visamsg, field &fullmessage, VisaContext *contex
 			visamsg->set_messagetype(visamsg->messagetype() | isomessage::ISSUER | isomessage::REPEAT);
 			break;
 		default:
-			printf("Error: Unknown message type: '%s'\n", message(0));
+			printf("Error: Unknown message type: '%s'\n", message(0).c_str());
 	}
 
 	if(message.sfexist(2))
@@ -250,7 +250,7 @@ int processIncoming(isomessage *visamsg, field &fullmessage, VisaContext *contex
 				break;
 
 			default:
-				printf("Error: Unknown processing code: '%s'\n", message(3,1));
+				printf("Error: Unknown processing code: '%s'\n", message(3,1).c_str());
 				return 1;
 		}
 
@@ -277,7 +277,7 @@ int processIncoming(isomessage *visamsg, field &fullmessage, VisaContext *contex
 				break;
 
 			default:
-				printf("Warning: Unknown From account type: '%s'\n", message(3,2));
+				printf("Warning: Unknown From account type: '%s'\n", message(3,2).c_str());
 		}
 
 		switch(atoi(message(3,3).c_str()))
@@ -303,7 +303,7 @@ int processIncoming(isomessage *visamsg, field &fullmessage, VisaContext *contex
 				break;
 
 			default:
-				printf("Warning: Unknown To account type: '%s'\n", message(3,3));
+				printf("Warning: Unknown To account type: '%s'\n", message(3,3).c_str());
 		}
 	}
 
@@ -1090,8 +1090,6 @@ int processOutgoing(field &fullmessage, isomessage *visamsg, fldformat *frm, Vis
 
 	time_t datetime;
 
-	unsigned int i;
-
 	fullmessage(0)="0000";
 	field &header=fullmessage(1);
 	field &message=fullmessage(2);
@@ -1627,7 +1625,7 @@ int processOutgoing(field &fullmessage, isomessage *visamsg, fldformat *frm, Vis
 		message(53,6)="000000";
 	}
 
-	for(i=0; i<visamsg->additionalamount_size() && i<6; i++)
+	for(int i=0; i<visamsg->additionalamount_size() && i<6; i++)
 	{
 		const isomessage::AddAmnt& addamnt=visamsg->additionalamount(i);
 

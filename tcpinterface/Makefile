@@ -1,4 +1,4 @@
-CFLAGS=-ggdb
+CFLAGS=-ggdb -Wall
 
 
 all: tcpif_visa #tcpif_mast

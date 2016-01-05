@@ -39,10 +39,10 @@ class fldformat
 		fll_fixed,	// Fixed length			F
 		fll_ber		// Length format for EMV tags	M
 	} lengthFormat;
-	unsigned int lengthLength;
-	unsigned short lengthInclusive; //TODO: bool
-	unsigned int maxLength; //TODO: size_t
-	int addLength;
+	size_t lengthLength;
+	bool lengthInclusive;
+	size_t maxLength;
+	long int addLength;
 	enum tagformat
 	{
 		flt_ebcdic,	// 0xF1F2F3F4		EBCDIC
@@ -51,7 +51,7 @@ class fldformat
 		flt_ascii,	// 0x31323334		ASCII
 		flt_ber		// EMV tag format	TLVBER
 	} tagFormat;
-	unsigned int tagLength;
+	size_t tagLength;
 	std::string data;
 	std::map<int,fldformat> subfields;
 	fldformat *altformat;
@@ -82,7 +82,7 @@ class fldformat
 	void moveFrom(fldformat &from);
 	inline fldformat *get_altformat(void) const {return altformat;};
 	inline const std::string& get_description(void) const {return description;};
-	inline const unsigned int get_lengthLength(void) const {return lengthLength;};
+	inline const size_t get_lengthLength(void) const {return lengthLength;};
 	inline fldformat& sf(int n) {if(!subfields.count(n) && subfields.count(-1)) return subfields[-1]; else return subfields[n];};
 	inline bool sfexist(int n) const {return subfields.count(n) || subfields.count(-1);};
 	void erase(void);
@@ -92,9 +92,9 @@ class field
 {
 	private:
 	std::string data;  //parsed data
-	unsigned int start;  //start position inside the message binary data relative to the parent field
-	unsigned int blength;  //length of the field inside the message binary data (including length length)
-	unsigned int flength;  //parsed data length
+	size_t start;  //start position inside the message binary data relative to the parent field
+	size_t blength;  //length of the field inside the message binary data (including length length)
+	size_t flength;  //parsed data length
 	fldformat *frm;  //field format
 	fldformat *firstfrm;
 	bool deletefrm;
@@ -103,14 +103,14 @@ class field
 
 	void fill_default(void);
 
-	int parse_field(const std::string::const_iterator&, const std::string::const_iterator&);
-	int parse_field_alt(const std::string::const_iterator&, const std::string::const_iterator&);
-	int parse_field_length(const std::string::const_iterator&, const std::string::const_iterator&);
-	unsigned int build_field(std::string&);
-	unsigned int build_field_length(std::string&);
-	unsigned int build_field_alt(std::string&);
-	unsigned int build_isobitmap(std::string&, unsigned int);
-	unsigned int build_bitmap(std::string&, unsigned int);
+	long int parse_field(const std::string::const_iterator&, const std::string::const_iterator&);
+	long int parse_field_alt(const std::string::const_iterator&, const std::string::const_iterator&);
+	long int parse_field_length(const std::string::const_iterator&, const std::string::const_iterator&);
+	size_t build_field(std::string&);
+	size_t build_field_length(std::string&);
+	size_t build_field_alt(std::string&);
+	size_t build_isobitmap(std::string&, unsigned int);
+	size_t build_bitmap(std::string&, unsigned int);
 	bool change_format(fldformat*);
 
 	public:
@@ -144,18 +144,18 @@ class field
 	void swap(field &from);
 	field& operator= (const field &from);
 
-	int parse_message(const std::string&);
-	int parse_message(const char*, size_t);
-	inline unsigned int build_message(std::string& buf) {return build_field(buf);}; //TODO: Consider changing the return type to std::string or at least to size_t
-	unsigned int build_message(char*, size_t); //TODO: rename to serialize
-	unsigned int get_blength(void);
-	unsigned int get_flength(void);
-	unsigned int get_mlength(void);
+	long int parse(const std::string&);
+	long int parse(const char*, size_t);
+	inline size_t serialize(std::string& buf) {return build_field(buf);}; //TODO: Consider changing the return type to std::string
+	size_t serialize(char*, size_t); //TODO: rename to serialize
+	size_t get_blength(void);
+	size_t get_flength(void);
+	size_t get_mlength(void);
 	inline size_t get_maxLength(void) {return frm->maxLength;}; //TODO: Loop through all altformats
 
 	inline const std::string& get_description(void) const {return frm->get_description();};
-	inline const int get_cached_blength(void) const {return blength;};
-	inline const int get_lengthLength(void) const {return frm?frm->get_lengthLength():0;};
+	inline const size_t get_cached_blength(void) const {return blength;};
+	inline const size_t get_lengthLength(void) const {return frm?frm->get_lengthLength():0;};
 	field& sf(int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1);
 	inline field& operator() (int n0, int n1=-1, int n2=-1, int n3=-1, int n4=-1, int n5=-1, int n6=-1, int n7=-1, int n8=-1, int n9=-1)
 		{return sf(n0, n1, n2, n3, n4, n5, n6, n7, n8, n9);};
