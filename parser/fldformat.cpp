@@ -474,10 +474,10 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 }
 
 //parses format string
-bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
+bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 {
 	size_t i, j=0;
-	char *p;
+	const char *p;
 	fldformat *tmpfrm;
 
 	if(!format)
@@ -646,65 +646,125 @@ bool fldformat::parseFormat(char *format, map<string,fldformat> &orphans)
 			data.assign(p+1);
 		else
 			data.assign(maxLength, ' '); //replacing empty string with a space character. It is a feature, not bug.
-		*p='\0';
 	}
 
-	if(!strcmp(format+i, "SF"))
+	if(!strncmp(format+i, "SF", 2))
+	{
 		dataFormat=fld_subfields;
+		i+=2;
+	}
 	else if(!strncmp(format+i, "TLV", 3))
 	{
 		i+=3;
 		dataFormat=fld_tlv;
-		if(!strcmp(format+i, "BER"))
+		if(!strncmp(format+i, "BER", 3))
+		{
 			tagFormat=flt_ber;
+			i+=3;
+		}
 		else
 		{
 			tagLength=atoi(format+i);
 			for(; format[i]>='0' && format[i]<='9'; i++);
 
-			if(!strcmp(format+i, "EBCDIC") || !strcmp(format+i, "EBC"))
+			if(!strncmp(format+i, "EBCDIC", 6))
+			{
 				tagFormat=flt_ebcdic;
-			else if(!strcmp(format+i, "BCD"))
+				i+=6;
+			}
+			else if(!strncmp(format+i, "EBC", 3))
+			{
+				tagFormat=flt_ebcdic;
+				i+=3;
+			}
+			else if(!strncmp(format+i, "BCD", 3))
+			{
 				tagFormat=flt_bcd;
-			else if(!strcmp(format+i, "BIN"))
+				i+=3;
+			}
+			else if(!strncmp(format+i, "BIN", 3))
+			{
 				tagFormat=flt_bin;
-			else if(!strcmp(format+i, "ASCII") || !strcmp(format+i, "ASC") || format[i]=='\0')
+				i+=3;
+			}
+			else if(!strncmp(format+i, "ASCII", 5))
+			{
+				tagFormat=flt_ascii;
+				i+=5;
+			}
+			else if(!strncmp(format+i, "ASC", 3))
+			{
+				tagFormat=flt_ascii;
+				i+=3;
+			}
+			else if(format[i]=='\0')
 				tagFormat=flt_ascii;
 			else
 			{
 				if(debug)
 					printf("Error: Unrecognized TLV tag format (%s)\n", format+i);
-				if(p)
-					*p='=';
 				return false;
 			}
 		}
 	}
-	else if(!strcmp(format+i, "BCDSF"))
+	else if(!strncmp(format+i, "BCDSF", 5))
+	{
 		dataFormat=fld_bcdsf;
-	else if(!strcmp(format+i, "BITMAP"))
+		i+=5;
+	}
+	else if(!strncmp(format+i, "BITMAP", 6))
+	{
 		dataFormat=fld_bitmap;
-	else if(!strcmp(format+i, "BITSTR"))
+		i+=6;
+	}
+	else if(!strncmp(format+i, "BITSTR", 6))
+	{
 		dataFormat=fld_bitstr;
-	else if(!strcmp(format+i, "EBCDIC") || !strcmp(format+i, "EBC"))
+		i+=6;
+	}
+	else if(!strncmp(format+i, "EBCDIC", 6))
+	{
 		dataFormat=fld_ebcdic;
-	else if(!strcmp(format+i, "BCD"))
+		i+=6;
+	}
+	else if(!strncmp(format+i, "EBC", 3))
+	{
+		dataFormat=fld_ebcdic;
+		i+=3;
+	}
+	else if(!strncmp(format+i, "BCD", 3))
+	{
 		dataFormat=fld_bcd;
-	else if(!strcmp(format+i, "HEX"))
+		i+=3;
+	}
+	else if(!strncmp(format+i, "HEX", 3))
+	{
 		dataFormat=fld_hex;
-	else if(!strcmp(format+i, "ASCII") || !strcmp(format+i, "ASC"))
+		i+=3;
+	}
+	else if(!strncmp(format+i, "ASCII", 5))
+	{
 		dataFormat=fld_ascii;
+		i+=3;
+	}
+	else if(!strncmp(format+i, "ASC", 3))
+	{
+		dataFormat=fld_ascii;
+		i+=3;
+	}
 	else
 	{
 		if(debug)
 			printf("Error: Unrecognized data format (%s)\n", format+i);
-		if(p)
-			*p='=';
 		return false;
 	}
 
-	if(p)
-		*p='=';
+	if(p && p!=format+i)
+	{
+		if(debug)
+			printf("Error: Unrecognized trailing characters in format string (%s, %s)\n", format, format+i);
+		return false;
+	}
 
 	if(p && dataFormat!=fld_bitstr && dataFormat!=fld_ebcdic && dataFormat!=fld_bcd && dataFormat!=fld_hex && dataFormat!=fld_ascii)
 	{

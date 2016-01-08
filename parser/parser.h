@@ -59,7 +59,7 @@ class fldformat
 
 	void fill_default(void);
 	inline fldformat *get_lastaltformat(void) {fldformat *last; for(last=this; last->altformat!=NULL; ) last=last->altformat; return last;};
-	bool parseFormat(char*, std::map<std::string,fldformat> &orphans);
+	bool parseFormat(const char*, std::map<std::string,fldformat> &orphans);
 	fldformat* get_by_number(const char *number, std::map<std::string,fldformat> &orphans);
 
 	friend field;
@@ -147,7 +147,7 @@ class field
 	long int parse(const std::string&);
 	long int parse(const char*, size_t);
 	inline size_t serialize(std::string& buf) {return build_field(buf);}; //TODO: Consider changing the return type to std::string
-	size_t serialize(char*, size_t); //TODO: rename to serialize
+	size_t serialize(char*, size_t);
 	size_t get_blength(void);
 	size_t get_flength(void);
 	size_t get_mlength(void);
