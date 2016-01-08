@@ -31,8 +31,6 @@ size_t field::get_flength(void)
 	size_t lenlen=0;
 	size_t flength=data.length();
 	fldformat tmpfrm;
-	fldformat *frmold, *firstfrmold;
-	unsigned int altformatold;
 
 	flength=data.length();
 
@@ -48,26 +46,11 @@ size_t field::get_flength(void)
 	{
 		case fldformat::fld_subfields:
 		case fldformat::fld_tlv:
+		case fldformat::fld_bcdsf:
 			flength=get_blength();
 			if(flength<=lenlen)
 				return 0;
 			flength-=lenlen;
-			break;
-
-		case fldformat::fld_bcdsf:
-			tmpfrm=*frm;
-			tmpfrm.lengthFormat=fldformat::fll_unknown;
-			tmpfrm.lengthLength=0;
-			tmpfrm.dataFormat=fldformat::fld_subfields;
-			frmold=frm;
-			firstfrmold=firstfrm;
-			altformatold=altformat;
-			set_frm(&tmpfrm);
-
-			flength=get_blength();
-
-			set_frm(firstfrmold, frmold);
-			altformat=altformatold;
 			break;
 
 		case fldformat::fld_isobitmap:
@@ -111,9 +94,12 @@ size_t field::get_blength(void)
 	{
 		case fldformat::fld_subfields:
 		case fldformat::fld_tlv:
+		case fldformat::fld_bcdsf:
 			pos=lenlen;
 
-			if(frm->dataFormat==fldformat::fld_subfields)
+			if(frm->dataFormat==fldformat::fld_tlv)
+				taglength=frm->tagLength;
+			else
 			{
 				for(fldformat::iterator i=frm->begin(); i!=frm->end(); ++i)
 					if(i->second.dataFormat==fldformat::fld_isobitmap || i->second.dataFormat==fldformat::fld_bitmap)
@@ -124,8 +110,6 @@ size_t field::get_blength(void)
 								break;
 							}
 			}
-			else
-				taglength=frm->tagLength;
 
 			for(field::iterator i=begin(); i!=end(); ++i)
 			{
@@ -140,12 +124,12 @@ size_t field::get_blength(void)
 
 				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==fldformat::fld_isobitmap || frm->sf(bitmap_found).maxLength > (unsigned int)(i->first-bitmap_found-1))
 				{
-					if(frm->dataFormat==fldformat::fld_subfields && frm->sf(i->first).dataFormat==fldformat::fld_isobitmap)
+					if(frm->dataFormat!=fldformat::fld_tlv && frm->sf(i->first).dataFormat==fldformat::fld_isobitmap)
 					{
 						bitmap_found=i->first;
 						sflen=((subfields.rbegin()->first - i->first)/64+1)*8;
 					}
-					else if(frm->dataFormat==fldformat::fld_subfields && frm->sf(i->first).dataFormat==fldformat::fld_bitmap)
+					else if(frm->dataFormat!=fldformat::fld_tlv && frm->sf(i->first).dataFormat==fldformat::fld_bitmap)
 					{
 						bitmap_found=i->first;
 						sflen=(frm->sf(i->first).maxLength+7)/8;
@@ -166,10 +150,11 @@ size_t field::get_blength(void)
 			}
 
 			newblength=pos-lenlen;
-			
+
+			if(frm->dataFormat==fldformat::fld_bcdsf)
+				newblength=(newblength+1)/2;
 			break;
 
-		case fldformat::fld_bcdsf:
 		case fldformat::fld_hex:
 		case fldformat::fld_bcd:
 			flength=get_flength();
@@ -423,12 +408,10 @@ size_t field::build_field_alt(string &buf)
 	size_t lenlen=0;
 	size_t newblength=0;
 	size_t flength=0;
-	string lengthbuf;
+	string lengthbuf, bcd;
 	size_t pos, sflen, taglength=0;
 	int bitmap_found=-1;
 	fldformat tmpfrm;
-	fldformat *frmold, *firstfrmold;
-	unsigned int altformatold;
 	unsigned char tmpc=0;
 
 //	printf("Building %s\n", frm->get_description().c_str());
@@ -454,7 +437,10 @@ size_t field::build_field_alt(string &buf)
 	{
 		case fldformat::fld_subfields:
 		case fldformat::fld_tlv:
-			if(frm->dataFormat==fldformat::fld_subfields)
+		case fldformat::fld_bcdsf:
+			if(frm->dataFormat==fldformat::fld_tlv)
+				taglength=frm->tagLength;
+			else
 			{
 				for(fldformat::iterator i=frm->begin(); i!=frm->end(); ++i)
 					if(i->second.dataFormat==fldformat::fld_isobitmap || i->second.dataFormat==fldformat::fld_bitmap)
@@ -465,14 +451,9 @@ size_t field::build_field_alt(string &buf)
 								break;
 							}
 			}
-			else
-				taglength=frm->tagLength;
 
 			for(field::iterator i=begin(); i!=end(); ++i)	//TODO: implement a stack and go back if build failed
 			{
-				if(pos==frm->maxLength+lenlen)       //TODO: should we remove?
-					break;
-
 				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=fldformat::fld_isobitmap && frm->sf(bitmap_found).maxLength < i->first-(unsigned int)bitmap_found)	//TODO: suspicious condition
 					break;
 
@@ -485,15 +466,21 @@ size_t field::build_field_alt(string &buf)
 
 				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==fldformat::fld_isobitmap || frm->sf(bitmap_found).maxLength > i->first-(unsigned int)bitmap_found-1)
 				{
-					if(frm->dataFormat==fldformat::fld_subfields && frm->sf(i->first).dataFormat==fldformat::fld_isobitmap)
+					if(frm->dataFormat!=fldformat::fld_tlv && frm->sf(i->first).dataFormat==fldformat::fld_isobitmap)
 					{
 						bitmap_found=i->first;
-						sflen=build_isobitmap(buf, i->first);
+						if(frm->dataFormat!=fldformat::fld_bcdsf)
+							sflen=build_isobitmap(buf, i->first);
+						else
+							sflen=build_isobitmap(bcd, i->first);
 					}
-					else if(frm->dataFormat==fldformat::fld_subfields && frm->sf(i->first).dataFormat==fldformat::fld_bitmap)
+					else if(frm->dataFormat!=fldformat::fld_tlv && frm->sf(i->first).dataFormat==fldformat::fld_bitmap)
 					{
 						bitmap_found=i->first;
-						sflen=build_bitmap(buf, i->first);
+						if(frm->dataFormat!=fldformat::fld_bcdsf)
+							sflen=build_bitmap(buf, i->first);
+						else
+							sflen=build_bitmap(bcd, i->first);
 					}
 					else if(i->second.empty())
 					{
@@ -503,7 +490,7 @@ size_t field::build_field_alt(string &buf)
 					}
 					else
 					{
-						if(frm->dataFormat!=fldformat::fld_subfields)
+						if(frm->dataFormat==fldformat::fld_tlv)
 						{
 							switch(frm->tagFormat)
 							{
@@ -516,10 +503,21 @@ size_t field::build_field_alt(string &buf)
 										return 0;
 									}
 
-									buf.append(taglength - lengthbuf.length(), 0xF0);
+									if(frm->dataFormat!=fldformat::fld_bcdsf)
+									{
+										buf.append(taglength - lengthbuf.length(), 0xF0);
 
-									if(!build_ebcdic(lengthbuf.begin(), buf, lengthbuf.length()))
-										return 0;
+										if(!build_ebcdic(lengthbuf.begin(), buf, lengthbuf.length()))
+											return 0;
+									}
+									else
+									{
+										bcd.append(taglength - lengthbuf.length(), 0xF0);
+
+										if(!build_ebcdic(lengthbuf.begin(), bcd, lengthbuf.length()))
+											return 0;
+									}
+
 									break;
 
 								case fldformat::flt_bcd:
@@ -531,21 +529,42 @@ size_t field::build_field_alt(string &buf)
 										return 0;
 									}
 
-									buf.append(taglength - (lengthbuf.length()+1)/2, '\0');
+									if(frm->dataFormat!=fldformat::fld_bcdsf)
+									{
+										buf.append(taglength - (lengthbuf.length()+1)/2, '\0');
 
-									if(!build_bcdr(lengthbuf.begin(), buf, lengthbuf.length()))
-										return 0;
+										if(!build_bcdr(lengthbuf.begin(), buf, lengthbuf.length()))
+											return 0;
+									}
+									else
+									{
+										bcd.append(taglength - (lengthbuf.length()+1)/2, '\0');
+
+										if(!build_bcdr(lengthbuf.begin(), bcd, lengthbuf.length()))
+											return 0;
+									}
 									break;
 
 								case fldformat::flt_ber:
 									taglength=i->first>0xFF?2:1;
 									//no break intentionally
 								case fldformat::flt_bin:
-									if(taglength>4)
-										buf.append(taglength-4, '\0');
+									if(frm->dataFormat!=fldformat::fld_bcdsf)
+									{
+										if(taglength>4)
+											buf.append(taglength-4, '\0');
 
-									for(size_t j=0; j<(taglength>4?4:taglength); j++)
-										buf.push_back(((unsigned char *)(&(i->first)))[(taglength>4?4:taglength)-j-1]);  //TODO: htonl()
+										for(size_t j=0; j<(taglength>4?4:taglength); j++)
+											buf.push_back(((unsigned char *)(&(i->first)))[(taglength>4?4:taglength)-j-1]);  //TODO: htonl()
+									}
+									else
+									{
+										if(taglength>4)
+											bcd.append(taglength-4, '\0');
+
+										for(size_t j=0; j<(taglength>4?4:taglength); j++)
+											bcd.push_back(((unsigned char *)(&(i->first)))[(taglength>4?4:taglength)-j-1]);  //TODO: htonl()
+									}
 									break;
 
 								case fldformat::flt_ascii:
@@ -557,8 +576,16 @@ size_t field::build_field_alt(string &buf)
 										return 0;
 									}
 
-									buf.append(taglength - lengthbuf.length(), '0');
-									buf.append(lengthbuf);
+									if(frm->dataFormat!=fldformat::fld_bcdsf)
+									{
+										buf.append(taglength - lengthbuf.length(), '0');
+										buf.append(lengthbuf);
+									}
+									else
+									{
+										bcd.append(taglength - lengthbuf.length(), '0');
+										bcd.append(lengthbuf);
+									}
 
 									break;
 
@@ -571,7 +598,10 @@ size_t field::build_field_alt(string &buf)
 							pos+=taglength;
 						}
 
-						sflen=i->second.build_field(buf);
+						if(frm->dataFormat!=fldformat::fld_bcdsf)
+							sflen=i->second.build_field(buf);
+						else
+							sflen=i->second.build_field(bcd);
 					}
 					
 					if(!sflen)
@@ -587,43 +617,18 @@ size_t field::build_field_alt(string &buf)
 			flength=pos-lenlen;
 			newblength=pos-lenlen;
 
-			break;
-
-		case fldformat::fld_bcdsf:
-			data.clear();
-
-			tmpfrm=*frm;
-			tmpfrm.lengthFormat=fldformat::fll_unknown;
-			tmpfrm.lengthLength=0;
-			tmpfrm.dataFormat=fldformat::fld_subfields;
-			frmold=frm;
-			firstfrmold=firstfrm;
-			altformatold=altformat;
-			set_frm(&tmpfrm);
-
-			flength=build_field(data);
-
-			set_frm(firstfrmold, frmold);
-			altformat=altformatold;
-
-			if(!flength)
+			if(frm->dataFormat==fldformat::fld_bcdsf)
 			{
-				data.clear();
-				return 0;
+				if(!build_bcdl(bcd.begin(), buf, flength))
+				{
+					if(debug)
+						printf("Error: Not BCD subfield\n");
+					return 0;
+				}
+
+				newblength=(newblength+1)/2;
 			}
 
-			newblength=(flength+1)/2;
-			
-			if(!build_bcdl(data.begin(), buf, flength))
-			{
-				data.clear();
-				if(debug)
-					printf("Error: Not BCD subfield\n");
-				return 0;
-			}
-
-			data.clear();
-			
 			break;
 
 		case fldformat::fld_isobitmap:

@@ -238,8 +238,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 	int minlength=0;
 	size_t taglength=0;
 	fldformat tmpfrm;
-	fldformat *frmold, *firstfrmold;
-	unsigned int altformatold;
+	size_t oldlenlen;
 	int curnum;
 	vector<int> fieldstack;
 
@@ -314,6 +313,20 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 	
 	switch(frm->dataFormat)
 	{
+		case fldformat::fld_bcdsf:
+			if(!parse_bcdl(buf+lenlen, data, flength))
+			{
+				if(debug)
+					printf("Error: Not BCD field\n");
+				return 0;
+			}
+
+			buf=data.data();
+			printf("maxlength=%lu, flength=%lu, lenlen=%lu\n", maxlength, flength, lenlen);
+			oldlenlen=lenlen;
+			lenlen=0;
+			maxlength=data.length();
+			// no break intentionally
 		case fldformat::fld_subfields:
 		case fldformat::fld_tlv:
 			parse_failed=1;
@@ -533,40 +546,9 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 
 			if(parse_failed)
 				return minlength;
-			
-			break;
 
-		case fldformat::fld_bcdsf:
-			if(!parse_bcdl(buf+lenlen, data, flength))
-			{
-				if(debug)
-					printf("Error: Not BCD field\n");
-				return 0;
-			}
-
-			tmpfrm=*frm;
-			tmpfrm.lengthFormat=fldformat::fll_fixed;
-			tmpfrm.lengthLength=0;
-			tmpfrm.maxLength=flength;
-			tmpfrm.addLength=0;
-			tmpfrm.dataFormat=fldformat::fld_subfields;
-			frmold=frm;
-			firstfrmold=firstfrm;
-			altformatold=altformat;
-			set_frm(&tmpfrm);
-
-			sflen=parse_field(data.data(), data.length());
-			
-			data.clear();
-			set_frm(firstfrmold, frmold);
-			altformat=altformatold;
-
-			if(sflen<=0)
-			{
-				if(debug)
-					printf("Error: Unable to parse BCD subfields\n");
-				return sflen;
-			}
+			if(frm->dataFormat==fldformat::fld_bcdsf)
+				lenlen=oldlenlen;
 
 			break;
 
