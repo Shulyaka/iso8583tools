@@ -103,9 +103,9 @@ class field
 
 	void fill_default(void);
 
-	long int parse_field(const std::string::const_iterator&, const std::string::const_iterator&);
-	long int parse_field_alt(const std::string::const_iterator&, const std::string::const_iterator&);
-	long int parse_field_length(const std::string::const_iterator&, const std::string::const_iterator&);
+	long int parse_field(const char*, size_t);
+	long int parse_field_alt(const char*, size_t);
+	long int parse_field_length(const char*, size_t);
 	size_t build_field(std::string&);
 	size_t build_field_length(std::string&);
 	size_t build_field_alt(std::string&);

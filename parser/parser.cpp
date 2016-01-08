@@ -5,10 +5,10 @@
 
 using namespace std;
 
-size_t parse_ebcdic(const std::string::const_iterator&, std::string&, size_t);
-size_t parse_hex(const std::string::const_iterator&, std::string&, size_t);
-size_t parse_bcdr(const std::string::const_iterator&, std::string&, size_t);
-size_t parse_bcdl(const std::string::const_iterator&, std::string&, size_t);
+size_t parse_ebcdic(const char*, std::string&, size_t);
+size_t parse_hex(const char*, std::string&, size_t);
+size_t parse_bcdr(const char*, std::string&, size_t);
+size_t parse_bcdl(const char*, std::string&, size_t);
 
 // return value:
 // >0: successfully parsed, the value is the length
@@ -16,17 +16,22 @@ size_t parse_bcdl(const std::string::const_iterator&, std::string&, size_t);
 // =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
 long int field::parse(const string &msgbuf)
 {
+	return parse(msgbuf.data(), msgbuf.length());
+}
+
+long int field::parse(const char *s, size_t n)
+{
 	field message(firstfrm);
 	int parsedlength;
 
-	if(msgbuf.empty())
+	if(!s || !n)
 	{
 		if(debug)
 			printf("Error: Empty input\n");
 		return 0;
 	}
 
-	parsedlength=message.parse_field(msgbuf.begin(), msgbuf.end());
+	parsedlength=message.parse_field(s, n);
 
 	if(parsedlength>0)
 		moveFrom(message);
@@ -37,12 +42,7 @@ long int field::parse(const string &msgbuf)
 	return parsedlength;
 }
 
-long int field::parse(const char *s, size_t n) //TODO: Revert parse_field to use char* buf instead of iterator
-{
-	return parse(string(s,n));
-}
-
-long int field::parse_field_length(const std::string::const_iterator &buf, const std::string::const_iterator &bufend)
+long int field::parse_field_length(const char *buf, size_t maxlength)
 {
 	size_t lenlen=0;
 	size_t newlength=0;
@@ -50,7 +50,7 @@ long int field::parse_field_length(const std::string::const_iterator &buf, const
 
 	lenlen=frm->lengthLength;
 
-	if(lenlen > (size_t)(bufend-buf))
+	if(lenlen > maxlength)
 	{
 		if(debug)
 			printf("Error: Buffer less than length size\n");
@@ -76,7 +76,7 @@ long int field::parse_field_length(const std::string::const_iterator &buf, const
 			if((unsigned char)buf[0]>127)
 			{
 				lenlen=2;
-				if(lenlen > (size_t)(bufend-buf))
+				if(lenlen > maxlength)
 				{
 					if(debug)
 						printf("Error: Buffer less than length size\n");
@@ -118,7 +118,7 @@ long int field::parse_field_length(const std::string::const_iterator &buf, const
 						return 0;
 					}
 
-			lengthbuf.assign(buf, buf+lenlen);
+			lengthbuf.assign(buf, lenlen);
 			newlength=atoi(lengthbuf.c_str());
 			break;
 
@@ -141,7 +141,7 @@ long int field::parse_field_length(const std::string::const_iterator &buf, const
 			break;
 
 		case fldformat::fll_unknown:
-			newlength=(size_t)(bufend-buf) < frm->maxLength ? bufend-buf : frm->maxLength;
+			newlength=maxlength < frm->maxLength ? maxlength : frm->maxLength;
 			break;
 
 		case fldformat::fll_fixed:
@@ -178,12 +178,12 @@ long int field::parse_field_length(const std::string::const_iterator &buf, const
 // >0: successfully parsed, the value is the length
 // <0: Parse failed but you could try a greater maxlength of at least the negated returned value
 // =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
-long int field::parse_field(const std::string::const_iterator &buf, const std::string::const_iterator &bufend)
+long int field::parse_field(const char *buf, size_t maxlength)
 {
 	int newlength;
 	int minlength=0;
 
-	if(bufend-buf<=0)
+	if(maxlength==0)
 	{
 		if(debug)
 			printf("Error: buf too small on %s\n", frm->get_description().c_str());
@@ -209,7 +209,7 @@ long int field::parse_field(const std::string::const_iterator &buf, const std::s
 		if(debug && altformat)
 			printf("Info: parse_field: Retrying with alternate format \"%s\"\n", frm->get_description().c_str());
 
-		newlength=parse_field_alt(buf, bufend);
+		newlength=parse_field_alt(buf, maxlength);
 		if(newlength>0)
 			return newlength;
 
@@ -223,7 +223,7 @@ long int field::parse_field(const std::string::const_iterator &buf, const std::s
 	return minlength;
 }
 
-long int field::parse_field_alt(const std::string::const_iterator &buf, const std::string::const_iterator &bufend)
+long int field::parse_field_alt(const char *buf, size_t maxlength)
 {
 	size_t lenlen=0;
 	size_t newblength=0;
@@ -240,11 +240,10 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 	fldformat tmpfrm;
 	fldformat *frmold, *firstfrmold;
 	unsigned int altformatold;
-	size_t maxlength=bufend-buf;
 	int curnum;
 	vector<int> fieldstack;
 
-	if(bufend-buf<=0)
+	if(!buf)
 	{
 		if(debug)
 			printf("Error: No buf\n");
@@ -263,7 +262,7 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 
 	if(frm->dataFormat!=fldformat::fld_isobitmap)
 	{
-		sflen=parse_field_length(buf, bufend);
+		sflen=parse_field_length(buf, maxlength);
 
 		if(sflen<=0)
 			return sflen;
@@ -318,10 +317,10 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 		case fldformat::fld_subfields:
 		case fldformat::fld_tlv:
 			parse_failed=1;
-			if(frm->dataFormat==fldformat::fld_subfields)
-				cursf=frm->begin();
-			else
+			if(frm->dataFormat==fldformat::fld_tlv)
 				taglength=frm->tagLength;
+			else
+				cursf=frm->begin();
 			pos=lenlen;
 			minlength=0;
 			while(parse_failed)
@@ -336,21 +335,7 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 					if(pos==flength+lenlen) // Some subfields are missing or canceled by bitmap
 						break;
 
-					if(frm->dataFormat==fldformat::fld_subfields) // subfield number is defined by its position
-					{
-						if(cursf==frm->end())
-						{
-							if(debug)
-								printf("Field length is greater than formats available (%s)\n", frm->get_description().c_str());
-							parse_failed=1;
-							break;
-						}
-
-						curfrm=&cursf->second;
-						curnum=cursf->first;
-						++cursf;
-					}
-					else // subfield number is encoded as a tag name
+					if(frm->dataFormat==fldformat::fld_tlv) // subfield number is encoded as a tag name
 					{
 						if(frm->tagFormat==fldformat::flt_ber)
 						{
@@ -385,7 +370,7 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 									*(((char*)(&curnum))+taglength-1-i)=buf[pos+i];
 								break;
 							case fldformat::flt_ascii:
-								lengthbuf.assign(buf+pos, buf+pos+taglength);
+								lengthbuf.assign(buf+pos, taglength);
 								curnum=atoi(lengthbuf.c_str());
 								break;
 							default:
@@ -404,6 +389,20 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 						curfrm=&frm->sf(curnum);
 
 						pos+=taglength;
+					}
+					else // subfield number is defined by its position
+					{
+						if(cursf==frm->end())
+						{
+							if(debug)
+								printf("Field length is greater than formats available (%s)\n", frm->get_description().c_str());
+							parse_failed=1;
+							break;
+						}
+
+						curfrm=&cursf->second;
+						curnum=cursf->first;
+						++cursf;
 					}
 
 					fieldstack.push_back(curnum);
@@ -430,7 +429,7 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 								if(debug)
 									printf("trying pos %lu length %lu/%lu for %s\n", pos, i, flength+lenlen-pos, curfrm->get_description().c_str());
 								sf(curnum).blength=0;
-								sflen=sf(curnum).parse_field(buf+pos, buf+pos+i);
+								sflen=sf(curnum).parse_field(buf+pos, i);
 
 								if(sflen>=0)
 									break;
@@ -442,7 +441,7 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 							}
 						}
 						else
-							sflen=sf(curnum).parse_field(buf+pos, buf+flength+lenlen);
+							sflen=sf(curnum).parse_field(buf+pos, flength+lenlen-pos);
 
 						if(sflen==0 && sf(curnum).frm->maxLength==0)
 						{
@@ -455,13 +454,13 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 						if(sflen<=0)
 						{
 							if(debug)
-								printf("Error: unable to parse subfield %d (%s/%s, %lu)\n", curnum, get_description().c_str(), sf(curnum).frm->get_description().c_str(), sflen);
+								printf("Error: unable to parse subfield %d (%s/%s, %ld)\n", curnum, get_description().c_str(), sf(curnum).frm->get_description().c_str(), sflen);
 							subfields.erase(curnum);
 							parse_failed=1;
 							break;
 						}
 
-						if(frm->dataFormat==fldformat::fld_subfields && (sf(curnum).frm->dataFormat==fldformat::fld_bitmap || sf(curnum).frm->dataFormat==fldformat::fld_isobitmap))	//TODO: change sf(curnum).frm to curfrm or remove curfrm
+						if(frm->dataFormat!=fldformat::fld_tlv && (sf(curnum).frm->dataFormat==fldformat::fld_bitmap || sf(curnum).frm->dataFormat==fldformat::fld_isobitmap))	//TODO: change sf(curnum).frm to curfrm or remove curfrm
 						{
 							if(debug && bitmap_start!=-1)
 								printf("Warning: Only one bitmap per subfield allowed\n");
@@ -501,7 +500,7 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 
 					while(!fieldstack.empty())
 					{
-						if(frm->dataFormat==fldformat::fld_subfields)
+						if(frm->dataFormat!=fldformat::fld_tlv)
 							--cursf;
 						curnum=fieldstack.back();
 						fieldstack.pop_back();
@@ -556,7 +555,7 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 			altformatold=altformat;
 			set_frm(&tmpfrm);
 
-			sflen=parse_field(data.begin(), data.end());
+			sflen=parse_field(data.data(), data.length());
 			
 			data.clear();
 			set_frm(firstfrmold, frmold);
@@ -599,7 +598,7 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 			break;
 
 		case fldformat::fld_ascii:
-			data.assign(buf+lenlen, buf+lenlen+flength);
+			data.assign(buf+lenlen, flength);
 			break;
 
 		case fldformat::fld_hex:
@@ -637,7 +636,7 @@ long int field::parse_field_alt(const std::string::const_iterator &buf, const st
 	return lenlen+newblength;
 }
 
-size_t parse_ebcdic(const string::const_iterator &from, string &to, size_t len)
+size_t parse_ebcdic(const char *from, string &to, size_t len)
 {
 //	const string ebcdic2ascii("\0\x001\x002\x003 \t \x07F   \x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013 \n\x008 \x018\x019  \x01C\x01D\x01E\x01F\x080 \x01C  \x00A\x017\x01B     \x005\x006\x007  \x016    \x004    \x014\x015 \x01A  âäàáãåçñ¢.<(+|&éêëèíîïìß!$*);¬-/ÂÄÀÁÃÅÇÑ\x0A6,%_>?øÉÊËÈÍÎÏÌ`:#@'=\"Øabcdefghi   ý  \x010jklmnopqr  Æ æ  ~stuvwxyz   Ý  ^£¥       []    {ABCDEFGHI ôöòóõ}JKLMNOPQR ûüùúÿ\\ STUVWXYZ ÔÖÒÓÕ0123456789 ÛÜÙÚŸ", 256);
 	const string ebcdic2ascii(" \x001\x002\x003 \t \x07F   \x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013 \n\x008 \x018\x019  \x01C\x01D\x01E\x01F\x080 \x01C  \x00A\x017\x01B     \x005\x006\x007  \x016    \x004    \x014\x015 \x01A           .<(+|&         !$*); -/        \x0A6,%_>?         `:#@'=\" abcdefghi      \x010jklmnopqr       ~stuvwxyz      ^         []    {ABCDEFGHI      }JKLMNOPQR      \\ STUVWXYZ      0123456789      ", 256);
@@ -648,7 +647,7 @@ size_t parse_ebcdic(const string::const_iterator &from, string &to, size_t len)
 	return len;
 }
 
-size_t parse_bcdr(const string::const_iterator &from, string &to, size_t len)
+size_t parse_bcdr(const char *from, string &to, size_t len)
 {
 	unsigned char t;
 	size_t u=len/2*2==len?0:1;
@@ -699,7 +698,7 @@ size_t parse_bcdr(const string::const_iterator &from, string &to, size_t len)
 	return len;
 }
 
-size_t parse_bcdl(const string::const_iterator &from, string &to, size_t len)
+size_t parse_bcdl(const char *from, string &to, size_t len)
 {
 	unsigned char t;
 	size_t u=len/2*2==len?0:1;
@@ -750,7 +749,7 @@ size_t parse_bcdl(const string::const_iterator &from, string &to, size_t len)
 	return len;
 }
 
-size_t parse_hex(const string::const_iterator &from, string &to, size_t len)
+size_t parse_hex(const char *from, string &to, size_t len)
 {
 	unsigned char t;
 	size_t u=len/2*2==len?0:1;
