@@ -1,12 +1,14 @@
 #include <iterator>
 #include "parser.h"
 
-frmiterator::frmiterator(void)
+template<class T, typename iterator_type, typename reference_type>
+frmiterator<T, iterator_type, reference_type>::frmiterator(void)
 {
 	return;
 }
 
-frmiterator::frmiterator(fldformat *iwildcard, std::map<int,fldformat>::iterator iit, std::map<int,fldformat>::iterator ibegin, std::map<int,fldformat>::iterator iend, int icurnum) :
+template<class T, typename iterator_type, typename reference_type>
+frmiterator<T, iterator_type, reference_type>::frmiterator(const T *iwildcard, iterator_type iit, iterator_type ibegin, iterator_type iend, int icurnum) :
 	wildcard(iwildcard),
 	it(iit),
 	next(iit==iend?iend:++iit),
@@ -19,7 +21,8 @@ frmiterator::frmiterator(fldformat *iwildcard, std::map<int,fldformat>::iterator
 	return;
 }
 
-frmiterator::frmiterator(const frmiterator &it) :
+template<class T, typename iterator_type, typename reference_type>
+frmiterator<T, iterator_type, reference_type>::frmiterator(const frmiterator &it) :
 	tmpmap(it.tmpmap),
 	wildcard(it.wildcard),
 	it(it.it),
@@ -31,12 +34,14 @@ frmiterator::frmiterator(const frmiterator &it) :
 	return;
 }
 
-frmiterator::~frmiterator(void)
+template<class T, typename iterator_type, typename reference_type>
+frmiterator<T, iterator_type, reference_type>::~frmiterator(void)
 {
 	return;
 }
 
-frmiterator& frmiterator::operator=(const frmiterator &other)
+template<class T, typename iterator_type, typename reference_type>
+frmiterator<T, iterator_type, reference_type>& frmiterator<T, iterator_type, reference_type>::operator=(const frmiterator<T, iterator_type, reference_type> &other)
 {
 	wildcard=other.wildcard;
 	it=other.it;
@@ -48,22 +53,26 @@ frmiterator& frmiterator::operator=(const frmiterator &other)
 	return *this;
 }
 
-bool frmiterator::operator!=(frmiterator const &other) const
+template<class T, typename iterator_type, typename reference_type>
+bool frmiterator<T, iterator_type, reference_type>::operator!=(frmiterator<T, iterator_type, reference_type> const &other) const
 {
 	return it!=other.it || curnum!=other.curnum;
 }
 
-bool frmiterator::operator==(frmiterator const &other) const
+template<class T, typename iterator_type, typename reference_type>
+bool frmiterator<T, iterator_type, reference_type>::operator==(frmiterator<T, iterator_type, reference_type> const &other) const
 {
 	return it==other.it && curnum==other.curnum;
 }
 
-std::pair<const int, fldformat>& frmiterator::operator*(void)
+template<class T, typename iterator_type, typename reference_type>
+reference_type& frmiterator<T, iterator_type, reference_type>::operator*(void)
 {
 	return *this->operator->();
 }
 
-std::pair<const int, fldformat>* frmiterator::operator->(void)
+template<class T, typename iterator_type, typename reference_type>
+reference_type* frmiterator<T, iterator_type, reference_type>::operator->(void)
 {
 	if(!wildcard || (it!=end && (it->first==curnum || curnum<0)))
 		return it.operator->();
@@ -74,7 +83,8 @@ std::pair<const int, fldformat>* frmiterator::operator->(void)
 	}
 }
 
-frmiterator& frmiterator::operator++(void)
+template<class T, typename iterator_type, typename reference_type>
+frmiterator<T, iterator_type, reference_type>& frmiterator<T, iterator_type, reference_type>::operator++(void)
 {
 	if(!wildcard)
 	{
@@ -92,7 +102,8 @@ frmiterator& frmiterator::operator++(void)
 	return *this;
 }
 
-frmiterator& frmiterator::operator--(void)
+template<class T, typename iterator_type, typename reference_type>
+frmiterator<T, iterator_type, reference_type>& frmiterator<T, iterator_type, reference_type>::operator--(void)
 {
 	if(!wildcard)
 	{
@@ -110,3 +121,6 @@ frmiterator& frmiterator::operator--(void)
 
 	return *this;
 }
+
+template class frmiterator<fldformat, std::map<int,fldformat>::iterator, std::pair<const int, fldformat> >;
+template class frmiterator<fldformat, std::map<int,fldformat>::const_iterator, const std::pair<const int, fldformat> >;

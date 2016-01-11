@@ -10,6 +10,7 @@ extern int debug;
 class fldformat;
 class field;
 
+template<class T=fldformat, typename iterator_type=typename std::map<int,T>::iterator, typename reference_type=typename std::pair<const int,T> >
 class frmiterator;
 
 class fldformat
@@ -66,10 +67,15 @@ class fldformat
 	friend field;
 
 	public:
-	typedef frmiterator iterator;
+	typedef frmiterator<> iterator;
+	typedef frmiterator<fldformat, std::map<int,fldformat>::const_iterator, const std::pair<const int, fldformat> > const_iterator;
 	iterator begin(void);
+	const_iterator begin(void) const;
 	iterator end(void);
+	const_iterator end(void) const;
 	iterator find(int);
+	const_iterator find(int) const;
+	//there are no reverse iterators because we may have a wildcard format which implies infinite number if subformats
 
 	fldformat(void);
 	fldformat(const std::string &filename);
@@ -85,6 +91,7 @@ class fldformat
 	inline const std::string& get_description(void) const {return description;};
 	inline const size_t get_lengthLength(void) const {return lengthLength;};
 	inline fldformat& sf(int n) {if(!subfields.count(n) && subfields.count(-1)) return subfields[-1]; else return subfields[n];};
+	const fldformat& sf(int n) const;
 	inline bool sfexist(int n) const {return subfields.count(n) || subfields.count(-1);};
 	void erase(void);
 };
@@ -345,19 +352,20 @@ class field
 	//friend inline std::istream& getline (std::istream& is, field& f) {return getline(is, f.data);};
 };
 
-class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pair<int,fldformat> >
+template<class T, typename iterator_type, typename reference_type>
+class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pair<int,T> >
 {
-	friend class fldformat;
+	friend T;
 	private:
-	std::map<int,fldformat> tmpmap;
-	fldformat *wildcard;
-	std::map<int,fldformat>::iterator it;
-	std::map<int,fldformat>::iterator next;
-	std::map<int,fldformat>::iterator begin;
-	std::map<int,fldformat>::iterator end;
+	std::map<int,T> tmpmap;
+	const T *wildcard;
+	iterator_type it;
+	iterator_type next;
+	iterator_type begin;
+	iterator_type end;
 	int curnum;
 
-	frmiterator(fldformat*, std::map<int,fldformat>::iterator, std::map<int,fldformat>::iterator, std::map<int,fldformat>::iterator, int);
+	frmiterator(const T*, iterator_type, iterator_type, iterator_type, int);
 
 	public:
 	frmiterator(void);
@@ -367,8 +375,8 @@ class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 	frmiterator& operator=(const frmiterator &other);
 	bool operator!=(frmiterator const& other) const;
 	bool operator==(frmiterator const& other) const;
-	std::pair<const int, fldformat>& operator*(void);
-	std::pair<const int, fldformat>* operator->(void);
+	reference_type& operator*(void);
+	reference_type* operator->(void);
 	frmiterator& operator++(void);
 	frmiterator& operator--(void);
 };

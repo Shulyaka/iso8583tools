@@ -809,6 +809,21 @@ void fldformat::erase(void)
 		}
 }
 
+const fldformat& fldformat::sf(int n) const
+{
+	std::map<int,fldformat>::const_iterator i=subfields.find(n);
+
+	if(i==subfields.end())
+	{
+		if(subfields.count(-1))
+			i=subfields.find(-1);
+		else
+			exit(0);
+	}
+
+	return i->second;
+}
+
 fldformat::iterator fldformat::begin(void)
 {
 	return iterator(subfields.count(-1)?&subfields[-1]:NULL, subfields.begin(), subfields.begin(), subfields.end(), 0);
@@ -832,6 +847,34 @@ fldformat::iterator fldformat::find(int n)
 				if(i->first>n)
 					return iterator(&subfields[-1], --i, subfields.begin(), subfields.end(), n);
 			return iterator(&subfields[-1], --subfields.end(), subfields.begin(), subfields.end(), n);
+		}
+		else
+			return end();
+}
+
+fldformat::const_iterator fldformat::begin(void) const
+{
+	return const_iterator(subfields.count(-1)?&(subfields.find(-1)->second):NULL, subfields.begin(), subfields.begin(), subfields.end(), 0);
+}
+
+fldformat::const_iterator fldformat::end(void) const
+{
+	if(subfields.count(-1))
+		return const_iterator(&(subfields.find(-1)->second), subfields.begin(), subfields.begin(), subfields.begin(), -1);
+	return const_iterator(0, subfields.end(), subfields.begin(), subfields.end(), 0);
+}
+
+fldformat::const_iterator fldformat::find(int n) const
+{
+	if(subfields.count(n))
+		return const_iterator(subfields.count(-1)?&(subfields.find(-1)->second):NULL, subfields.find(n), subfields.begin(), subfields.end(), n);
+	else
+		if(subfields.count(-1) && n>=0)
+		{
+			for(map<int,fldformat>::const_iterator i=subfields.begin(); i!=subfields.end(); ++i)
+				if(i->first>n)
+					return const_iterator(&(subfields.find(-1)->second), --i, subfields.begin(), subfields.end(), n);
+			return const_iterator(&(subfields.find(-1)->second), --subfields.end(), subfields.begin(), subfields.end(), n);
 		}
 		else
 			return end();
