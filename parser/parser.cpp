@@ -322,7 +322,6 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 			}
 
 			buf=data.data();
-			printf("maxlength=%lu, flength=%lu, lenlen=%lu\n", maxlength, flength, lenlen);
 			oldlenlen=lenlen;
 			lenlen=0;
 			maxlength=data.length();
