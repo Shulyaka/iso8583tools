@@ -231,8 +231,8 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 	int bitmap_start=-1;
 	int bitmap_end=0;
 	int parse_failed;
-	fldformat::iterator cursf;
-	fldformat *curfrm;
+	fldformat::const_iterator cursf;
+	const fldformat *curfrm;
 	size_t pos;
 	long int sflen;
 	int minlength=0;

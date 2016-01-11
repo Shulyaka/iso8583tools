@@ -103,8 +103,8 @@ class field
 	size_t start;  //start position inside the message binary data relative to the parent field
 	size_t blength;  //length of the field inside the message binary data (including length length)
 	size_t flength;  //parsed data length
-	fldformat *frm;  //field format
-	fldformat *firstfrm;
+	const fldformat *frm;  //field format
+	const fldformat *firstfrm;
 	bool deletefrm;
 	std::map<int,field> subfields;
 	unsigned int altformat;  //altformat number
@@ -119,7 +119,7 @@ class field
 	size_t build_field_alt(std::string&);
 	size_t build_isobitmap(std::string&, unsigned int);
 	size_t build_bitmap(std::string&, unsigned int);
-	bool change_format(fldformat*);
+	bool change_format(const fldformat*);
 
 	public:
 	typedef std::map<int,field>::iterator iterator;
@@ -138,14 +138,14 @@ class field
 	const_reverse_iterator rend(void) const { return subfields.rend();};
 
 	field(const std::string &str=""); //TODO: add more constructors
-	field(fldformat *frm, const std::string &str="");
+	field(const fldformat *frm, const std::string &str="");
 	field(const std::string &filename, const std::string &str="");
 	field(const field&);
 	~field(void);
 	void print_message(std::string prefix="") const;
 	void clear(void);
 	bool empty(void) const;
-	bool set_frm(fldformat* firstfrm, fldformat* altfrm=NULL);
+	bool set_frm(const fldformat* firstfrm, const fldformat* altfrm=NULL);
 	bool switch_altformat(void);
 	bool reset_altformat(void);
 	void moveFrom(field &from);

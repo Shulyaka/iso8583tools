@@ -352,7 +352,7 @@ size_t field::build_field_length(string &buf)
 size_t field::build_field(string &buf)  //TODO: remove build_field_alt() and make sure altformat is set during filling of the field
 {
 	size_t newlength;
-	fldformat *frmold=frm;
+	const fldformat *frmold=frm;
 
 	do
 	{

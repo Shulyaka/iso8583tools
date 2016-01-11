@@ -18,7 +18,7 @@ field::field(const string &str)
 	data=str;
 }
 
-field::field(fldformat *format, const string &str)
+field::field(const fldformat *format, const string &str)
 {
 	fill_default();
 	frm=format;
@@ -48,7 +48,7 @@ field::field(const field &from)
 	{
 		firstfrm=new fldformat(*from.firstfrm);
 		frm=firstfrm;
-		for(fldformat *tmpfrm=from.firstfrm; tmpfrm!=NULL; tmpfrm=tmpfrm->get_altformat(), frm=frm->get_altformat())
+		for(const fldformat *tmpfrm=from.firstfrm; tmpfrm!=NULL; tmpfrm=tmpfrm->get_altformat(), frm=frm->get_altformat())
 			if(tmpfrm==from.frm)
 				break;
 	}
@@ -80,7 +80,7 @@ void field::fill_default(void)
 
 void field::clear(void)
 {
-	fldformat *tmpfrm=frm, *tmpfirstfrm=firstfrm;
+	const fldformat *tmpfrm=frm, *tmpfirstfrm=firstfrm;
 	unsigned int tmpaltformat=altformat;
 	bool delfrm=deletefrm;
 	fill_default();
@@ -94,7 +94,7 @@ void field::clear(void)
 //If field is not empty, the format is retained
 field& field::operator= (const field &from)
 {
-	fldformat *tmpfrm=frm, *tmpfirstfrm=firstfrm;
+	const fldformat *tmpfrm=frm, *tmpfirstfrm=firstfrm;
 	bool keepfrm=false;
 
 	if(this==&from)
@@ -115,7 +115,7 @@ field& field::operator= (const field &from)
 	{
 		firstfrm=new fldformat(*from.firstfrm);
 		frm=firstfrm;
-		for(fldformat *tmpfrm=from.firstfrm; tmpfrm!=NULL; tmpfrm=tmpfrm->get_altformat(), frm=frm->get_altformat())
+		for(const fldformat *tmpfrm=from.firstfrm; tmpfrm!=NULL; tmpfrm=tmpfrm->get_altformat(), frm=frm->get_altformat())
 			if(tmpfrm==from.frm)
 				break;
 	}
@@ -244,7 +244,7 @@ bool field::empty(void) const
 // Returns true on success, false if no applicable altformats left after the current
 bool field::switch_altformat(void)
 {
-	fldformat *frmtmp=frm;
+	const fldformat *frmtmp=frm;
 
 	for(unsigned int i=altformat+1; (frmtmp=frmtmp->get_altformat())!=NULL; i++)
 		if(change_format(frmtmp))
@@ -260,7 +260,7 @@ bool field::switch_altformat(void)
 // Returns true on success, false if none formats are applicable (which is an error)
 bool field::reset_altformat(void)
 {
-	fldformat *frmtmp=firstfrm;
+	const fldformat *frmtmp=firstfrm;
 
 	for(unsigned int i=0; frmtmp!=NULL; frmtmp=frmtmp->get_altformat(), i++)
 		if(change_format(frmtmp))
@@ -274,9 +274,9 @@ bool field::reset_altformat(void)
 
 // Assigns a new format to the field. Not to be used to switch to an altformat because it assumes the new format to be the root of altformat, so the information about the first altformat is lost and reset_altformat() would not reset to original altformat, use switch_altformat() instead.
 // If frmaltnew is not null, it must be an altformat of frmnew
-bool field::set_frm(fldformat *frmnew, fldformat *frmaltnew)
+bool field::set_frm(const fldformat *frmnew, const fldformat *frmaltnew)
 {
-	fldformat *frmtmp=frmnew;
+	const fldformat *frmtmp=frmnew;
 
 	for(unsigned int i=0; frmtmp!=NULL; frmtmp=frmtmp->get_altformat(), i++)
 		if(change_format(frmtmp))
@@ -312,10 +312,10 @@ bool field::set_frm(fldformat *frmnew, fldformat *frmaltnew)
 
 // Internal function to change current format, not to be called directly
 // If the new format does not suit the already present field tree, the function will restore the original format. The function guarantees consistency of the resulting field format, however it is not guaranteed that all subfields will remain on the same altformats in case of failure.
-bool field::change_format(fldformat *frmnew)
+bool field::change_format(const fldformat *frmnew)
 {
 	iterator i;
-	fldformat *frmold=frm;
+	const fldformat *frmold=frm;
 
 	if(!frmnew)
 		return false;
