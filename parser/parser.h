@@ -56,11 +56,12 @@ class fldformat
 	std::map<int,fldformat> subfields;
 	fldformat *altformat;
 	fldformat *parent;
+	int hasBitmap;
 
 	void fill_default(void);
 	inline fldformat *get_lastaltformat(void) {fldformat *last; for(last=this; last->altformat!=NULL; ) last=last->altformat; return last;};
 	bool parseFormat(const char*, std::map<std::string,fldformat> &orphans);
-	fldformat* get_by_number(const char *number, std::map<std::string,fldformat> &orphans);
+	fldformat* get_by_number(const char *number, std::map<std::string,fldformat> &orphans, bool isBitmap=false);
 
 	friend field;
 

@@ -99,19 +99,8 @@ size_t field::get_blength(void)
 
 			if(frm->dataFormat==fldformat::fld_tlv)
 				taglength=frm->tagLength;
-			else
-			{
-				for(fldformat::iterator i=frm->begin(); i!=frm->end(); ++i)
-					if(i->second.dataFormat==fldformat::fld_isobitmap || i->second.dataFormat==fldformat::fld_bitmap)
-						for(field::iterator j=begin(); j!=end(); ++j)
-							if(j->first > i->first && !j->second.empty())
-							{
-								sf(i->first); //ensure bit map fields are present
-								break;
-							}
-			}
 
-			for(field::iterator i=begin(); i!=end(); ++i)
+			for(iterator i=begin(); i!=end(); ++i)
 			{
 				if(pos==frm->maxLength+lenlen)
 					break;
@@ -440,19 +429,8 @@ size_t field::build_field_alt(string &buf)
 		case fldformat::fld_bcdsf:
 			if(frm->dataFormat==fldformat::fld_tlv)
 				taglength=frm->tagLength;
-			else
-			{
-				for(fldformat::iterator i=frm->begin(); i!=frm->end(); ++i)
-					if(i->second.dataFormat==fldformat::fld_isobitmap || i->second.dataFormat==fldformat::fld_bitmap)
-						for(field::iterator j=begin(); j!=end(); ++j)
-							if(j->first > i->first && !j->second.empty())
-							{
-								sf(i->first); //ensure bit map fields are present
-								break;
-							}
-			}
 
-			for(field::iterator i=begin(); i!=end(); ++i)	//TODO: implement a stack and go back if build failed
+			for(iterator i=begin(); i!=end(); ++i)	//TODO: implement a stack and go back if build failed
 			{
 				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=fldformat::fld_isobitmap && frm->sf(bitmap_found).maxLength < i->first-(unsigned int)bitmap_found)	//TODO: suspicious condition
 					break;

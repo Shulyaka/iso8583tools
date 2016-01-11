@@ -62,6 +62,7 @@ void fldformat::fill_default(void) //TODO: When API stabilizes, enhance construc
 	subfields.clear();
 	altformat=NULL;
 	parent=NULL;
+	hasBitmap=-1;
 }
 
 //empty to default
@@ -89,7 +90,8 @@ bool fldformat::empty(void) const
 	    && tagLength==0
 	    && data==""
 	    && subfields.empty()
-	    && altformat==NULL;
+	    && altformat==NULL
+	    && hasBitmap==-1;
 }
 
 //forks the format. All data and subformat are also copied so that all pointers will have new values to newly copied data but non-pointers will have same values
@@ -118,6 +120,8 @@ fldformat& fldformat::operator= (const fldformat &from)
 	if(from.altformat)
 		altformat=new fldformat(*from.altformat);
 
+	hasBitmap=from.hasBitmap;
+
 	return *this;
 }
 
@@ -145,6 +149,7 @@ void fldformat::moveFrom(fldformat &from)
 		i->second.parent=this;
 
 	altformat=from.altformat;
+	hasBitmap=from.hasBitmap;
 
 	from.altformat=NULL;
 
@@ -325,7 +330,7 @@ bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength f
 
 		frmtmp->description.assign(descr);
 
-		frmnew=orphans["message"].get_by_number(number, orphans);
+		frmnew=orphans["message"].get_by_number(number, orphans, frmtmp->dataFormat==fld_bitmap || frmtmp->dataFormat==fld_isobitmap);
 		if(frmnew)
 		{
 			if(!frmnew->empty())
@@ -392,14 +397,14 @@ bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength f
 // If not found but its parent exists, a new entry would be created.
 // If the parent does not yet exists, NULL is returned.
 // During parent search, always choses latest altformat wherever possible
-fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &orphans)
+fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &orphans, bool isBitmap)
 {
 	size_t i, l;
 	int n;
 	string key;
 
 	if(altformat)
-		return get_lastaltformat()->get_by_number(number, orphans);
+		return get_lastaltformat()->get_by_number(number, orphans, isBitmap);
 
 	if(!number)
 	{
@@ -429,6 +434,16 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 			}
 		}
 
+		if(isBitmap)
+		{
+			if(get_lastaltformat()->hasBitmap!=-1)
+			{
+				printf("Error: Only one bitmap per subfield is allowed (%s)\n", get_lastaltformat()->description.c_str());
+				exit(1);
+			}
+			get_lastaltformat()->hasBitmap=n;
+		}
+
 		return get_lastaltformat()->subfields[n].get_lastaltformat();
 	}
 
@@ -446,7 +461,7 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 		if(!orphans.count(key)) //no parent, not last iteration.
 			return NULL;
 
-		return orphans[key].get_lastaltformat()->get_by_number(number+i+1, orphans);
+		return orphans[key].get_lastaltformat()->get_by_number(number+i+1, orphans, isBitmap);
 	}
 
 	//now we know it's not the last iteration
@@ -470,7 +485,7 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 		return NULL;
 	}
 
-	return subfields[n].get_lastaltformat()->get_by_number(number+i+1, orphans);
+	return subfields[n].get_lastaltformat()->get_by_number(number+i+1, orphans, isBitmap);
 }
 
 //parses format string

@@ -226,9 +226,6 @@ bool field::empty(void) const
 		case fldformat::fld_bcdsf:
 		case fldformat::fld_tlv:
 			break;
-		case fldformat::fld_isobitmap:
-		case fldformat::fld_bitmap:
-			return false;
 		default:
 			return data.empty();
 	}
@@ -328,7 +325,7 @@ bool field::change_format(fldformat *frmnew)
 
 	frm=frmnew;
 
-	for(i=begin(); i!=end(); i++)
+	for(i=begin(); i!=end(); ++i)
 		if(!frmnew->sfexist(i->first) || !i->second.change_format(&frmnew->sf(i->first)))
 			break;
 
@@ -337,7 +334,7 @@ bool field::change_format(fldformat *frmnew)
 		if(debug)
 			printf("Error: Unable to change field format (%d). Reverting.\n", i->first);
 
-		for(frm=frmold; i!=begin(); i--)
+		for(frm=frmold; i!=begin(); --i)
 			if(!frmold->sfexist(i->first) || !i->second.change_format(&frmold->sf(i->first)))
 				if(debug)
 					printf("Error: Unable to revert\n");
@@ -348,6 +345,9 @@ bool field::change_format(fldformat *frmnew)
 
 		return false;
 	}
+
+	if(frm->hasBitmap!=-1 && !subfields.empty() && (--i)->first > frm->hasBitmap)
+		sf(frm->hasBitmap); //make sure to not skip bitmap field on serialize
 
 	return true;
 }
@@ -371,6 +371,9 @@ field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7,
 
 		if(subfields[n0].empty())
 			subfields[n0].set_frm(&frm->sf(n0));
+
+		if(frm->hasBitmap!=-1 && n0 > frm->hasBitmap)
+			sf(frm->hasBitmap); //make sure to not skip bitmap field on serialize
 	}
 
 	if(n1<0)
