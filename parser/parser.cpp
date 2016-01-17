@@ -190,7 +190,7 @@ long int field::parse_field(const char *buf, size_t maxlength)
 		return -1;
 	}
 
-	if(blength && frm && frm->altformat)
+	if(blength && frm->altformat)
 	{
 		clear();
 
@@ -439,7 +439,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 							for(size_t i=sf(curnum).blength+1; i<flength+lenlen-pos+1; i=-sflen)
 							{
 								if(debug)
-									printf("trying pos %lu length %lu/%lu for %s\n", pos, i, flength+lenlen-pos, curfrm->get_description().c_str());
+									printf("trying pos %lu length %lu/%lu for %s\n", pos, i, flength+lenlen-pos, curfrm->get_description().c_str());  //TODO: remove curfrm
 								sf(curnum).blength=0;
 								sflen=sf(curnum).parse_field(buf+pos, i);
 
@@ -472,7 +472,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 							break;
 						}
 
-						if(frm->dataFormat!=fldformat::fld_tlv && (sf(curnum).frm->dataFormat==fldformat::fld_bitmap || sf(curnum).frm->dataFormat==fldformat::fld_isobitmap))	//TODO: change sf(curnum).frm to curfrm or remove curfrm
+						if(frm->dataFormat!=fldformat::fld_tlv && (sf(curnum).frm->dataFormat==fldformat::fld_bitmap || sf(curnum).frm->dataFormat==fldformat::fld_isobitmap))
 						{
 							if(debug && bitmap_start!=-1)
 								printf("Warning: Only one bitmap per subfield allowed\n");

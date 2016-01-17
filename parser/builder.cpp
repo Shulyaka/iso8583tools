@@ -108,8 +108,8 @@ size_t field::get_blength(void)
 				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=fldformat::fld_isobitmap && frm->sf(bitmap_found).maxLength < (unsigned int)(i->first-bitmap_found))
 					break;
 
-				if(!frm->sfexist(i->first))
-					return 0;
+		//		if(!frm->sfexist(i->first))
+		//			return 0;
 
 				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==fldformat::fld_isobitmap || frm->sf(bitmap_found).maxLength > (unsigned int)(i->first-bitmap_found-1))
 				{
@@ -132,7 +132,7 @@ size_t field::get_blength(void)
 						return 0;
 
 					if(frm->dataFormat==fldformat::fld_tlv && frm->tagFormat==fldformat::flt_ber)
-						taglength=i->first>0xFF?2:1;
+						taglength=i->second.tag>0xFF?2:1;
 
 					pos+=taglength+sflen;
 				}
@@ -435,12 +435,12 @@ size_t field::build_field_alt(string &buf)
 				if(bitmap_found!=-1 && frm->sf(bitmap_found).dataFormat!=fldformat::fld_isobitmap && frm->sf(bitmap_found).maxLength < i->first-(unsigned int)bitmap_found)	//TODO: suspicious condition
 					break;
 
-				if(!frm->sfexist(i->first))
-				{
-					if(debug)
-						printf("Error: No format for subfield %d\n", i->first);
-					return 0;
-				}
+//				if(!frm->sfexist(i->first))
+//				{
+//					if(debug)
+//						printf("Error: No format for subfield %d\n", i->first);
+//					return 0;
+//				}
 
 				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==fldformat::fld_isobitmap || frm->sf(bitmap_found).maxLength > i->first-(unsigned int)bitmap_found-1)
 				{
@@ -473,11 +473,11 @@ size_t field::build_field_alt(string &buf)
 							switch(frm->tagFormat)
 							{
 								case fldformat::flt_ebcdic:
-									lengthbuf=to_string(i->first);
+									lengthbuf=to_string(i->second.tag); //TODO: implement field::iterator and change i->second.tag back to i->first
 									if(lengthbuf.length()>taglength)
 									{
 										if(debug)
-											printf("Error: TLV tag number is too big (%d)\n", i->first);
+											printf("Error: TLV tag number is too big (%d)\n", i->second.tag);
 										return 0;
 									}
 
@@ -499,11 +499,11 @@ size_t field::build_field_alt(string &buf)
 									break;
 
 								case fldformat::flt_bcd:
-									lengthbuf=to_string(i->first);
+									lengthbuf=to_string(i->second.tag);
 									if(lengthbuf.length()>taglength*2)
 									{
 										if(debug)
-											printf("Error: TLV tag number is too big (%d)\n", i->first);
+											printf("Error: TLV tag number is too big (%d)\n", i->second.tag);
 										return 0;
 									}
 
@@ -524,7 +524,7 @@ size_t field::build_field_alt(string &buf)
 									break;
 
 								case fldformat::flt_ber:
-									taglength=i->first>0xFF?2:1;
+									taglength=i->second.tag>0xFF?2:1;
 									//no break intentionally
 								case fldformat::flt_bin:
 									if(frm->dataFormat!=fldformat::fld_bcdsf)
@@ -533,7 +533,7 @@ size_t field::build_field_alt(string &buf)
 											buf.append(taglength-4, '\0');
 
 										for(size_t j=0; j<(taglength>4?4:taglength); j++)
-											buf.push_back(((unsigned char *)(&(i->first)))[(taglength>4?4:taglength)-j-1]);  //TODO: htonl()
+											buf.push_back(((unsigned char *)(&(i->second.tag)))[(taglength>4?4:taglength)-j-1]);  //TODO: htonl()
 									}
 									else
 									{
@@ -541,16 +541,16 @@ size_t field::build_field_alt(string &buf)
 											bcd.append(taglength-4, '\0');
 
 										for(size_t j=0; j<(taglength>4?4:taglength); j++)
-											bcd.push_back(((unsigned char *)(&(i->first)))[(taglength>4?4:taglength)-j-1]);  //TODO: htonl()
+											bcd.push_back(((unsigned char *)(&(i->second.tag)))[(taglength>4?4:taglength)-j-1]);  //TODO: htonl()
 									}
 									break;
 
 								case fldformat::flt_ascii:
-									lengthbuf=to_string(i->first);
+									lengthbuf=to_string(i->second.tag);
 									if(lengthbuf.length()>taglength)
 									{
 										if(debug)
-											printf("Error: TLV tag number is too big (%d)\n", i->first);
+											printf("Error: TLV tag number is too big (%d)\n", i->second.tag);
 										return 0;
 									}
 

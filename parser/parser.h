@@ -108,6 +108,8 @@ class field
 	bool deletefrm;
 	std::map<int,field> subfields;
 	unsigned int altformat;  //altformat number
+	std::map<int,int> tagmap;  //TODO: multimap for multiple tags support
+	int tag;
 
 	void fill_default(void);
 
