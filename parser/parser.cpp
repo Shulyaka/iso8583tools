@@ -345,7 +345,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 				for(; pos!=maxlength;)
 				{
 					if(pos==flength+lenlen) // Some subfields are missing or canceled by bitmap
-						break;
+						break; //TODO: Check if parsed all bitmapped fields
 
 					if(frm->dataFormat==fldformat::fld_tlv) // subfield number is encoded as a tag name
 					{
@@ -419,7 +419,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 
 					fieldstack.push_back(curnum);
 
-					sflen=0;
+					sflen=0; //TODO: Remove
 
 					if(bitmap_start!=-1 && sf(bitmap_start).frm->dataFormat==fldformat::fld_isobitmap && bitmap_end < curnum)
 						break;

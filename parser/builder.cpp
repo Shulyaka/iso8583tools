@@ -6,7 +6,7 @@
 
 using namespace std;
 
-size_t build_ebcdic(const string::const_iterator&, string&, size_t);
+size_t build_ebcdic(const string::const_iterator&, string&, size_t); //TODO: private static
 size_t build_hex(const string::const_iterator&, string&, size_t);
 size_t build_bcdl(const string::const_iterator&, string&, size_t);
 size_t build_bcdr(const string::const_iterator&, string&, size_t);
@@ -855,7 +855,7 @@ size_t build_hex(const string::const_iterator &from, string &to, size_t len)
 	return (len+1)/2;
 }
 
-size_t field::build_isobitmap(string &buf, unsigned int index)
+size_t field::build_isobitmap(string &buf, unsigned int index) //TODO: const
 {
 	size_t newblength=0;
 	unsigned char tmpc=0;

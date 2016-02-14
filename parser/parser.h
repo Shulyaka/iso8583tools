@@ -13,6 +13,9 @@ class field;
 template<class T=fldformat, typename iterator_type=typename std::map<int,T>::iterator, typename reference_type=typename std::pair<const int,T>, typename iterator_type_const=typename std::map<int,T>::const_iterator, typename reference_type_const=const reference_type, typename iterator_type_nonconst=iterator_type, typename reference_type_nonconst=reference_type>
 class frmiterator;
 
+template<typename iterator_type, typename reference_type>
+class flditerator;
+
 class fldformat
 {
 	private:
@@ -124,20 +127,20 @@ class field
 	bool change_format(const fldformat*);
 
 	public:
-	typedef std::map<int,field>::iterator iterator;
-	typedef std::map<int,field>::const_iterator const_iterator;
-	iterator begin(void) { return subfields.begin();};
-	const_iterator begin(void) const { return subfields.begin();};
-	iterator end(void) { return subfields.end();};
-	const_iterator end(void) const { return subfields.end();};
-	iterator find(int n) { return subfields.find(n);};
-	const_iterator find(int n) const { return subfields.find(n);};
-	typedef std::map<int,field>::reverse_iterator reverse_iterator;
-	typedef std::map<int,field>::const_reverse_iterator const_reverse_iterator;
-	reverse_iterator rbegin(void) { return subfields.rbegin();};
-	const_reverse_iterator rbegin(void) const { return subfields.rbegin();};
-	reverse_iterator rend(void) { return subfields.rend();};
-	const_reverse_iterator rend(void) const { return subfields.rend();};
+	typedef flditerator<std::map<int,field>::iterator, std::pair<const int,field> > iterator;
+	typedef flditerator<std::map<int,field>::const_iterator, const std::pair<const int,field> > const_iterator;
+	iterator begin(void);
+	const_iterator begin(void) const;
+	iterator end(void);
+	const_iterator end(void) const;
+	iterator find(int n);
+	const_iterator find(int n) const;
+	typedef std::reverse_iterator<field::iterator> reverse_iterator;
+	typedef std::reverse_iterator<field::const_iterator> const_reverse_iterator;
+	reverse_iterator rbegin(void);
+	const_reverse_iterator rbegin(void) const;
+	reverse_iterator rend(void);
+	const_reverse_iterator rend(void) const;
 
 	field(const std::string &str=""); //TODO: add more constructors
 	field(const fldformat *frm, const std::string &str="");
@@ -246,7 +249,7 @@ class field
 	inline void insert (std::string::iterator p, size_t n, char c) {data.insert(p, n, c);};
 	inline std::string::iterator insert (std::string::iterator p, char c) {return data.insert(p, c);};
 	template <class InputIterator>
-		inline void insert (iterator p, InputIterator first, InputIterator last) {data.insert(p, first, last);};
+		inline void insert (std::string::iterator p, InputIterator first, InputIterator last) {data.insert(p, first, last);};
 	inline field& erase (size_t pos = 0, size_t len = npos) {data.erase(pos, len); return *this;};
 	inline std::string::iterator erase (std::string::iterator p) {return data.erase(p);};
 	inline std::string::iterator erase (std::string::iterator first, std::string::iterator last) {return data.erase(first, last);};
@@ -385,6 +388,31 @@ class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 
 	friend frmiterator<T, iterator_type_nonconst, reference_type_nonconst, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst>;
 	operator frmiterator<T, iterator_type_const, reference_type_const, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst>(void) const;
+};
+
+template<typename iterator_type, typename reference_type>
+class flditerator: public std::iterator<std::bidirectional_iterator_tag, std::pair<int,field> >
+{
+	friend field;
+	private:
+	iterator_type it;
+	flditerator(iterator_type mapit) : it(mapit) {};
+
+	public:
+	flditerator(void) {};
+	flditerator(const flditerator &other) : it(other.it) {};
+	~flditerator(void) {};
+
+	flditerator& operator=(const flditerator &other) {it=other.it; return *this;};
+	bool operator!=(flditerator const& other) const {return it!=other.it;};
+	bool operator==(flditerator const& other) const {return it==other.it;};
+	reference_type& operator*(void) {return *it;};
+	reference_type* operator->(void) {return it.operator->();};
+	flditerator& operator++(void) {++it; return *this;};
+	flditerator& operator--(void) {--it; return *this;};
+
+	friend flditerator<std::map<int,field>::iterator, std::pair<const int,field> >;
+	operator flditerator<std::map<int,field>::const_iterator, const reference_type>(void) const {return flditerator<std::map<int,field>::const_iterator, const reference_type>(it);};
 };
 
 #endif

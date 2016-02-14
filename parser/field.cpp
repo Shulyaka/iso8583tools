@@ -12,6 +12,7 @@ string to_string(unsigned int);
 field::field(const string &str)
 {
 	fill_default();
+	tag=0;
 	frm=new fldformat();
 	deletefrm=true;
 	firstfrm=frm;
@@ -21,6 +22,7 @@ field::field(const string &str)
 field::field(const fldformat *format, const string &str)
 {
 	fill_default();
+	tag=0;
 	frm=format;
 	firstfrm=frm;
 	data=str;
@@ -29,6 +31,7 @@ field::field(const fldformat *format, const string &str)
 field::field(const std::string &filename, const string &str)
 {
 	fill_default();
+	tag=0;
 	frm=new fldformat(filename);
 	deletefrm=true;
 	firstfrm=frm;
@@ -79,7 +82,6 @@ void field::fill_default(void)
 	deletefrm=false;
 	firstfrm=frm;
 	tagmap.clear();
-	tag=0;
 }
 
 void field::clear(void)
@@ -132,7 +134,6 @@ field& field::operator= (const field &from)
 		set_frm(tmpfirstfrm, tmpfrm);
 
 	tagmap=from.tagmap;
-	tag=from.tag;
 
 	return *this;
 }
@@ -496,3 +497,54 @@ string to_string(unsigned int n)
 	ss << n;
 	return ss.str();
 }
+
+field::iterator field::begin(void)
+{
+	return iterator(subfields.begin());
+}
+
+field::iterator field::end(void)
+{
+	return iterator(subfields.end());
+}
+
+field::iterator field::find(int n)
+{
+	return iterator(subfields.find(n));
+}
+
+field::const_iterator field::begin(void) const
+{
+	return const_iterator(subfields.begin());
+}
+
+field::const_iterator field::end(void) const
+{
+	return const_iterator(subfields.end());
+}
+
+field::const_iterator field::find(int n) const
+{
+	return const_iterator(subfields.find(n));
+}
+
+field::reverse_iterator field::rbegin(void)
+{
+	return reverse_iterator(end());
+}
+
+field::const_reverse_iterator field::rbegin(void) const
+{
+	return const_reverse_iterator(end());
+}
+
+field::reverse_iterator field::rend(void)
+{
+	return reverse_iterator(begin());
+}
+
+field::const_reverse_iterator field::rend(void) const
+{
+	return const_reverse_iterator(begin());
+}
+
