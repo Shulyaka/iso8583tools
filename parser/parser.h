@@ -13,7 +13,7 @@ class field;
 template<class T=fldformat, typename iterator_type=typename std::map<int,T>::iterator, typename reference_type=typename std::pair<const int,T>, typename iterator_type_const=typename std::map<int,T>::const_iterator, typename reference_type_const=const reference_type, typename iterator_type_nonconst=iterator_type, typename reference_type_nonconst=reference_type>
 class frmiterator;
 
-template<typename iterator_type, typename reference_type>
+template<typename iterator_type, typename reference_type, typename map_type>
 class flditerator;
 
 class fldformat
@@ -127,8 +127,8 @@ class field
 	bool change_format(const fldformat*);
 
 	public:
-	typedef flditerator<std::map<int,field>::iterator, std::pair<const int,field> > iterator;
-	typedef flditerator<std::map<int,field>::const_iterator, const std::pair<const int,field> > const_iterator;
+	typedef flditerator<std::map<int,int>::iterator, std::pair<const int,field>, std::map<int,field> > iterator;
+	typedef flditerator<std::map<int,int>::const_iterator, const std::pair<const int,field>, const std::map<int,field> > const_iterator;
 	iterator begin(void);
 	const_iterator begin(void) const;
 	iterator end(void);
@@ -390,13 +390,14 @@ class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 	operator frmiterator<T, iterator_type_const, reference_type_const, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst>(void) const;
 };
 
-template<typename iterator_type, typename reference_type>
+template<typename iterator_type, typename reference_type, typename map_type>
 class flditerator: public std::iterator<std::bidirectional_iterator_tag, std::pair<int,field> >
 {
 	friend field;
 	private:
 	iterator_type it;
-	flditerator(iterator_type mapit) : it(mapit) {};
+	map_type* subfields;
+	flditerator(iterator_type mapit, map_type& sf) : it(mapit), subfields(&sf) {};
 
 	public:
 	flditerator(void) {};
@@ -406,8 +407,8 @@ class flditerator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 	flditerator& operator=(const flditerator &other) {it=other.it; return *this;};
 	bool operator!=(flditerator const& other) const {return it!=other.it;};
 	bool operator==(flditerator const& other) const {return it==other.it;};
-	reference_type& operator*(void) {return *it;};
-	reference_type* operator->(void) {return it.operator->();};
+	reference_type& operator*(void) {return *(subfields->find(it->second));};
+	reference_type* operator->(void) {return subfields->find(it->second).operator->();};
 	flditerator& operator++(void) {++it; return *this;};
 	flditerator& operator--(void) {--it; return *this;};
 

@@ -384,7 +384,7 @@ field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7,
 			else if(subfields.empty())
 				tagmap[0]=n0;
 			else
-				tagmap[subfields.rbegin()->first+1]=n0;
+				tagmap[tagmap.rbegin()->first+1]=n0;
 		}
 
 		if(subfields[n0].empty())
@@ -408,7 +408,7 @@ bool field::sfexist(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int 
 	if(n0 < 0)
 		return false;
 
-	const_iterator it = subfields.find(n0);
+	map<int,field>::const_iterator it = subfields.find(n0);
 
 	if(it == subfields.end())
 		return false;
@@ -472,32 +472,38 @@ string to_string(unsigned int n)
 
 field::iterator field::begin(void)
 {
-	return iterator(subfields.begin());
+	return iterator(tagmap.begin(), subfields);
 }
 
 field::iterator field::end(void)
 {
-	return iterator(subfields.end());
+	return iterator(tagmap.end(), subfields);
 }
 
 field::iterator field::find(int n)
 {
-	return iterator(subfields.find(n));
+	map<int,field>::const_iterator i=subfields.find(n);
+	if(i==subfields.end())
+		return end();
+	return iterator(tagmap.find(i->second.tag), subfields);
 }
 
 field::const_iterator field::begin(void) const
 {
-	return const_iterator(subfields.begin());
+	return const_iterator(tagmap.begin(), subfields);
 }
 
 field::const_iterator field::end(void) const
 {
-	return const_iterator(subfields.end());
+	return const_iterator(tagmap.end(), subfields);
 }
 
 field::const_iterator field::find(int n) const
 {
-	return const_iterator(subfields.find(n));
+	map<int,field>::const_iterator i=subfields.find(n);
+	if(i==subfields.end())
+		return end();
+	return const_iterator(tagmap.find(i->second.tag), subfields);
 }
 
 field::reverse_iterator field::rbegin(void)

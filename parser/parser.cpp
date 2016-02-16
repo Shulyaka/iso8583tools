@@ -612,7 +612,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 	blength=lenlen+newblength;
 
 	if(debug && !data.empty() && frm->dataFormat!=fldformat::fld_subfields)
-		printf("%s \t[%lu(%lu)] [%s]\n", frm->get_description().c_str(), flength, blength, data.c_str());
+		printf("%s\t(%lu/%lu): \"%s\"\n", frm->get_description().c_str(), flength, blength, data.c_str());
 
 	return lenlen+newblength;
 }
