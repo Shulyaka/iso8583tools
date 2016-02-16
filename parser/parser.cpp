@@ -298,7 +298,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 		{
 			if(debug)
 				printf("Error: Field '%s'(%lu) is bigger than buffer %lu+%lu>%lu\n", frm->get_description().c_str(), flength, lenlen, newblength, maxlength);
-			return -(lenlen+newblength);
+			return -(lenlen+newblength); //TODO: maxlength-(lenlen+newblength)
 		}
 //		else if(lenlen + newblength < maxlength)
 //		{

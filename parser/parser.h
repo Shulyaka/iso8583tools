@@ -411,8 +411,8 @@ class flditerator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 	flditerator& operator++(void) {++it; return *this;};
 	flditerator& operator--(void) {--it; return *this;};
 
-	friend flditerator<std::map<int,field>::iterator, std::pair<const int,field> >;
-	operator flditerator<std::map<int,field>::const_iterator, const reference_type>(void) const {return flditerator<std::map<int,field>::const_iterator, const reference_type>(it);};
+	friend field::iterator;
+	operator field::const_iterator(void) const {return field::const_iterator(it);};
 };
 
 #endif

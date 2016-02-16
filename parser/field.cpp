@@ -363,8 +363,6 @@ bool field::change_format(const fldformat *frmnew)
 //returns reference to subfield. If it does not exists, it will be added.
 field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
-	int tnum;
-
 	if(n0 < 0 && frm->dataFormat != fldformat::fld_tlv)
 	{
 		printf("Error: Wrong subfield number: %d\n", n0);
@@ -379,62 +377,36 @@ field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7,
 			exit(1);
 		}
 
-		if(frm->dataFormat == fldformat::fld_tlv)
+		if(!subfields.count(n0))
 		{
-			map<int,int>::const_iterator t = tagmap.find(n0);
-
-			if(t == tagmap.end())
-			{
-				if(subfields.empty())
-					tnum=0;
-				else
-					tnum=subfields.rbegin()->first+1;
-
-				tagmap[n0]=tnum;
-			}
+			if(frm->dataFormat!=fldformat::fld_tlv)
+				tagmap[n0]=n0;
+			else if(subfields.empty())
+				tagmap[0]=n0;
 			else
-				tnum = t->second;
+				tagmap[subfields.rbegin()->first+1]=n0;
 		}
-		else
-			tnum=n0;
 
-		if(subfields[tnum].empty())
+		if(subfields[n0].empty())
 		{
-			subfields[tnum].set_frm(&frm->sf(n0));
-			subfields[tnum].tag=n0;
+			subfields[n0].set_frm(&frm->sf(n0));
+			subfields[n0].tag=n0;
 		}
 
-		if(frm->hasBitmap!=-1 && frm->dataFormat != fldformat::fld_tlv && tnum > frm->hasBitmap)
+		if(frm->hasBitmap!=-1 && frm->dataFormat != fldformat::fld_tlv && n0 > frm->hasBitmap)
 			sf(frm->hasBitmap); //make sure to not skip bitmap field on serialize
-	}
-	else
-	{
-		if(frm->dataFormat == fldformat::fld_tlv)
-			tnum = tagmap[n0];
-		else
-			tnum=n0;
 	}
 
 	if(n1<0)
-		return subfields[tnum];
+		return subfields[n0];
 	else
-		return subfields[tnum].sf(n1, n2, n3, n4, n5, n6, n7, n8, n9);
+		return subfields[n0].sf(n1, n2, n3, n4, n5, n6, n7, n8, n9);
 }
 
 bool field::sfexist(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9) const
 {
 	if(n0 < 0)
 		return false;
-
-	if(frm->dataFormat == fldformat::fld_tlv)
-	{
-		map<int,int>::const_iterator t = tagmap.find(n0);
-
-		if(t == tagmap.end())
-			return false;
-
-		n0 = t->second;
-	}
 
 	const_iterator it = subfields.find(n0);
 
