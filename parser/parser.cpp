@@ -6,9 +6,9 @@
 using namespace std;
 
 size_t parse_ebcdic(const char*, std::string&, size_t);
-size_t parse_hex(const char*, std::string&, size_t);
-size_t parse_bcdr(const char*, std::string&, size_t);
-size_t parse_bcdl(const char*, std::string&, size_t);
+size_t parse_hex(const char*, std::string&, size_t, char);
+size_t parse_bcdr(const char*, std::string&, size_t, char);
+size_t parse_bcdl(const char*, std::string&, size_t, char);
 
 // return value:
 // >0: successfully parsed, the value is the length
@@ -100,10 +100,10 @@ long int field::parse_field_length(const char *buf, size_t maxlength)
 						return 0;
 					}
 
-				parse_hex(buf + lenlen - 3, lengthbuf, 6);
+				parse_hex(buf + lenlen - 3, lengthbuf, 6, '0');
 			}
 			else
-				parse_hex(buf, lengthbuf, lenlen*2);
+				parse_hex(buf, lengthbuf, lenlen*2, '0');
 
 			newlength=atoi(lengthbuf.c_str());
 			break;
@@ -287,7 +287,8 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 //			case fldformat::fld_bcdsf:
 				flength*=2;
 			case fldformat::fld_bcdsf:
-			case fldformat::fld_bcd:
+			case fldformat::fld_bcdl:
+			case fldformat::fld_bcdr:
 				newblength=(flength+1)/2;
 				break;
 			default:
@@ -314,7 +315,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 	switch(frm->dataFormat)
 	{
 		case fldformat::fld_bcdsf:
-			if(!parse_bcdl(buf+lenlen, data, flength))
+			if(!parse_bcdl(buf+lenlen, data, flength, frm->fillChar))
 			{
 				if(debug)
 					printf("Error: Not BCD field\n");
@@ -372,7 +373,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 								curnum=atoi(lengthbuf.c_str());
 								break;
 							case fldformat::flt_bcd:
-								parse_bcdl(buf+pos, lengthbuf, taglength*2);
+								parse_bcdl(buf+pos, lengthbuf, taglength*2, '0');
 								curnum=atoi(lengthbuf.c_str());
 								break;
 							case fldformat::flt_ber:
@@ -583,11 +584,16 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 			break;
 
 		case fldformat::fld_hex:
-			parse_hex(buf+lenlen, data, flength);
+			parse_hex(buf+lenlen, data, flength, '0');
 			break;
 
-		case fldformat::fld_bcd:
-			if(!parse_bcdr(buf+lenlen, data, flength))
+		case fldformat::fld_bcdl:
+			if(!parse_bcdl(buf+lenlen, data, flength, frm->fillChar))
+				return 0;
+			break;
+
+		case fldformat::fld_bcdr:
+			if(!parse_bcdr(buf+lenlen, data, flength, frm->fillChar))
 				return 0;
 			break;
 
@@ -628,7 +634,7 @@ size_t parse_ebcdic(const char *from, string &to, size_t len)
 	return len;
 }
 
-size_t parse_bcdr(const char *from, string &to, size_t len)
+size_t parse_bcdr(const char *from, string &to, size_t len, char fillChar)
 {
 	unsigned char t;
 	size_t u=len/2*2==len?0:1;
@@ -653,10 +659,10 @@ size_t parse_bcdr(const char *from, string &to, size_t len)
 			else
 				to.push_back('0'+t);
 		}
-		else if(((unsigned char)from[i])>>4!=0)
+		else if(((unsigned char)from[i])>>4!=(fillChar=='F'?0xF:0))
 		{
 			if(debug)
-				printf("Error: parse_bcdr: First 4 bits not zero\n");
+				printf("Error: parse_bcdr: First 4 bits don't match fillChar\n");
 			return 0;
 		}
 
@@ -679,7 +685,7 @@ size_t parse_bcdr(const char *from, string &to, size_t len)
 	return len;
 }
 
-size_t parse_bcdl(const char *from, string &to, size_t len)
+size_t parse_bcdl(const char *from, string &to, size_t len, char fillChar)
 {
 	unsigned char t;
 	size_t u=len/2*2==len?0:1;
@@ -719,10 +725,10 @@ size_t parse_bcdl(const char *from, string &to, size_t len)
 			else
 				to.push_back('0'+t);
 		}
-		else if((((unsigned char)from[i]) & 0x0F)!=0)
+		else if((((unsigned char)from[i]) & 0x0F)!=(fillChar=='F'?0xF:0))
 		{
 			if(debug)
-				printf("Error: parse_bcdl: Last 4 bits not zero\n");
+				printf("Error: parse_bcdl: Last 4 bits don't match fillChar\n");
 			return 0;
 		}
 	}
@@ -730,7 +736,7 @@ size_t parse_bcdl(const char *from, string &to, size_t len)
 	return len;
 }
 
-size_t parse_hex(const char *from, string &to, size_t len)
+size_t parse_hex(const char *from, string &to, size_t len, char fillChar)
 {
 	unsigned char t;
 	size_t u=len/2*2==len?0:1;
@@ -745,10 +751,10 @@ size_t parse_hex(const char *from, string &to, size_t len)
 			else
 				to.push_back('0'+t);
 		}
-		else if(((unsigned char)from[i])>>4!=0)
+		else if(((unsigned char)from[i])>>4!=(fillChar=='F'?0xF:0))
 		{
 			if(debug)
-				printf("Warning: parse_hex: First 4 bits not zero\n");
+				printf("Warning: parse_hex: First 4 bits don't match fillChar\n");
 			return 0;
 		}
 

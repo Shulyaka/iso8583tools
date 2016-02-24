@@ -27,7 +27,8 @@ class fldformat
 		fld_subfields,	// the contents is split to subfields	SF
 		fld_tlv,	// TLV subfields			TLV
 		fld_ebcdic,	// EBCDIC				EBCDIC
-		fld_bcd,	// Binary Coded Decimal			BCD
+		fld_bcdr,	// Binary Coded Decimal			BCD or BCDR
+		fld_bcdl,	// Binary Coded Decimal, left justified	BCDL
 		fld_ascii,	// ASCII				ASC
 		fld_hex,	// 0x0123FD -> "0123FD"			HEX
 		fld_bcdsf,	// The field is first converted from BCD to ASCII, and then is split into subfields	BCDSF
@@ -56,6 +57,7 @@ class fldformat
 		flt_ber		// EMV tag format	TLVBER
 	} tagFormat;
 	size_t tagLength;
+	char fillChar;
 	std::string data;
 	std::map<int,fldformat> subfields;
 	fldformat *altformat;

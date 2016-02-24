@@ -7,9 +7,9 @@
 using namespace std;
 
 size_t build_ebcdic(const string::const_iterator&, string&, size_t); //TODO: private static
-size_t build_hex(const string::const_iterator&, string&, size_t);
-size_t build_bcdl(const string::const_iterator&, string&, size_t);
-size_t build_bcdr(const string::const_iterator&, string&, size_t);
+size_t build_hex(const string::const_iterator&, string&, size_t, char);
+size_t build_bcdl(const string::const_iterator&, string&, size_t, char);
+size_t build_bcdr(const string::const_iterator&, string&, size_t, char);
 string to_string(unsigned int);
 
 size_t field::serialize(char *s, size_t n) //TODO: invent something more zero-copy
@@ -35,7 +35,7 @@ size_t field::get_flength(void)
 	flength=data.length();
 
 	if(frm->lengthFormat==fldformat::fll_ber)
-		if(frm->dataFormat==fldformat::fld_bcd || frm->dataFormat==fldformat::fld_hex)
+		if(frm->dataFormat==fldformat::fld_bcdl || frm->dataFormat==fldformat::fld_bcdr || frm->dataFormat==fldformat::fld_hex)
 			lenlen=(flength+1)/2>127?2:1;
 		else
 			lenlen=flength>127?2:1;
@@ -59,7 +59,8 @@ size_t field::get_flength(void)
 		case fldformat::fld_ascii:
 		case fldformat::fld_ebcdic:
 		case fldformat::fld_hex:
-		case fldformat::fld_bcd:
+		case fldformat::fld_bcdl:
+		case fldformat::fld_bcdr:
 			break;
 
 		default:
@@ -83,7 +84,7 @@ size_t field::get_blength(void)
 	fldformat tmpfrm;
 
 	if(frm->lengthFormat==fldformat::fll_ber)
-		if(frm->dataFormat==fldformat::fld_bcd || frm->dataFormat==fldformat::fld_hex)
+		if(frm->dataFormat==fldformat::fld_bcdl || frm->dataFormat==fldformat::fld_bcdr || frm->dataFormat==fldformat::fld_hex)
 			lenlen=(flength+1)/2>127?2:1;
 		else
 			lenlen=flength>127?2:1;
@@ -145,7 +146,8 @@ size_t field::get_blength(void)
 			break;
 
 		case fldformat::fld_hex:
-		case fldformat::fld_bcd:
+		case fldformat::fld_bcdl:
+		case fldformat::fld_bcdr:
 			flength=get_flength();
 
 			if(!flength)
@@ -195,7 +197,7 @@ size_t field::get_mlength(void)
 	size_t mlength=0;
 
 	if(frm->lengthFormat==fldformat::fll_ber)
-		if(frm->dataFormat==fldformat::fld_bcd || frm->dataFormat==fldformat::fld_hex)
+		if(frm->dataFormat==fldformat::fld_bcdl || frm->dataFormat==fldformat::fld_bcdr || frm->dataFormat==fldformat::fld_hex)
 			lenlen=(data.length()+1)/2>127?2:1;
 		else
 			lenlen=data.length()>127?2:1;
@@ -211,7 +213,8 @@ size_t field::get_mlength(void)
 		case fldformat::fld_bitstr:
 		case fldformat::fld_ascii:
 		case fldformat::fld_ebcdic:
-		case fldformat::fld_bcd:
+		case fldformat::fld_bcdl:
+		case fldformat::fld_bcdr:
 			mlength=get_flength();
 			if(!mlength)
 				return 0;
@@ -295,7 +298,7 @@ size_t field::build_field_length(string &buf)
 
 			buf.append(lenlen - (lengthbuf.length()+1)/2, '\0');
 
-			if(!build_bcdr(lengthbuf.begin(), buf, lengthbuf.length()))
+			if(!build_bcdr(lengthbuf.begin(), buf, lengthbuf.length(), '0'))
 				return 0;
 
 			break;
@@ -511,14 +514,14 @@ size_t field::build_field_alt(string &buf)
 									{
 										buf.append(taglength - (lengthbuf.length()+1)/2, '\0');
 
-										if(!build_bcdr(lengthbuf.begin(), buf, lengthbuf.length()))
+										if(!build_bcdr(lengthbuf.begin(), buf, lengthbuf.length(), frm->fillChar))
 											return 0;
 									}
 									else
 									{
 										bcd.append(taglength - (lengthbuf.length()+1)/2, '\0');
 
-										if(!build_bcdr(lengthbuf.begin(), bcd, lengthbuf.length()))
+										if(!build_bcdr(lengthbuf.begin(), bcd, lengthbuf.length(), frm->fillChar))
 											return 0;
 									}
 									break;
@@ -597,7 +600,7 @@ size_t field::build_field_alt(string &buf)
 
 			if(frm->dataFormat==fldformat::fld_bcdsf)
 			{
-				if(!build_bcdl(bcd.begin(), buf, flength))
+				if(!build_bcdl(bcd.begin(), buf, flength, frm->fillChar))
 				{
 					if(debug)
 						printf("Error: Not BCD subfield\n");
@@ -680,15 +683,23 @@ size_t field::build_field_alt(string &buf)
 		case fldformat::fld_hex:
 			flength=data.length();
 			newblength=(flength+1)/2;
-			if(!build_hex(data.begin(), buf, flength))
+			if(!build_hex(data.begin(), buf, flength, '0'))
 				return 0;
 
 			break;
 
-		case fldformat::fld_bcd:
+		case fldformat::fld_bcdr:
 			flength=data.length();
 			newblength=(flength+1)/2;
-			if(!build_bcdr(data.begin(), buf, flength))
+			if(!build_bcdr(data.begin(), buf, flength, frm->fillChar))
+				return 0;
+
+			break;
+
+		case fldformat::fld_bcdl:
+			flength=data.length();
+			newblength=(flength+1)/2;
+			if(!build_bcdl(data.begin(), buf, flength, frm->fillChar))
 				return 0;
 
 			break;
@@ -720,7 +731,7 @@ size_t build_ebcdic(const string::const_iterator &from, string &to, size_t len)
 	return len;
 }
 
-size_t build_bcdr(const string::const_iterator &from, string &to, size_t len)
+size_t build_bcdr(const string::const_iterator &from, string &to, size_t len, char fillChar)
 {
 	unsigned char t, tmpc=0;
 	size_t u=len/2*2==len?0:1;
@@ -745,6 +756,8 @@ size_t build_bcdr(const string::const_iterator &from, string &to, size_t len)
 				return 0;
 			}
 		}
+		else if(fillChar=='F')
+			tmpc=0xF0;
 
 		t=(unsigned char)from[i*2+1-u];
 		if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
@@ -766,7 +779,7 @@ size_t build_bcdr(const string::const_iterator &from, string &to, size_t len)
 	return (len+1)/2;
 }
 
-size_t build_bcdl(const string::const_iterator &from, string &to, size_t len)
+size_t build_bcdl(const string::const_iterator &from, string &to, size_t len, char fillChar)
 {
 	unsigned char t, tmpc=0;
 	size_t u=len/2*2==len?0:1;
@@ -807,12 +820,15 @@ size_t build_bcdl(const string::const_iterator &from, string &to, size_t len)
 				return 0;
 			}
 		}
+		else if(fillChar=='F')
+			tmpc|=0xF;
+
 		to.push_back(tmpc);
 	}
 	return (len+1)/2;
 }
 
-size_t build_hex(const string::const_iterator &from, string &to, size_t len)
+size_t build_hex(const string::const_iterator &from, string &to, size_t len, char fillChar)
 {
 	unsigned char t, tmpc=0;
 	size_t u=len/2*2==len?0:1;
@@ -835,6 +851,8 @@ size_t build_hex(const string::const_iterator &from, string &to, size_t len)
 				return 0;
 			}
 		}
+		else if(fillChar=='F')
+			tmpc=0xF0;
 
 		t=(unsigned char)from[i*2+1-u];
 		if(t>='0' && t<='9')

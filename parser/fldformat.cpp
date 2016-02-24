@@ -58,6 +58,7 @@ void fldformat::fill_default(void) //TODO: When API stabilizes, enhance construc
 	dataFormat=fld_ascii;
 	tagFormat=flt_ascii;
 	tagLength=0;
+	fillChar='\0';
 	data.clear();
 	subfields.clear();
 	altformat=NULL;
@@ -88,6 +89,7 @@ bool fldformat::empty(void) const
 	    && dataFormat==fld_ascii
 	    && tagFormat==flt_ascii
 	    && tagLength==0
+	    && fillChar=='\0'
 	    && data==""
 	    && subfields.empty()
 	    && altformat==NULL
@@ -111,6 +113,7 @@ fldformat& fldformat::operator= (const fldformat &from)
 	dataFormat=from.dataFormat;
 	tagFormat=from.tagFormat;
 	tagLength=from.tagLength;
+	fillChar=from.fillChar;
 	data=from.data;
 
 	subfields=from.subfields;
@@ -143,6 +146,7 @@ void fldformat::moveFrom(fldformat &from)
 	dataFormat=from.dataFormat;
 	tagFormat=from.tagFormat;
 	tagLength=from.tagLength;
+	fillChar=from.fillChar;
 	data=from.data;
 	subfields=from.subfields;
 	for(map<int,fldformat>::iterator i=subfields.begin(); i!=subfields.end(); ++i)
@@ -240,8 +244,11 @@ void fldformat::print_format(string numprefix)
 			case fld_ebcdic:
 				printf("EBCDIC");
 				break;
-			case fld_bcd:
-				printf("BCD");
+			case fld_bcdl:
+				printf("BCDL");
+				break;
+			case fld_bcdr:
+				printf("BCDR");
 				break;
 			case fld_hex:
 				printf("HEX");
@@ -252,6 +259,9 @@ void fldformat::print_format(string numprefix)
 			case fld_isobitmap:
 				break; //logic error
 		}
+
+		if(fillChar)
+			printf("%c", fillChar);
 
 		if(!data.empty())
 			printf("=%s", data.c_str());
@@ -749,7 +759,7 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 	}
 	else if(!strncmp(format+i, "BCD", 3))
 	{
-		dataFormat=fld_bcd;
+		dataFormat=fld_bcdr;
 		i+=3;
 	}
 	else if(!strncmp(format+i, "HEX", 3))
@@ -774,6 +784,23 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 		return false;
 	}
 
+	if(dataFormat==fld_bcdr)
+	{
+		if(format[i]=='L')
+		{
+			dataFormat=fld_bcdl;
+			i++;
+		}
+		else if(format[i]=='L')
+			i++;
+
+		if(format[i]=='0'||format[i]=='F')
+		{
+			fillChar=format[i];
+			i++;
+		}
+	}
+
 	if(p && p!=format+i)
 	{
 		if(debug)
@@ -781,7 +808,7 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 		return false;
 	}
 
-	if(p && dataFormat!=fld_bitstr && dataFormat!=fld_ebcdic && dataFormat!=fld_bcd && dataFormat!=fld_hex && dataFormat!=fld_ascii)
+	if(p && (dataFormat==fld_subfields || dataFormat==fld_bcdsf || dataFormat==fld_tlv))
 	{
 		if(debug)
 			printf("Error: Mandatory data specified for subfield format\n");
