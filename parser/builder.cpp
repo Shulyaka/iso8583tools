@@ -742,7 +742,7 @@ size_t build_bcdr(const string::const_iterator &from, string &to, size_t len, ch
 		if(i!=0 || u==0)
 		{
 			t=(unsigned char)from[i*2-u];
-			if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
+			if(17<len && len<38 && !separator_found && (t=='^' || t=='=' || t=='D'))     //making one exception for track2
 			{
 				separator_found=1;
 				tmpc=0xD0;
@@ -760,7 +760,7 @@ size_t build_bcdr(const string::const_iterator &from, string &to, size_t len, ch
 			tmpc=0xF0;
 
 		t=(unsigned char)from[i*2+1-u];
-		if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
+		if(17<len && len<38 && !separator_found && (t=='^' || t=='=' || t=='D'))     //making one exception for track2
 		{
 			separator_found=1;
 			tmpc|=0xD;
@@ -788,7 +788,7 @@ size_t build_bcdl(const string::const_iterator &from, string &to, size_t len, ch
 	for(size_t i=0; i<(len+1)/2; i++)
 	{
 		t=(unsigned char)from[i*2];
-		if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
+		if(17<len && len<38 && !separator_found && (t=='^' || t=='=' || t=='D'))     //making one exception for track2
 		{
 			separator_found=1;
 			tmpc=0xD0;
@@ -805,7 +805,7 @@ size_t build_bcdl(const string::const_iterator &from, string &to, size_t len, ch
 		if(u==0 || i!=(len+1)/2-1)
 		{
 			t=(unsigned char)from[i*2+1];
-			if(17<len && len<38 && !separator_found && t=='^')     //making one exception for track2
+			if(17<len && len<38 && !separator_found && (t=='^' || t=='=' || t=='D'))     //making one exception for track2
 			{
 				separator_found=1;
 				tmpc|=0xD;
