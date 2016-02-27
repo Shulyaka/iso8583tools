@@ -322,7 +322,11 @@ unsigned int fldformat::load_format(const string &filename)	//TODO: auto set max
 
 		frmtmp=new fldformat;
 
-		if (!frmtmp->parseFormat(format, orphans))
+		try
+		{
+			frmtmp->parseFormat(format, orphans);
+		}
+		catch (const exception& e)
 		{
 			if(debug)
 				printf("Error: Unable to parse format, skipping:\n%s\n", line.c_str());
@@ -461,24 +465,20 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 }
 
 //parses format string
-bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
+void fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 {
 	size_t i, j=0;
 	const char *p;
 	fldformat *tmpfrm;
 
 	if(!format)
-	{
-		if(debug)
-			printf("Error: Null pointer to second arg\n");
-		return false;
-	}
+		throw invalid_argument("No format provided");
 
 	if(!strcmp(format, "ISOBITMAP"))
 	{
 		dataFormat=fld_isobitmap;
 		maxLength=192;
-		return true;
+		return;
 	}
 
 	switch (format[0])
@@ -560,28 +560,17 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 					*this=*orphans[format+1].get_lastaltformat();
 				}
 				else
-				{
-					if(debug)
-						printf("Error: Unable to find referenced format (%s) (no parent loaded)\n", format+1);
-					return false;
-				}
+					throw invalid_argument("Unable to find referenced format (no parent loaded)");
 			}
 
 			if(tmpfrm->empty())
-			{
-				if(debug)
-					printf("Error: Unable to find referenced format (%s) (parent loaded)\n", format+1);
-				tmpfrm->erase();
-				return false;
-			}
+				throw invalid_argument("Unable to find referenced format (parent loaded)");
 
 			*this=*tmpfrm;
 
 			description.clear();
 
-			return true;
-
-			break;
+			return;
 
 		default:
 			if(debug)
@@ -600,11 +589,7 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 		if (format[i]<'0' || format[i]>'9')
 			break;
 	if(i==j)
-	{
-		if(debug)
-			printf("Error: Unrecognized max length (%s)\n", format);
-		return false;
-	}
+		throw invalid_argument("Unrecognized max length");
 
 	maxLength=atoi(format+j);
 
@@ -615,11 +600,7 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 				break;
 
 		if(j==i+1)
-		{
-			if(debug)
-				printf("Error: Unrecognized additional length (%s)\n", format);
-			return false;
-		}
+			throw invalid_argument("Unrecognized additional length");
 
 		addLength=(format[i]=='+')? atoi(format+i+1) : -atoi(format+i+1);
 		i=j;
@@ -628,7 +609,7 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 		addLength=0;
 
 	if(!maxLength)
-		return true; //allow zero length fields
+		return; //allow zero length fields
 
 	p=strstr(format+i, "=");
 	if(p)
@@ -691,11 +672,7 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 			else if(format[i]=='\0')
 				tagFormat=flt_ascii;
 			else
-			{
-				if(debug)
-					printf("Error: Unrecognized TLV tag format (%s)\n", format+i);
-				return false;
-			}
+				throw invalid_argument("Unrecognized TLV tag format");
 		}
 	}
 	else if(!strncmp(format+i, "BCDSF", 5))
@@ -744,11 +721,7 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 		i+=3;
 	}
 	else
-	{
-		if(debug)
-			printf("Error: Unrecognized data format (%s)\n", format+i);
-		return false;
-	}
+		throw invalid_argument("Unrecognized data format");
 
 	if(dataFormat==fld_bcdr)
 	{
@@ -768,22 +741,14 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 	}
 
 	if(p && p!=format+i)
-	{
-		if(debug)
-			printf("Error: Unrecognized trailing characters in format string (%s, %s)\n", format, format+i);
-		return false;
-	}
+		throw invalid_argument("Unrecognized trailing characters in format string");
 
 	if(p && (dataFormat==fld_subfields || dataFormat==fld_bcdsf || dataFormat==fld_tlv))
-	{
-		if(debug)
-			printf("Error: Mandatory data specified for subfield format\n");
-		return false;
-	}
+		throw invalid_argument("Mandatory data specified for subfield format");
 
 	//printf("Field: %s, Length type: %d, LengthLength: %d, Max Length: %d, Data format: %d, Mandatory data: %s\n", description.c_str(), lengthFormat, lengthLength, maxLength, dataFormat, data.c_str());
 
-	return true;
+	return;
 }
 
 void fldformat::erase(void)

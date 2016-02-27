@@ -46,7 +46,7 @@ class fldformat
 		fll_ber		// Length format for EMV tags	M
 	} lengthFormat;
 	size_t lengthLength;
-	bool lengthInclusive;
+	bool lengthInclusive; //TODO: Deprecate lingthInclusive (to be replaced with addLength)
 	size_t maxLength;
 	long int addLength;
 	enum tagformat
@@ -67,7 +67,7 @@ class fldformat
 
 	void fill_default(void);
 	inline fldformat *get_lastaltformat(void) {fldformat *last; for(last=this; last->altformat!=NULL; ) last=last->altformat; return last;};
-	bool parseFormat(const char*, std::map<std::string,fldformat> &orphans);
+	void parseFormat(const char*, std::map<std::string,fldformat> &orphans);
 	fldformat* get_by_number(const char *number, std::map<std::string,fldformat> &orphans, bool isBitmap=false);
 	static std::string to_string(unsigned int);
 
