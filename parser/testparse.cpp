@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 		{
 			frm.load_format(filename);
 		}
-		catch (const std::exception& e)
+		catch (const exception& e)
 		{
 			printf("Error: Unable to load format file %s: %s\n", filename, e.what());
 			continue;

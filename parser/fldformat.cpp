@@ -332,9 +332,10 @@ unsigned int fldformat::load_format(const string &filename)	//TODO: auto set max
 
 		frmtmp->description.assign(descr);
 
-		frmnew=orphans["message"].get_by_number(number, orphans, frmtmp->dataFormat==fld_bitmap || frmtmp->dataFormat==fld_isobitmap);
-		if(frmnew)
+		try
 		{
+			frmnew=orphans["message"].get_by_number(number, orphans, frmtmp->dataFormat==fld_bitmap || frmtmp->dataFormat==fld_isobitmap);
+
 			if(!frmnew->empty())
 			{
 				frmnew->altformat=frmtmp;
@@ -346,7 +347,7 @@ unsigned int fldformat::load_format(const string &filename)	//TODO: auto set max
 				delete frmtmp;
 			}
 		}
-		else
+		catch (const out_of_range& e)
 		{
 			if(orphans.count(number) && !orphans[number].empty())
 			{
@@ -393,7 +394,7 @@ unsigned int fldformat::load_format(const string &filename)	//TODO: auto set max
 
 // parses a string and returns a pointer to format by its number.
 // If not found but its parent exists, a new entry would be created.
-// If the parent does not yet exists, NULL is returned.
+// If the parent does not yet exists, throws out_of_range exception.
 // During parent search, always choses latest altformat wherever possible
 fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &orphans, bool isBitmap)
 {
@@ -405,11 +406,7 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 		return get_lastaltformat()->get_by_number(number, orphans, isBitmap);
 
 	if(!number)
-	{
-		if(debug)
-			printf("Error: No number provided\n");
-		return NULL;
-	}
+		throw invalid_argument("No number provided");
 
 	l=strlen(number);
 
@@ -422,23 +419,12 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 		if(number[i-1]=='*')
 			n=-1;
 		else
-		{
 			n=atoi(number);
-			if(n<0)
-			{
-				if(debug)
-					printf("Negative field number %s\n", number);
-				return NULL;
-			}
-		}
 
 		if(isBitmap)
 		{
 			if(get_lastaltformat()->hasBitmap!=-1)
-			{
-				printf("Error: Only one bitmap per subfield is allowed (%s)\n", get_lastaltformat()->description.c_str());
-				exit(1);
-			}
+				throw invalid_argument("Only one bitmap per subfield is allowed");
 			get_lastaltformat()->hasBitmap=n;
 		}
 
@@ -452,12 +438,12 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 				break;
 
 		if(i==l || i+1==l) //last iteration, no parent
-			return NULL;
+			throw out_of_range("No parent on last iteration");
 
 		key=string(number,i);
 
 		if(!orphans.count(key)) //no parent, not last iteration.
-			return NULL;
+			throw out_of_range("No parent on not last iteration");
 
 		return orphans[key].get_lastaltformat()->get_by_number(number+i+1, orphans, isBitmap);
 	}
@@ -466,22 +452,10 @@ fldformat* fldformat::get_by_number(const char *number, map<string,fldformat> &o
 	if(number[i-1]=='*')
 		n=-1;
 	else
-	{
 		n=atoi(number);
-		if(n<0)
-		{
-			if(debug)
-				printf("Negative field number %s\n", number);
-			return NULL;
-		}
-	}
 
 	if(!subfields.count(n))
-	{
-		if(debug)
-			printf("Warning: Parent format not loaded yet [%s][%d] %s\n", number, n, description.c_str());
-		return NULL;
-	}
+		throw out_of_range("Parent format not loaded yet");
 
 	return subfields[n].get_lastaltformat()->get_by_number(number+i+1, orphans, isBitmap);
 }
@@ -575,8 +549,11 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 			break;
 
 		case 'R':
-			tmpfrm=orphans["message"].get_by_number(format+1, orphans);
-			if(!tmpfrm)
+			try
+			{
+				tmpfrm=orphans["message"].get_by_number(format+1, orphans);
+			}
+			catch (const out_of_range& e)
 			{
 				if(orphans.count(format+1))
 				{
@@ -589,15 +566,16 @@ bool fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 					return false;
 				}
 			}
-			else if(tmpfrm->empty())
+
+			if(tmpfrm->empty())
 			{
 				if(debug)
 					printf("Error: Unable to find referenced format (%s) (parent loaded)\n", format+1);
 				tmpfrm->erase();
 				return false;
 			}
-			else
-				*this=*tmpfrm;
+
+			*this=*tmpfrm;
 
 			description.clear();
 
