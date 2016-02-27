@@ -773,7 +773,7 @@ const fldformat& fldformat::sf(int n) const
 		if(subfields.count(-1))
 			i=subfields.find(-1);
 		else
-			exit(0);
+			throw out_of_range("No subfield with this number");
 	}
 
 	return i->second;
