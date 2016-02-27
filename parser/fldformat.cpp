@@ -32,14 +32,8 @@ fldformat::fldformat(const fldformat &from)
 fldformat::~fldformat(void)
 {
 	clear();
-	if(parent)
-	{
-		if(parent->altformat==this)
-		{
-			parent->altformat=NULL;
-			return;
-		}
-	}
+	if(parent && parent->altformat==this)
+		parent->altformat=NULL;
 }
 
 //default format

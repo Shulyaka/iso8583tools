@@ -361,19 +361,13 @@ bool field::change_format(const fldformat *frmnew)
 //returns reference to subfield. If it does not exists, it will be added.
 field& field::sf(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, int n9)
 {
-	if(n0 < 0 && frm->dataFormat != fldformat::fld_tlv)
-	{
-		printf("Error: Wrong subfield number: %d\n", n0);
-		exit(1);
-	}
+	if(n0 < 0)
+		throw out_of_range("Bad subfield number");
 
 	if(!sfexist(n0))
 	{
 		if(!frm->sfexist(n0))
-		{
-			printf("Error: Wrong format for subfield number: %d\n", n0);
-			exit(1);
-		}
+			throw out_of_range("No format for the subfield");
 
 		if(!subfields.count(n0))
 		{
