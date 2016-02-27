@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <cerrno>
 #include "parser.h"
 
 using namespace std;
@@ -17,11 +18,7 @@ fldformat::fldformat(void)
 fldformat::fldformat(const string &filename)
 {
 	fill_default();
-	if(!load_format(filename))
-	{
-		printf("Error: Unable to load format\n");
-		exit(1);
-	}
+	load_format(filename);
 }
 
 //copy constructor
@@ -285,9 +282,9 @@ void fldformat::print_format(string numprefix)
 }
 
 // load format from file
-// returns false on failure, true on success
+// returns number of fields loaded
 // if already loaded, adds new as altformat
-bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength for some unknown length type formats
+unsigned int fldformat::load_format(const string &filename)	//TODO: auto set maxLength for some unknown length type formats
 {
 	string line;
 	char number[256];
@@ -300,11 +297,7 @@ bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength f
 	std::ifstream file(filename.c_str());
 
 	if(!file)
-	{
-		if(debug)
-			perror("Error: Unable to open file\n");
-		return false;
-	}
+		throw invalid_argument(strerror(errno));
 
 	orphans["message"];
 
@@ -390,16 +383,12 @@ bool fldformat::load_format(const string &filename)	//TODO: auto set maxLength f
 			moveFrom(orphans["message"]);
 	}
 	else
-	{
-		if(debug)
-			printf("Error: No fields loaded\n");
-		return false;
-	}
+		throw invalid_argument("No fields loaded");
 
 	if(debug)
 		printf("Info: Loaded %d fields\n", k);
 
-	return true;
+	return k;
 }
 
 // parses a string and returns a pointer to format by its number.

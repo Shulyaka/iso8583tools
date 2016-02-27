@@ -57,8 +57,15 @@ int main(int argc, char **argv)
 		if(debug)
 			printf("Loading %s\n", filename);
 
-		if(!frm.load_format(filename))
+		try
+		{
+			frm.load_format(filename);
+		}
+		catch (const std::exception& e)
+		{
+			printf("Error: Unable to load format file %s: %s\n", filename, e.what());
 			continue;
+		}
 
 		frmcounter++;
 	}

@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <cstdarg>
+#include <stdexcept>
 
 extern int debug;
 
@@ -90,7 +91,7 @@ class fldformat
 	void print_format(std::string prefix="");
 	void clear(void);
 	bool empty(void) const;
-	bool load_format(const std::string &filename);
+	unsigned int load_format(const std::string &filename);
 	fldformat& operator= (const fldformat &from);
 	void moveFrom(fldformat &from);
 	inline fldformat *get_altformat(void) const {return altformat;};
