@@ -1,13 +1,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
 #include <iostream>
 #include <fstream>
 #include "parser.h"
 
 using namespace std;
-
-string to_string(unsigned int);
 
 //constructor
 fldformat::fldformat(void)
@@ -849,6 +848,13 @@ const fldformat& fldformat::sf(int n) const
 	}
 
 	return i->second;
+}
+
+string fldformat::to_string(unsigned int n)
+{
+	ostringstream ss;
+	ss << n;
+	return ss.str();
 }
 
 fldformat::iterator fldformat::begin(void)

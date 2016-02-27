@@ -7,8 +7,6 @@
 
 using namespace std;
 
-string to_string(unsigned int);
-
 field::field(const string &str)
 {
 	fill_default();
@@ -463,7 +461,7 @@ size_t field::strftime(size_t max, const char *format, const struct tm *tm)
 	return count;
 }
 
-string to_string(unsigned int n)
+string field::to_string(unsigned int n)
 {
 	ostringstream ss;
 	ss << n;

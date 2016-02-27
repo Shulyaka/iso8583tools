@@ -68,6 +68,7 @@ class fldformat
 	inline fldformat *get_lastaltformat(void) {fldformat *last; for(last=this; last->altformat!=NULL; ) last=last->altformat; return last;};
 	bool parseFormat(const char*, std::map<std::string,fldformat> &orphans);
 	fldformat* get_by_number(const char *number, std::map<std::string,fldformat> &orphans, bool isBitmap=false);
+	static std::string to_string(unsigned int);
 
 	friend field;
 
@@ -127,6 +128,16 @@ class field
 	size_t build_isobitmap(std::string&, unsigned int);
 	size_t build_bitmap(std::string&, unsigned int);
 	bool change_format(const fldformat*);
+
+	static size_t parse_ebcdic(const char*, std::string&, size_t);
+	static size_t parse_hex(const char*, std::string&, size_t, char);
+	static size_t parse_bcdr(const char*, std::string&, size_t, char);
+	static size_t parse_bcdl(const char*, std::string&, size_t, char);
+	static size_t build_ebcdic(const std::string::const_iterator&, std::string&, size_t);
+	static size_t build_hex(const std::string::const_iterator&, std::string&, size_t, char);
+	static size_t build_bcdl(const std::string::const_iterator&, std::string&, size_t, char);
+	static size_t build_bcdr(const std::string::const_iterator&, std::string&, size_t, char);
+	static std::string to_string(unsigned int);
 
 	public:
 	typedef flditerator<std::map<int,int>::iterator, std::pair<const int,field>, std::map<int,field> > iterator;

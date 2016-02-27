@@ -5,11 +5,6 @@
 
 using namespace std;
 
-size_t parse_ebcdic(const char*, std::string&, size_t);
-size_t parse_hex(const char*, std::string&, size_t, char);
-size_t parse_bcdr(const char*, std::string&, size_t, char);
-size_t parse_bcdl(const char*, std::string&, size_t, char);
-
 // return value:
 // >0: successfully parsed, the value is the length
 // <0: Parse failed but you could try a greater maxlength of at least the negated returned value
@@ -623,7 +618,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 	return lenlen+newblength;
 }
 
-size_t parse_ebcdic(const char *from, string &to, size_t len)
+size_t field::parse_ebcdic(const char *from, string &to, size_t len)
 {
 //	const string ebcdic2ascii("\0\x001\x002\x003 \t \x07F   \x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013 \n\x008 \x018\x019  \x01C\x01D\x01E\x01F\x080 \x01C  \x00A\x017\x01B     \x005\x006\x007  \x016    \x004    \x014\x015 \x01A  âäàáãåçñ¢.<(+|&éêëèíîïìß!$*);¬-/ÂÄÀÁÃÅÇÑ\x0A6,%_>?øÉÊËÈÍÎÏÌ`:#@'=\"Øabcdefghi   ý  \x010jklmnopqr  Æ æ  ~stuvwxyz   Ý  ^£¥       []    {ABCDEFGHI ôöòóõ}JKLMNOPQR ûüùúÿ\\ STUVWXYZ ÔÖÒÓÕ0123456789 ÛÜÙÚŸ", 256);
 	const string ebcdic2ascii(" \x001\x002\x003 \t \x07F   \x00B\x00C\x00D\x00E\x00F\x010\x011\x012\x013 \n\x008 \x018\x019  \x01C\x01D\x01E\x01F\x080 \x01C  \x00A\x017\x01B     \x005\x006\x007  \x016    \x004    \x014\x015 \x01A           .<(+|&         !$*); -/        \x0A6,%_>?         `:#@'=\" abcdefghi      \x010jklmnopqr       ~stuvwxyz      ^         []    {ABCDEFGHI      }JKLMNOPQR      \\ STUVWXYZ      0123456789      ", 256);
@@ -634,7 +629,7 @@ size_t parse_ebcdic(const char *from, string &to, size_t len)
 	return len;
 }
 
-size_t parse_bcdr(const char *from, string &to, size_t len, char fillChar)
+size_t field::parse_bcdr(const char *from, string &to, size_t len, char fillChar)
 {
 	unsigned char t;
 	size_t u=len/2*2==len?0:1;
@@ -685,7 +680,7 @@ size_t parse_bcdr(const char *from, string &to, size_t len, char fillChar)
 	return len;
 }
 
-size_t parse_bcdl(const char *from, string &to, size_t len, char fillChar)
+size_t field::parse_bcdl(const char *from, string &to, size_t len, char fillChar)
 {
 	unsigned char t;
 	size_t u=len/2*2==len?0:1;
@@ -736,7 +731,7 @@ size_t parse_bcdl(const char *from, string &to, size_t len, char fillChar)
 	return len;
 }
 
-size_t parse_hex(const char *from, string &to, size_t len, char fillChar)
+size_t field::parse_hex(const char *from, string &to, size_t len, char fillChar)
 {
 	unsigned char t;
 	size_t u=len/2*2==len?0:1;
