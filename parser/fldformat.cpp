@@ -754,10 +754,7 @@ void fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 void fldformat::erase(void)
 {
 	if(!parent)
-	{
-		printf("Error: Cannot remove field without parent\n");
-		exit(1);
-	}
+		throw invalid_argument("Cannot remove field without parent");
 
 	for(map<int,fldformat>::iterator i=parent->subfields.begin(); i!=parent->subfields.end(); ++i)
 		if(&i->second==this)
