@@ -418,7 +418,7 @@ class flditerator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 	flditerator(const flditerator &other) : it(other.it) {};
 	~flditerator(void) {};
 
-	flditerator& operator=(const flditerator &other) {it=other.it; return *this;};
+	flditerator& operator=(const flditerator &other) {it=other.it; subfields=other.subfields; return *this;};
 	bool operator!=(flditerator const& other) const {return it!=other.it;};
 	bool operator==(flditerator const& other) const {return it==other.it;};
 	reference_type& operator*(void) {return *(subfields->find(it->second));};
