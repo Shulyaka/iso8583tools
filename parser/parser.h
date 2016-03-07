@@ -128,7 +128,7 @@ class field
 	size_t build_field_alt(std::string&);
 	size_t build_isobitmap(std::string&, unsigned int);
 	size_t build_bitmap(std::string&, unsigned int);
-	bool change_format(const fldformat*);
+	void change_format(const fldformat*);
 
 	static size_t parse_ebcdic(const char*, std::string&, size_t);
 	static size_t parse_hex(const char*, std::string&, size_t, char);

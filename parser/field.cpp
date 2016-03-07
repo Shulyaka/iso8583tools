@@ -1,5 +1,5 @@
 #include <cstdio>
-#include <cstdlib> //for exit(). TODO: Remove exit() and introduce exceptions
+#include <cstdlib> //for malloc(). TODO: Remove malloc()
 #include <sstream>
 #include <ctime>
 
@@ -253,11 +253,18 @@ bool field::switch_altformat(void)
 	const fldformat *frmtmp=frm;
 
 	for(unsigned int i=altformat+1; (frmtmp=frmtmp->get_altformat())!=NULL; i++)
-		if(change_format(frmtmp))
+	{
+		try
 		{
+			change_format(frmtmp);
 			altformat=i;
 			return true;
 		}
+		catch (const exception& e)
+		{
+			continue;
+		}
+	}
 
 	return false;
 }
@@ -269,11 +276,18 @@ bool field::reset_altformat(void)
 	const fldformat *frmtmp=firstfrm;
 
 	for(unsigned int i=0; frmtmp!=NULL; frmtmp=frmtmp->get_altformat(), i++)
-		if(change_format(frmtmp))
+	{
+		try
 		{
+			change_format(frmtmp);
 			altformat=i;
 			return true;
 		}
+		catch (const exception& e)
+		{
+			continue;
+		}
+	}
 
 	return false;
 }
@@ -285,11 +299,18 @@ bool field::set_frm(const fldformat *frmnew, const fldformat *frmaltnew)
 	const fldformat *frmtmp=frmnew;
 
 	for(unsigned int i=0; frmtmp!=NULL; frmtmp=frmtmp->get_altformat(), i++)
-		if(change_format(frmtmp))
+	{
+		try
 		{
+			change_format(frmtmp);
 			altformat=i;
 			break;
 		}
+		catch (const exception& e)
+		{
+			continue;
+		}
+	}
 
 	if(!frmtmp)
 		return false;
@@ -308,8 +329,9 @@ bool field::set_frm(const fldformat *frmnew, const fldformat *frmaltnew)
 		for(unsigned int i=altformat; frmtmp!=NULL; frmtmp=frmtmp->get_altformat(), i++)
 			if(frmtmp==frmaltnew)
 			{
+				change_format(frmaltnew);
 				altformat=i;
-				return change_format(frmaltnew);
+				return true;
 			}
 	}
 
@@ -318,44 +340,53 @@ bool field::set_frm(const fldformat *frmnew, const fldformat *frmaltnew)
 
 // Internal function to change current format, not to be called directly
 // If the new format does not suit the already present field tree, the function will restore the original format. The function guarantees consistency of the resulting field format, however it is not guaranteed that all subfields will remain on the same altformats in case of failure.
-bool field::change_format(const fldformat *frmnew)
+void field::change_format(const fldformat *frmnew)
 {
 	iterator i;
 	const fldformat *frmold=frm;
 
 	if(!frmnew)
-		return false;
+		throw invalid_argument("No new format provided");
 
 	if(frm == frmnew)
-		return true;
+		return;
 
 	frm=frmnew;
 
-	for(i=begin(); i!=end(); ++i)
-		if(!frmnew->sfexist(i->first) || !i->second.change_format(&frmnew->sf(i->first)))
-			break;
+	try
+	{
+		for(i=begin(); i!=end(); ++i)
+		{
+			if(!frmnew->sfexist(i->first))
+				throw invalid_argument("Subfield does not exist in new format");
 
-	if(i!=end())
+			i->second.change_format(&frmnew->sf(i->first));
+		}
+	}
+	catch (const exception& e)
 	{
 		if(debug)
 			printf("Error: Unable to change field format (%d). Reverting.\n", i->first);
 
-		for(frm=frmold; i!=begin(); --i)
-			if(!frmold->sfexist(i->first) || !i->second.change_format(&frmold->sf(i->first)))
-				if(debug)
-					printf("Error: Unable to revert\n");
+		try
+		{
+			for(frm=frmold; i!=begin(); --i)
+				i->second.change_format(&frmold->sf(i->first));
 
-		if(!frmold->sfexist(i->first) || !i->second.change_format(&frmold->sf(i->first)))
-			if(debug)
-				printf("Error: Unable to revert\n");
+			i->second.change_format(&frmold->sf(i->first));
+		}
+		catch (const exception& e1)
+		{
+			throw invalid_argument("Unable to revert to the original format. The field is in undefined state.");
+		}
 
-		return false;
+		throw invalid_argument("Fields don't fit in new format");
 	}
 
 	if(frm->hasBitmap!=-1 && !subfields.empty() && (--i)->first > frm->hasBitmap)
 		sf(frm->hasBitmap); //make sure to not skip bitmap field on serialize
 
-	return true;
+	return;
 }
 
 //returns reference to subfield. If it does not exists, it will be added.
@@ -414,7 +445,7 @@ bool field::sfexist(int n0, int n1, int n2, int n3, int n4, int n5, int n6, int 
 int field::vsnprintf(size_t pos, size_t size, const char *format, va_list ap)
 {
 	static char tmpstr[256];
-	char *strptr = size+1>sizeof(tmpstr)/sizeof(char) ? (char*)malloc((size+1)*sizeof(char)) : tmpstr;
+	char *strptr = size+1>sizeof(tmpstr)/sizeof(char) ? (char*)malloc((size+1)*sizeof(char)) : tmpstr; //TODO: replace malloc with new
 
 	int count=std::vsnprintf(strptr, size+1, format, ap);
 
