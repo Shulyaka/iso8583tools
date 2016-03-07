@@ -608,8 +608,14 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 			break;
 
 		case fldformat::fld_bcdr:
-			if(!parse_bcdr(buf+lenlen, data, flength, frm->fillChar))
+			try
+			{
+				parse_bcdr(buf+lenlen, data, flength, frm->fillChar);
+			}
+			catch(const exception& e)
+			{
 				return 0;
+			}
 			break;
 
 		case fldformat::fld_ebcdic:
@@ -666,20 +672,12 @@ size_t field::parse_bcdr(const char *from, string &to, size_t len, char fillChar
 				to.push_back('^');
 			}
 			else if (t > 9)
-			{
-				if(debug)
-					printf("Error: parse_bcdr: The string is not BCD (%02x, %02x, %lu, %lu)\n", from[i], t, separator_found, len);
-				return 0;
-			}
+				throw invalid_argument("The string is not BCD");
 			else
 				to.push_back('0'+t);
 		}
 		else if(((unsigned char)from[i])>>4!=(fillChar=='F'?0xF:0))
-		{
-			if(debug)
-				printf("Error: parse_bcdr: First 4 bits don't match fillChar\n");
-			return 0;
-		}
+			throw invalid_argument("First 4 bits don't match fillChar");
 
 		t=((unsigned char)from[i]) & 0x0F;
 		if(17<len && len<38 && !separator_found && t==0xD)     //making one exception for track2
@@ -688,11 +686,7 @@ size_t field::parse_bcdr(const char *from, string &to, size_t len, char fillChar
 			to.push_back('^');
 		}
 		else if (t > 9)
-		{
-			if(debug)
-				printf("Error: parse_bcdr: The string is not BCD\n");
-			return 0;
-		}
+			throw invalid_argument("The string is not BCD");
 		else
 			to.push_back('0'+t);
 	}
