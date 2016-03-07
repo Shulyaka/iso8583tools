@@ -247,7 +247,6 @@ bool field::empty(void) const
 }
 
 // Switches to the next applicable altformat.
-// Returns true on success, false if no applicable altformats left after the current
 void field::switch_altformat(void)
 {
 	const fldformat *frmtmp=frm;
@@ -266,12 +265,11 @@ void field::switch_altformat(void)
 		}
 	}
 
-	throw invalid_argument("No applicable altformats found");
+	throw invalid_argument("No applicable altformats found after the current");
 }
 
 // Rewinds to the first applicable altformat.
-// Returns true on success, false if none formats are applicable (which is an error)
-bool field::reset_altformat(void)
+void field::reset_altformat(void)
 {
 	const fldformat *frmtmp=firstfrm;
 
@@ -281,7 +279,7 @@ bool field::reset_altformat(void)
 		{
 			change_format(frmtmp);
 			altformat=i;
-			return true;
+			return;
 		}
 		catch (const exception& e)
 		{
@@ -289,7 +287,7 @@ bool field::reset_altformat(void)
 		}
 	}
 
-	return false;
+	throw invalid_argument("None formats are applicable");
 }
 
 // Assigns a new format to the field. Not to be used to switch to an altformat because it assumes the new format to be the root of altformat, so the information about the first altformat is lost and reset_altformat() would not reset to original altformat, use switch_altformat() instead.
