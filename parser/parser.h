@@ -164,7 +164,7 @@ class field
 	void print_message(std::string prefix="") const;
 	void clear(void);
 	bool empty(void) const;
-	bool set_frm(const fldformat* firstfrm, const fldformat* altfrm=NULL);
+	void set_frm(const fldformat* firstfrm, const fldformat* altfrm=NULL);
 	void switch_altformat(void);
 	void reset_altformat(void);
 	void moveFrom(field &from);

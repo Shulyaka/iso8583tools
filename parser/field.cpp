@@ -292,7 +292,7 @@ void field::reset_altformat(void)
 
 // Assigns a new format to the field. Not to be used to switch to an altformat because it assumes the new format to be the root of altformat, so the information about the first altformat is lost and reset_altformat() would not reset to original altformat, use switch_altformat() instead.
 // If frmaltnew is not null, it must be an altformat of frmnew
-bool field::set_frm(const fldformat *frmnew, const fldformat *frmaltnew)
+void field::set_frm(const fldformat *frmnew, const fldformat *frmaltnew)
 {
 	const fldformat *frmtmp=frmnew;
 
@@ -311,7 +311,7 @@ bool field::set_frm(const fldformat *frmnew, const fldformat *frmaltnew)
 	}
 
 	if(!frmtmp)
-		return false;
+		throw invalid_argument("The new format is not applicable");
 
 	if(deletefrm)
 	{
@@ -329,11 +329,9 @@ bool field::set_frm(const fldformat *frmnew, const fldformat *frmaltnew)
 			{
 				change_format(frmaltnew);
 				altformat=i;
-				return true;
+				return;
 			}
 	}
-
-	return true;
 }
 
 // Internal function to change current format, not to be called directly
