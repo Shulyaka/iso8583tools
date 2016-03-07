@@ -165,7 +165,7 @@ class field
 	void clear(void);
 	bool empty(void) const;
 	bool set_frm(const fldformat* firstfrm, const fldformat* altfrm=NULL);
-	bool switch_altformat(void);
+	void switch_altformat(void);
 	bool reset_altformat(void);
 	void moveFrom(field &from);
 	void swap(field &from);

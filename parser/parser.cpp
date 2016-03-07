@@ -189,7 +189,11 @@ long int field::parse_field(const char *buf, size_t maxlength)
 	{
 		clear();
 
-		if(!switch_altformat())
+		try
+		{
+			switch_altformat();
+		}
+		catch(const exception &e)
 		{
 			if(debug)
 				printf("Error: Field was already parsed but unable to switch to altformat\n");
@@ -199,7 +203,7 @@ long int field::parse_field(const char *buf, size_t maxlength)
 	else
 		reset_altformat();
 
-	do
+	while(true)
 	{
 		if(debug && altformat)
 			printf("Info: parse_field: Retrying with alternate format \"%s\"\n", frm->get_description().c_str());
@@ -212,8 +216,16 @@ long int field::parse_field(const char *buf, size_t maxlength)
 			minlength=newlength;
 
 		clear();
+
+		try
+		{
+			switch_altformat();
+		}
+		catch(const exception &e)
+		{
+			break;
+		}
 	}
-	while(switch_altformat());
 
 	return minlength;
 }

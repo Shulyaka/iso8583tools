@@ -248,7 +248,7 @@ bool field::empty(void) const
 
 // Switches to the next applicable altformat.
 // Returns true on success, false if no applicable altformats left after the current
-bool field::switch_altformat(void)
+void field::switch_altformat(void)
 {
 	const fldformat *frmtmp=frm;
 
@@ -258,7 +258,7 @@ bool field::switch_altformat(void)
 		{
 			change_format(frmtmp);
 			altformat=i;
-			return true;
+			return;
 		}
 		catch (const exception& e)
 		{
@@ -266,7 +266,7 @@ bool field::switch_altformat(void)
 		}
 	}
 
-	return false;
+	throw invalid_argument("No applicable altformats found");
 }
 
 // Rewinds to the first applicable altformat.
@@ -385,8 +385,6 @@ void field::change_format(const fldformat *frmnew)
 
 	if(frm->hasBitmap!=-1 && !subfields.empty() && (--i)->first > frm->hasBitmap)
 		sf(frm->hasBitmap); //make sure to not skip bitmap field on serialize
-
-	return;
 }
 
 //returns reference to subfield. If it does not exists, it will be added.

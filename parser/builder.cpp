@@ -351,7 +351,7 @@ size_t field::build_field(string &buf)  //TODO: remove build_field_alt() and mak
 	size_t newlength;
 	const fldformat *frmold=frm;
 
-	do
+	while(true)
 	{
 		newlength=build_field_alt(buf);
 
@@ -360,15 +360,23 @@ size_t field::build_field(string &buf)  //TODO: remove build_field_alt() and mak
 
 		if(debug)
 			printf("Info: Retrying with an alternate format\n");
+
+		try
+		{
+			switch_altformat();
+		}
+		catch(const exception &e)
+		{
+			break;
+		}
 	}
-	while(switch_altformat());
 
 	if(debug)
 		printf("Info: No alternate format\nWarning: Unable to build the field. Trying to reset to the first altformat and start over\n");
 
 	reset_altformat();
 
-	do
+	while(true)
 	{
 		if(frmold==frm) //full loop
 			break;
@@ -380,8 +388,16 @@ size_t field::build_field(string &buf)  //TODO: remove build_field_alt() and mak
 
 		if(debug)
 			printf("Info: Retrying with an alternate format\n");
+
+		try
+		{
+			switch_altformat();
+		}
+		catch(const exception &e)
+		{
+			break;
+		}
 	}
-	while(switch_altformat());
 
 	if(debug)
 		printf("Info: No alternate format\n");
