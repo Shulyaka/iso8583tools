@@ -759,11 +759,7 @@ size_t field::parse_hex(const char *from, string &to, size_t len, char fillChar)
 				to.push_back('0'+t);
 		}
 		else if(((unsigned char)from[i])>>4!=(fillChar=='F'?0xF:0))
-		{
-			if(debug)
-				printf("Warning: parse_hex: First 4 bits don't match fillChar\n");
-			return 0;
-		}
+			throw invalid_argument("First 4 bits don't match fillChar");
 
 		t=((unsigned char)from[i]) & 0x0F;
 		if (t > 9)

@@ -5,7 +5,6 @@
 #define ITPAR T, iterator_type, reference_type, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst
 #define ITPAR_CONST T, iterator_type_const, reference_type_const, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst
 
-//template<ITMPL>
 template<ITMPL>
 frmiterator<ITPAR>::frmiterator(void)
 {
