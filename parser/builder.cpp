@@ -23,7 +23,6 @@ size_t field::get_flength(void)
 {
 	size_t lenlen=0;
 	size_t flength=data.length();
-	fldformat tmpfrm;
 
 	flength=data.length();
 
@@ -205,16 +204,7 @@ size_t field::build_field_length(string &buf)
 	string lengthbuf;
 	fldformat tmpfrm;
 
-	try
-	{
-		mlength=get_mlength();
-	}
-	catch(const exception& e)
-	{
-		if(debug)
-			printf("Error: build_field_length: Wrong length\n");
-		return 0;
-	}
+	mlength=get_mlength();
 
 	lenlen=frm->lengthLength;
 
@@ -222,11 +212,7 @@ size_t field::build_field_length(string &buf)
 	{
 		case fldformat::fll_fixed:
 			if(frm->maxLength != mlength)
-			{
-				if(debug)
-					printf("Error: Bad length for fixed-length field! %lu (field) != %lu (format) for %s\n", mlength, frm->maxLength, frm->get_description().c_str());
-				return 0;
-			}
+				throw invalid_argument("Bad length for fixed-length field");
 			break;
 
 		case fldformat::fll_bin:
@@ -251,33 +237,18 @@ size_t field::build_field_length(string &buf)
 		case fldformat::fll_bcd:
 			lengthbuf=to_string(mlength);
 			if(lengthbuf.length()>lenlen*2)
-			{
-				if(debug)
-					printf("Error: Length of length is too small (%lu)\n", lenlen);
-				return 0;
-			}
+				throw invalid_argument("Length of length is too small");
 
 			buf.append(lenlen - (lengthbuf.length()+1)/2, '\0');
 
-			try
-			{
-				build_bcdr(lengthbuf.begin(), buf, lengthbuf.length(), '0');
-			}
-			catch(const exception& e)
-			{
-				return 0;
-			}
+			build_bcdr(lengthbuf.begin(), buf, lengthbuf.length(), '0');
 
 			break;
 
 		case fldformat::fll_ascii:
 			lengthbuf=to_string(mlength);
 			if(lengthbuf.length()>lenlen)
-			{
-				if(debug)
-					printf("Error: Length of length is too small (%lu)\n", lenlen);
-				return 0;
-			}
+				throw invalid_argument("Length of length is too small");
 
 			buf.append(lenlen - lengthbuf.length(), '\0');
 
@@ -288,16 +259,11 @@ size_t field::build_field_length(string &buf)
 		case fldformat::fll_ebcdic:
 			lengthbuf=to_string(mlength);
 			if(lengthbuf.length()>lenlen)
-			{
-				if(debug)
-					printf("Error: Length of length is too small (%lu)\n", lenlen);
-				return 0;
-			}
+				throw invalid_argument("Length of length is too small");
 
 			buf.append(lenlen - lengthbuf.length(), 0xF0U);
 
-			if(!build_ebcdic(lengthbuf.begin(), buf, lengthbuf.length()))
-				return 0;
+			build_ebcdic(lengthbuf.begin(), buf, lengthbuf.length());
 
 			break;
 
@@ -306,11 +272,7 @@ size_t field::build_field_length(string &buf)
 
 		default:
 			if(frm->dataFormat!=fldformat::fld_isobitmap)
-			{
-				if(debug)
-					printf("Error: Unknown length format\n");
-				return 0;
-			}
+				throw invalid_argument("Unknown length format");
 	}
 
 	if(debug && lenlen)
@@ -398,11 +360,14 @@ size_t field::build_field_alt(string &buf)
 		return 0;
 	}
 
-	lenlen=build_field_length(buf);
-	if(!lenlen && frm->lengthLength)
+	try
+	{
+		lenlen=build_field_length(buf);
+	}
+	catch(const exception& e)
 	{
 		if(debug)
-			printf("Error: build_field_alt: Wrong length for %s\n", get_description().c_str());
+			printf("Error: build_field_alt: Wrong length for %s: %s\n", get_description().c_str(), e.what());
 		return 0;
 	}
 
