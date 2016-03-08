@@ -122,7 +122,7 @@ class field
 
 	long int parse_field(const char*, size_t);
 	long int parse_field_alt(const char*, size_t);
-	long int parse_field_length(const char*, size_t);
+	size_t parse_field_length(const char*, size_t);
 	size_t build_field(std::string&);
 	size_t build_field_length(std::string&);
 	size_t build_field_alt(std::string&);
@@ -430,5 +430,14 @@ class flditerator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 	operator field::const_iterator(void) const {return field::const_iterator(it, *subfields);};
 };
 
+class need_more_data: public std::overflow_error
+{
+	private:
+	size_t need;
+
+	public:
+	need_more_data(size_t how_much_more, const std::string& what_arg) : overflow_error(what_arg), need(how_much_more) {};
+	size_t howmuch(void) const {return need;};
+};
 #endif
 

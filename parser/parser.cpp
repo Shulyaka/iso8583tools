@@ -37,7 +37,7 @@ long int field::parse(const char *s, size_t n)
 	return parsedlength;
 }
 
-long int field::parse_field_length(const char *buf, size_t maxlength)
+size_t field::parse_field_length(const char *buf, size_t maxlength)
 {
 	size_t lenlen=0;
 	size_t newlength=0;
@@ -46,11 +46,7 @@ long int field::parse_field_length(const char *buf, size_t maxlength)
 	lenlen=frm->lengthLength;
 
 	if(lenlen > maxlength)
-	{
-		if(debug)
-			printf("Error: Buffer less than length size\n");
-		return -lenlen;
-	}
+		throw need_more_data(lenlen, "Buffer less than length size");
 
 	switch(frm->lengthFormat)
 	{
@@ -58,11 +54,7 @@ long int field::parse_field_length(const char *buf, size_t maxlength)
 			if(lenlen>4)
 				for(size_t i=0; i < lenlen-4; i++)
 					if(buf[i]!='\0')
-					{
-						if(debug)
-							printf("Error: Length is too big\n");
-						return 0;
-					}
+						throw invalid_argument("Length is too big");
 			for(size_t i=0; i<(lenlen>4?4:lenlen); i++)
 				((char *)(&newlength))[i]=buf[(lenlen>4?4:lenlen)-i-1];
 			break;
@@ -72,11 +64,7 @@ long int field::parse_field_length(const char *buf, size_t maxlength)
 			{
 				lenlen=2;
 				if(lenlen > maxlength)
-				{
-					if(debug)
-						printf("Error: Buffer less than length size\n");
-					return -lenlen;
-				}
+					throw need_more_data(lenlen, "Buffer less than length size");
 			}
 			else
 				lenlen=1;
@@ -89,11 +77,7 @@ long int field::parse_field_length(const char *buf, size_t maxlength)
 			{
 				for(size_t i=0; i < lenlen-3; i++)
 					if(buf[i]!='\0')
-					{
-						if(debug)
-							printf("Error: Length is too big\n");
-						return 0;
-					}
+						throw invalid_argument("Length is too big");
 
 				parse_hex(buf + lenlen - 3, lengthbuf, 6, '0');
 			}
@@ -107,11 +91,7 @@ long int field::parse_field_length(const char *buf, size_t maxlength)
 			if(lenlen>6)
 				for(size_t i=0; i < lenlen-6; i++)
 					if(buf[i]!='0')
-					{
-						if(debug)
-							printf("Error: Length is too big\n");
-						return 0;
-					}
+						throw invalid_argument("Length is too big");
 
 			lengthbuf.assign(buf, lenlen);
 			newlength=atoi(lengthbuf.c_str());
@@ -121,11 +101,7 @@ long int field::parse_field_length(const char *buf, size_t maxlength)
 			if(lenlen>6)
 				for(size_t i=0; i < lenlen-6; i++)
 					if(buf[i]!=(char)0xF0)
-					{
-						if(debug)
-							printf("Error: Length is too big\n");
-						return 0;
-					}
+						throw invalid_argument("Length is too big");
 				
 			if(lenlen>6)
 				parse_ebcdic(buf + lenlen - 6, lengthbuf, 6);
@@ -145,11 +121,7 @@ long int field::parse_field_length(const char *buf, size_t maxlength)
 
 		default:
 			if(frm->dataFormat!=fldformat::fld_isobitmap)
-			{
-				if(debug)
-					printf("Error: Unknown length format\n");
-				return 0;
-			}
+				throw invalid_argument("Unknown length format");
 	}
 
 	newlength-=frm->addLength;
@@ -158,11 +130,7 @@ long int field::parse_field_length(const char *buf, size_t maxlength)
 		newlength*=2;
 
 	if(frm->lengthInclusive && newlength<=lenlen)
-	{
-		if(debug)
-			printf("Error: Wrong length (%s)\n", frm->get_description().c_str());
-		return 0;
-	}
+		throw invalid_argument("Wrong length");
 
 	flength=newlength;
 
@@ -268,10 +236,18 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 
 	if(frm->dataFormat!=fldformat::fld_isobitmap)
 	{
-		sflen=parse_field_length(buf, maxlength);
-
-		if(sflen<=0)
-			return sflen;
+		try
+		{
+			sflen=parse_field_length(buf, maxlength);
+		}
+		catch(const need_more_data& e)
+		{
+			return -e.howmuch();
+		}
+		catch(const exception& e)
+		{
+			return 0;
+		}
 
 		if(flength > frm->maxLength)
 		{

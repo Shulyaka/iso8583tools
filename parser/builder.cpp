@@ -11,7 +11,7 @@ size_t field::serialize(char *s, size_t n) //TODO: invent something more zero-co
 	string buf;
 	size_t res=serialize(buf);
 	if(res>n)
-		return 0;
+		throw overflow_error("Not enough buffer for the message");
 
 	memcpy(s, buf.data(), res);
 
