@@ -693,8 +693,14 @@ size_t field::build_field_alt(string &buf)
 		case fldformat::fld_hex:
 			flength=data.length();
 			newblength=(flength+1)/2;
-			if(!build_hex(data.begin(), buf, flength, '0'))
+			try
+			{
+				build_hex(data.begin(), buf, flength, '0');
+			}
+			catch(const exception& e)
+			{
 				return 0;
+			}
 
 			break;
 
@@ -855,11 +861,7 @@ size_t field::build_hex(const string::const_iterator &from, string &to, size_t l
 			else if(t>='a' && t<='f')
 				tmpc=(t-'a'+0xA)<<4;
 			else
-			{
-				if(debug)
-					printf("Error: build_hex: The string is not HEX\n");
-				return 0;
-			}
+				throw invalid_argument("The string is not HEX");
 		}
 		else if(fillChar=='F')
 			tmpc=0xF0;
@@ -873,10 +875,8 @@ size_t field::build_hex(const string::const_iterator &from, string &to, size_t l
 			tmpc|=t-'a'+0xA;
 		else
 		{
-			if(debug)
-				printf("Error: build_hex: The string is not HEX\n");
 			to.push_back(tmpc);
-			return 0;
+			throw invalid_argument("The string is not HEX");
 		}
 		to.push_back(tmpc);
 	}
