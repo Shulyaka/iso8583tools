@@ -132,9 +132,11 @@ int main(int argc, char **argv)
 	if(debug)
 		printf("Building %s, estimated length: %lu\n", message.get_description().c_str(), message.get_blength());
 
-	msglen2=message.serialize(msgbuf2);
-
-	if(!msglen2)
+	try
+	{
+		msglen2=message.serialize(msgbuf2);
+	}
+	catch(const exception& e)
 	{
 		if(debug)
 			printf("Error: Unable to build %s\n", message.get_description().c_str());

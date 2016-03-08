@@ -337,10 +337,7 @@ size_t field::build_field(string &buf)  //TODO: remove build_field_alt() and mak
 		}
 	}
 
-	if(debug)
-		printf("Info: No alternate format\n");
-
-	return 0;
+	throw invalid_argument("No alternate format to try");
 }
 
 size_t field::build_field_alt(string &buf)
@@ -497,8 +494,6 @@ size_t field::build_field_alt(string &buf)
 							sflen=i->second.build_field(bcd);
 					}
 					
-					if(!sflen)
-						throw invalid_argument("Unable to build subfield");
 					pos+=sflen;
 				}
 			}
