@@ -285,21 +285,24 @@ size_t field::build_field(string &buf)  //TODO: remove build_field_alt() and mak
 
 	while(true)
 	{
-		newlength=build_field_alt(buf);
-
-		if(newlength)
-			return newlength;
-
-		if(debug)
-			printf("Info: Retrying with an alternate format\n");
-
 		try
 		{
-			switch_altformat();
+			newlength=build_field_alt(buf);
+			return newlength;
 		}
-		catch(const exception &e)
+		catch(const exception& e)
 		{
-			break;
+			if(debug)
+				printf("Info: Retrying with an alternate format\n");
+
+			try
+			{
+				switch_altformat();
+			}
+			catch(const exception &e)
+			{
+				break;
+			}
 		}
 	}
 
@@ -313,21 +316,24 @@ size_t field::build_field(string &buf)  //TODO: remove build_field_alt() and mak
 		if(frmold==frm) //full loop
 			break;
 
-		newlength=build_field_alt(buf);
-
-		if(newlength)
-			return newlength;
-
-		if(debug)
-			printf("Info: Retrying with an alternate format\n");
-
 		try
 		{
-			switch_altformat();
+			newlength=build_field_alt(buf);
+			return newlength;
 		}
-		catch(const exception &e)
+		catch(const exception& e)
 		{
-			break;
+			if(debug)
+				printf("Info: Retrying with an alternate format\n");
+
+			try
+			{
+				switch_altformat();
+			}
+			catch(const exception &e)
+			{
+				break;
+			}
 		}
 	}
 
@@ -351,22 +357,9 @@ size_t field::build_field_alt(string &buf)
 //	printf("Building %s\n", frm->get_description().c_str());
 
 	if(!frm->data.empty() && !data.empty() && data!=frm->data)
-	{
-		if(debug)
-			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data.c_str(), data.c_str(), frm->get_description().c_str());
-		return 0;
-	}
+		throw invalid_argument("Format mandatory data does not match field data");
 
-	try
-	{
-		lenlen=build_field_length(buf);
-	}
-	catch(const exception& e)
-	{
-		if(debug)
-			printf("Error: build_field_alt: Wrong length for %s: %s\n", get_description().c_str(), e.what());
-		return 0;
-	}
+	lenlen=build_field_length(buf);
 
 	pos=lenlen;
 
@@ -384,11 +377,7 @@ size_t field::build_field_alt(string &buf)
 					break;
 
 				if(!frm->sfexist(i->first)) //TODO: Should we remove this?
-				{
-					if(debug)
-						printf("Error: No format for subfield %d\n", i->first);
-					return 0;
-				}
+					throw invalid_argument("No format for subfield");
 
 				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==fldformat::fld_isobitmap || frm->sf(bitmap_found).maxLength > i->first-(unsigned int)bitmap_found-1)
 				{
@@ -423,25 +412,17 @@ size_t field::build_field_alt(string &buf)
 								case fldformat::flt_ebcdic:
 									lengthbuf=to_string(i->first);
 									if(lengthbuf.length()>taglength)
-									{
-										if(debug)
-											printf("Error: TLV tag number is too big (%d)\n", i->first);
-										return 0;
-									}
+										throw invalid_argument("TLV tag number is too big");
 
 									if(frm->dataFormat!=fldformat::fld_bcdsf)
 									{
 										buf.append(taglength - lengthbuf.length(), 0xF0);
-
-										if(!build_ebcdic(lengthbuf.begin(), buf, lengthbuf.length()))
-											return 0;
+										build_ebcdic(lengthbuf.begin(), buf, lengthbuf.length());
 									}
 									else
 									{
 										bcd.append(taglength - lengthbuf.length(), 0xF0);
-
-										if(!build_ebcdic(lengthbuf.begin(), bcd, lengthbuf.length()))
-											return 0;
+										build_ebcdic(lengthbuf.begin(), bcd, lengthbuf.length());
 									}
 
 									break;
@@ -449,37 +430,17 @@ size_t field::build_field_alt(string &buf)
 								case fldformat::flt_bcd:
 									lengthbuf=to_string(i->first);
 									if(lengthbuf.length()>taglength*2)
-									{
-										if(debug)
-											printf("Error: TLV tag number is too big (%d)\n", i->first);
-										return 0;
-									}
+										throw invalid_argument("TLV tag number is too big");
 
 									if(frm->dataFormat!=fldformat::fld_bcdsf)
 									{
 										buf.append(taglength - (lengthbuf.length()+1)/2, '\0');
-
-										try
-										{
-											build_bcdr(lengthbuf.begin(), buf, lengthbuf.length(), frm->fillChar);
-										}
-										catch(const exception& e)
-										{
-											return 0;
-										}
+										build_bcdr(lengthbuf.begin(), buf, lengthbuf.length(), frm->fillChar);
 									}
 									else
 									{
 										bcd.append(taglength - (lengthbuf.length()+1)/2, '\0');
-
-										try
-										{
-											build_bcdr(lengthbuf.begin(), bcd, lengthbuf.length(), frm->fillChar);
-										}
-										catch(const exception& e)
-										{
-											return 0;
-										}
+										build_bcdr(lengthbuf.begin(), bcd, lengthbuf.length(), frm->fillChar);
 									}
 									break;
 
@@ -508,11 +469,7 @@ size_t field::build_field_alt(string &buf)
 								case fldformat::flt_ascii:
 									lengthbuf=to_string(i->first);
 									if(lengthbuf.length()>taglength)
-									{
-										if(debug)
-											printf("Error: TLV tag number is too big (%d)\n", i->first);
-										return 0;
-									}
+										throw invalid_argument("TLV tag number is too big");
 
 									if(frm->dataFormat!=fldformat::fld_bcdsf)
 									{
@@ -528,9 +485,7 @@ size_t field::build_field_alt(string &buf)
 									break;
 
 								default:
-									if(debug)
-										printf("Error: Unknown tag format\n");
-									return 0;
+									throw invalid_argument("Error: Unknown tag format");
 							}
 
 							pos+=taglength;
@@ -543,11 +498,7 @@ size_t field::build_field_alt(string &buf)
 					}
 					
 					if(!sflen)
-					{
-						if(debug)
-							printf("Error: unable to build subfield %d: %s\n", i->first, frm->sf(i->first).get_description().c_str());
-						return 0;
-					}
+						throw invalid_argument("Unable to build subfield");
 					pos+=sflen;
 				}
 			}
@@ -557,17 +508,7 @@ size_t field::build_field_alt(string &buf)
 
 			if(frm->dataFormat==fldformat::fld_bcdsf)
 			{
-				try
-				{
-					build_bcdl(bcd.begin(), buf, flength, frm->fillChar);
-				}
-				catch(const exception& e)
-				{
-					if(debug)
-						printf("Error: Not BCD subfield\n");
-					return 0;
-				}
-
+				build_bcdl(bcd.begin(), buf, flength, frm->fillChar);
 				newblength=(newblength+1)/2;
 			}
 
@@ -575,9 +516,6 @@ size_t field::build_field_alt(string &buf)
 
 		case fldformat::fld_isobitmap:
 			flength=data.length();
-
-			if(flength==0)
-				return 0;
 
 			for(size_t i=0; i<flength/64+1; newblength=(++i)*8)
 			{
@@ -587,30 +525,20 @@ size_t field::build_field_alt(string &buf)
 					tmpc=0;
 
 				if(i>0 && data[i*64-1]!='0') //ISOBITMAP can't encode fields 1, 65, 129, etc. Counting from 2, their offsets are i*64-1. So, if these bits are present, it's not an ISOBITMAP
-				{
-					if(debug)
-						printf("Error: Not a bitmap\n");
-					return 0;
-				}
+					throw invalid_argument("Not a bitmap");
 
 				for(size_t j=1; j<64 && i*64+j-1<flength; j++)
 				{
 					if(data[i*64+j-1]=='1')
 						tmpc|=1<<(7-j%8);
 					else if(data[i*64+j-1]!='0')
-					{
-						if(debug)
-							printf("Error: Not a bitmap\n");
-						return 0;
-					}
+						throw invalid_argument("Not a bitmap");
 					if((j+1)/8*8==j+1 || i*64+j==flength)
 					{	buf.push_back(tmpc);
 						tmpc=0;
 					}
 					if(i*64+j==flength)
-					{
 						buf.append(7-j/8, '\0');
-					}
 				}
 			}
 
@@ -644,42 +572,21 @@ size_t field::build_field_alt(string &buf)
 		case fldformat::fld_hex:
 			flength=data.length();
 			newblength=(flength+1)/2;
-			try
-			{
-				build_hex(data.begin(), buf, flength, '0');
-			}
-			catch(const exception& e)
-			{
-				return 0;
-			}
+			build_hex(data.begin(), buf, flength, '0');
 
 			break;
 
 		case fldformat::fld_bcdr:
 			flength=data.length();
 			newblength=(flength+1)/2;
-			try
-			{
-				build_bcdr(data.begin(), buf, flength, frm->fillChar);
-			}
-			catch(const exception& e)
-			{
-				return 0;
-			}
+			build_bcdr(data.begin(), buf, flength, frm->fillChar);
 
 			break;
 
 		case fldformat::fld_bcdl:
 			flength=data.length();
 			newblength=(flength+1)/2;
-			try
-			{
-				build_bcdl(data.begin(), buf, flength, frm->fillChar);
-			}
-			catch(const exception& e)
-			{
-				return 0;
-			}
+			build_bcdl(data.begin(), buf, flength, frm->fillChar);
 
 			break;
 
@@ -689,9 +596,7 @@ size_t field::build_field_alt(string &buf)
 			break;
 
 		default:
-			if(debug)
-				printf("Error: Unknown data format\n");
-			return 0;
+			throw invalid_argument("Unknown data format");
 	}
 
 	if(debug)
