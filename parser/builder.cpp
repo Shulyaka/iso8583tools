@@ -18,8 +18,7 @@ size_t field::serialize(char *s, size_t n) //TODO: invent something more zero-co
 	return res;
 }
 
-//On success, returns field data length. If field has subfields, their total size is returned
-//On failure, returns 0
+//Returns field data length. If field has subfields, their total size is returned
 size_t field::get_flength(void)
 {
 	size_t lenlen=0;
@@ -41,10 +40,7 @@ size_t field::get_flength(void)
 		case fldformat::fld_subfields:
 		case fldformat::fld_tlv:
 		case fldformat::fld_bcdsf:
-			flength=get_blength();
-			if(flength<=lenlen)
-				return 0;
-			flength-=lenlen;
+			flength=get_blength()-lenlen;
 			break;
 
 		case fldformat::fld_isobitmap:
@@ -58,30 +54,26 @@ size_t field::get_flength(void)
 			break;
 
 		default:
-			if(debug)
-				printf("Error: Unknown data format\n");
-			return 0;
+			throw invalid_argument("Unknown data format");
 	}
 
 	return flength;
 }
 
-//On success, returns field binary size including length field if present
-//On failure, returns 0
+//Returns field binary size including length field if present
 size_t field::get_blength(void)
 {
 	size_t lenlen=0;
 	size_t newblength=0;
-	size_t flength=data.length();
 	size_t pos, sflen, taglength=0;
 	int bitmap_found=-1;
 	fldformat tmpfrm;
 
 	if(frm->lengthFormat==fldformat::fll_ber)
 		if(frm->dataFormat==fldformat::fld_bcdl || frm->dataFormat==fldformat::fld_bcdr || frm->dataFormat==fldformat::fld_hex)
-			lenlen=(flength+1)/2>127?2:1;
+			lenlen=(data.length()+1)/2>127?2:1;
 		else
-			lenlen=flength>127?2:1;
+			lenlen=data.length()>127?2:1;
 	else
 		lenlen=frm->lengthLength;
 
@@ -104,7 +96,7 @@ size_t field::get_blength(void)
 					break;
 
 				if(!frm->sfexist(i->first))
-					return 0;
+					throw("Subfield format does not exist");
 
 				if(bitmap_found==-1 || frm->sf(bitmap_found).dataFormat==fldformat::fld_isobitmap || frm->sf(bitmap_found).maxLength > (unsigned int)(i->first-bitmap_found-1)) //TODO: change frm->sf(*) into i->second.frm or something
 				{
@@ -123,9 +115,6 @@ size_t field::get_blength(void)
 					else
 						sflen=i->second.get_blength();
 					
-					if(!sflen)
-						return 0;
-
 					if(frm->dataFormat==fldformat::fld_tlv && frm->tagFormat==fldformat::flt_ber)
 						taglength=i->first>0xFF?2:1;
 
@@ -142,49 +131,31 @@ size_t field::get_blength(void)
 		case fldformat::fld_hex:
 		case fldformat::fld_bcdl:
 		case fldformat::fld_bcdr:
-			flength=get_flength();
-
-			if(!flength)
-				return 0;
-
-			newblength=(flength+1)/2;
-
+			newblength=(get_flength()+1)/2;
 			break;
 
 		case fldformat::fld_isobitmap:
-			flength=get_flength();
-			if(!flength)
-				return 0;
-			newblength=(flength/64)*8;
+			newblength=(get_flength()/64)*8;
 			break;
 
 		case fldformat::fld_bitmap:
 		case fldformat::fld_bitstr:
-			flength=get_flength();
-			if(!flength)
-				return 0;
-			newblength=(flength+7)/8;
+			newblength=(get_flength()+7)/8;
 			break;
 
 		case fldformat::fld_ascii:
 		case fldformat::fld_ebcdic:
-			flength=get_flength();
-			if(!flength)
-				return 0;
-			newblength=flength;
+			newblength=get_flength();
 			break;
 
 		default:
-			if(debug)
-				printf("Error: Unknown data format\n");
-			return 0;
+			throw invalid_argument("Unknown data format");
 	}
 
 	return lenlen+newblength;
 }
 
-//On success, returns field length as represented in the message
-//On failure, returns 0
+//Returns field length as represented in the message
 size_t field::get_mlength(void)
 {
 	size_t lenlen=0;
@@ -210,22 +181,15 @@ size_t field::get_mlength(void)
 		case fldformat::fld_bcdl:
 		case fldformat::fld_bcdr:
 			mlength=get_flength();
-			if(!mlength)
-				return 0;
 			break;
 
 		case fldformat::fld_bcdsf:
 		case fldformat::fld_hex:
-			mlength=get_blength();
-			if(mlength<=lenlen)
-				return 0;
-			mlength-=lenlen;
+			mlength=get_blength()-lenlen;
 			break;
 
 		default:
-			if(debug)
-				printf("Error: Unknown data format\n");
-			return 0;
+			throw invalid_argument("Unknown data format");
 	}
 
 	if(frm->lengthInclusive)
@@ -241,8 +205,11 @@ size_t field::build_field_length(string &buf)
 	string lengthbuf;
 	fldformat tmpfrm;
 
-	mlength=get_mlength();
-	if(!mlength)
+	try
+	{
+		mlength=get_mlength();
+	}
+	catch(const exception& e)
 	{
 		if(debug)
 			printf("Error: build_field_length: Wrong length\n");
