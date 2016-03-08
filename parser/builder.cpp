@@ -292,8 +292,14 @@ size_t field::build_field_length(string &buf)
 
 			buf.append(lenlen - (lengthbuf.length()+1)/2, '\0');
 
-			if(!build_bcdr(lengthbuf.begin(), buf, lengthbuf.length(), '0'))
+			try
+			{
+				build_bcdr(lengthbuf.begin(), buf, lengthbuf.length(), '0');
+			}
+			catch(const exception& e)
+			{
 				return 0;
+			}
 
 			break;
 
@@ -524,15 +530,27 @@ size_t field::build_field_alt(string &buf)
 									{
 										buf.append(taglength - (lengthbuf.length()+1)/2, '\0');
 
-										if(!build_bcdr(lengthbuf.begin(), buf, lengthbuf.length(), frm->fillChar))
+										try
+										{
+											build_bcdr(lengthbuf.begin(), buf, lengthbuf.length(), frm->fillChar);
+										}
+										catch(const exception& e)
+										{
 											return 0;
+										}
 									}
 									else
 									{
 										bcd.append(taglength - (lengthbuf.length()+1)/2, '\0');
 
-										if(!build_bcdr(lengthbuf.begin(), bcd, lengthbuf.length(), frm->fillChar))
+										try
+										{
+											build_bcdr(lengthbuf.begin(), bcd, lengthbuf.length(), frm->fillChar);
+										}
+										catch(const exception& e)
+										{
 											return 0;
+										}
 									}
 									break;
 
@@ -711,8 +729,14 @@ size_t field::build_field_alt(string &buf)
 		case fldformat::fld_bcdr:
 			flength=data.length();
 			newblength=(flength+1)/2;
-			if(!build_bcdr(data.begin(), buf, flength, frm->fillChar))
+			try
+			{
+				build_bcdr(data.begin(), buf, flength, frm->fillChar);
+			}
+			catch(const exception& e)
+			{
 				return 0;
+			}
 
 			break;
 
@@ -776,11 +800,7 @@ size_t field::build_bcdr(const string::const_iterator &from, string &to, size_t 
 			else if(t>='0' && t<='9')
 				tmpc=(t-'0')<<4;
 			else
-			{
-				if(debug)
-					printf("Error: build_bcdr: The string is not BCD\n");
-				return 0;
-			}
+				throw invalid_argument("The string is not BCD");
 		}
 		else if(fillChar=='F')
 			tmpc=0xF0;
@@ -795,10 +815,8 @@ size_t field::build_bcdr(const string::const_iterator &from, string &to, size_t 
 			tmpc|=t-'0';
 		else
 		{
-			if(debug)
-				printf("Error: build_bcdr: The string is not BCD\n");
 			to.push_back(tmpc);
-			return 0;
+			throw invalid_argument("The string is not BCD");
 		}
 		to.push_back(tmpc);
 	}
