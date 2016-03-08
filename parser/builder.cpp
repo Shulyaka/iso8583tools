@@ -610,7 +610,11 @@ size_t field::build_field_alt(string &buf)
 
 			if(frm->dataFormat==fldformat::fld_bcdsf)
 			{
-				if(!build_bcdl(bcd.begin(), buf, flength, frm->fillChar))
+				try
+				{
+					build_bcdl(bcd.begin(), buf, flength, frm->fillChar);
+				}
+				catch(const exception& e)
 				{
 					if(debug)
 						printf("Error: Not BCD subfield\n");
@@ -715,8 +719,14 @@ size_t field::build_field_alt(string &buf)
 		case fldformat::fld_bcdl:
 			flength=data.length();
 			newblength=(flength+1)/2;
-			if(!build_bcdl(data.begin(), buf, flength, frm->fillChar))
+			try
+			{
+				build_bcdl(data.begin(), buf, flength, frm->fillChar);
+			}
+			catch(const exception& e)
+			{
 				return 0;
+			}
 
 			break;
 
@@ -812,11 +822,7 @@ size_t field::build_bcdl(const string::const_iterator &from, string &to, size_t 
 		else if(t>='0' && t<='9')
 			tmpc=(t-'0')<<4;
 		else
-		{
-			if(debug)
-				printf("Error: build_bcdl: The string is not BCD\n");
-			return 0;
-		}
+			throw invalid_argument("The string is not BCD");
 
 		if(u==0 || i!=(len+1)/2-1)
 		{
@@ -830,10 +836,8 @@ size_t field::build_bcdl(const string::const_iterator &from, string &to, size_t 
 				tmpc|=t-'0';
 			else
 			{
-				if(debug)
-					printf("Error: build_bcdl: The string is not BCD\n");
 				to.push_back(tmpc);
-				return 0;
+				throw invalid_argument("The string is not BCD");
 			}
 		}
 		else if(fillChar=='F')
