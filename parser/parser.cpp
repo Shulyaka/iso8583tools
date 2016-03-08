@@ -154,7 +154,7 @@ long int field::parse_field_length(const char *buf, size_t maxlength)
 
 	newlength-=frm->addLength;
 
-	if(frm->dataFormat==fldformat::fld_bcdsf && frm->lengthFormat!=fldformat::fll_fixed)
+	if((frm->dataFormat==fldformat::fld_bcdsf || frm->dataFormat==fldformat::fld_hex) && frm->lengthFormat!=fldformat::fll_fixed)
 		newlength*=2;
 
 	if(frm->lengthInclusive && newlength<=lenlen)
@@ -291,8 +291,6 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 				newblength=(flength+7)/8;
 				break;
 			case fldformat::fld_hex:
-//			case fldformat::fld_bcdsf:
-				flength*=2;
 			case fldformat::fld_bcdsf:
 			case fldformat::fld_bcdl:
 			case fldformat::fld_bcdr:

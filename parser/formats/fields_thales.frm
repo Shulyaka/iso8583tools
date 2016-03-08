@@ -134,7 +134,7 @@ message 	BB1024SF	Thales HSM message
 1.8.5		F2ASC		Number of Optional Blocks
 1.8.6		U255SF		Optional block 1
 1.8.6.0		F2ASC		Optional Block Identifier
-1.8.6.1		F2HEX		Optional Block Length
+1.8.6.1		F4HEX		Optional Block Length
 1.8.6.2		U251ASC		Optional Block Data
 1.8.7		R1.8.6		Optional block 2
 1.8.8		R1.8.6		Optional block 3
@@ -1322,10 +1322,10 @@ excl		F0		Excluded PIN Table
 
 #1		U1019SF		Unknown command
 #1.0		F2ASC		Command Code
-#1.1		U1017HEX	Data
+#1.1		U2034HEX	Data
 2		F3SF		LMK Identifier
 2.0		F1ASC=%		Delimiter
 2.1		F2ASC		LMK Identifier
 2		F0		LMK Identifier (not present)
-3		F1HEX=19	Trailer control character
+3		F2HEX=19	Trailer control character
 4		U32ASC		Message Trailer

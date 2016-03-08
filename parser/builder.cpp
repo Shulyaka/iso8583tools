@@ -23,6 +23,9 @@ size_t field::get_flength(void)
 {
 	size_t lenlen=0;
 	size_t flength=data.length();
+	size_t pos, sflen, taglength=0;
+	int bitmap_found=-1;
+	fldformat tmpfrm;
 
 	flength=data.length();
 
@@ -31,48 +34,6 @@ size_t field::get_flength(void)
 			lenlen=(flength+1)/2>127?2:1;
 		else
 			lenlen=flength>127?2:1;
-	else
-		lenlen=frm->lengthLength;
-
-	switch(frm->dataFormat)
-	{
-		case fldformat::fld_subfields:
-		case fldformat::fld_tlv:
-		case fldformat::fld_bcdsf:
-			flength=get_blength()-lenlen;
-			break;
-
-		case fldformat::fld_isobitmap:
-		case fldformat::fld_bitmap:
-		case fldformat::fld_bitstr:
-		case fldformat::fld_ascii:
-		case fldformat::fld_ebcdic:
-		case fldformat::fld_hex:
-		case fldformat::fld_bcdl:
-		case fldformat::fld_bcdr:
-			break;
-
-		default:
-			throw invalid_argument("Unknown data format");
-	}
-
-	return flength;
-}
-
-//Returns field binary size including length field if present
-size_t field::get_blength(void)
-{
-	size_t lenlen=0;
-	size_t newblength=0;
-	size_t pos, sflen, taglength=0;
-	int bitmap_found=-1;
-	fldformat tmpfrm;
-
-	if(frm->lengthFormat==fldformat::fll_ber)
-		if(frm->dataFormat==fldformat::fld_bcdl || frm->dataFormat==fldformat::fld_bcdr || frm->dataFormat==fldformat::fld_hex)
-			lenlen=(data.length()+1)/2>127?2:1;
-		else
-			lenlen=data.length()>127?2:1;
 	else
 		lenlen=frm->lengthLength;
 
@@ -121,12 +82,48 @@ size_t field::get_blength(void)
 				}
 			}
 
-			newblength=pos-lenlen;
-
-			if(frm->dataFormat==fldformat::fld_bcdsf)
-				newblength=(newblength+1)/2;
+			flength=pos-lenlen;
 			break;
 
+		case fldformat::fld_isobitmap:
+		case fldformat::fld_bitmap:
+		case fldformat::fld_bitstr:
+		case fldformat::fld_ascii:
+		case fldformat::fld_ebcdic:
+		case fldformat::fld_hex:
+		case fldformat::fld_bcdl:
+		case fldformat::fld_bcdr:
+			break;
+
+		default:
+			throw invalid_argument("Unknown data format");
+	}
+
+	return flength;
+}
+
+//Returns field binary size including length field if present
+size_t field::get_blength(void)
+{
+	size_t lenlen=0;
+	size_t newblength=0;
+
+	if(frm->lengthFormat==fldformat::fll_ber)
+		if(frm->dataFormat==fldformat::fld_bcdl || frm->dataFormat==fldformat::fld_bcdr || frm->dataFormat==fldformat::fld_hex)
+			lenlen=(data.length()+1)/2>127?2:1;
+		else
+			lenlen=data.length()>127?2:1;
+	else
+		lenlen=frm->lengthLength;
+
+	switch(frm->dataFormat)
+	{
+		case fldformat::fld_subfields:
+		case fldformat::fld_tlv:
+			newblength=get_flength();
+			break;
+
+		case fldformat::fld_bcdsf:
 		case fldformat::fld_hex:
 		case fldformat::fld_bcdl:
 		case fldformat::fld_bcdr:
@@ -211,7 +208,7 @@ size_t field::build_field_length(string &buf)
 	switch(frm->lengthFormat)
 	{
 		case fldformat::fll_fixed:
-			if(frm->maxLength != mlength)
+			if(frm->maxLength != get_flength())
 				throw invalid_argument("Bad length for fixed-length field");
 			break;
 
