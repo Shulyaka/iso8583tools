@@ -144,7 +144,7 @@ size_t field::parse_field_length(const char *buf, size_t maxlength)
 long int field::parse_field(const char *buf, size_t maxlength)
 {
 	int newlength;
-	int minlength=0;
+	size_t minlength=0;
 
 	if(maxlength==0)
 	{
@@ -176,12 +176,19 @@ long int field::parse_field(const char *buf, size_t maxlength)
 		if(debug && altformat)
 			printf("Info: parse_field: Retrying with alternate format \"%s\"\n", frm->get_description().c_str());
 
-		newlength=parse_field_alt(buf, maxlength);
-		if(newlength>0)
+		try
+		{
+			newlength=parse_field_alt(buf, maxlength);
 			return newlength;
-
-		if(newlength!=0 && (minlength==0 || newlength>minlength))
-			minlength=newlength;
+		}
+		catch(const need_more_data& e)
+		{
+			if(minlength==0 || e.howmuch()<minlength)
+				minlength=e.howmuch();
+		}
+		catch(const exception& e)
+		{
+		}
 
 		clear();
 
@@ -195,7 +202,7 @@ long int field::parse_field(const char *buf, size_t maxlength)
 		}
 	}
 
-	return minlength;
+	return -(int)minlength;
 }
 
 long int field::parse_field_alt(const char *buf, size_t maxlength)
@@ -210,7 +217,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 	const fldformat *curfrm;
 	size_t pos;
 	long int sflen;
-	int minlength=0;
+	size_t minlength=0;
 	size_t taglength=0;
 	fldformat tmpfrm;
 	size_t oldlenlen;
@@ -218,11 +225,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 	vector<int> fieldstack;
 
 	if(!buf)
-	{
-		if(debug)
-			printf("Error: No buf\n");
-		return 0;
-	}
+		throw invalid_argument("No buf");
 
 	lenlen=frm->lengthLength;
 
@@ -236,26 +239,11 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 
 	if(frm->dataFormat!=fldformat::fld_isobitmap)
 	{
-		try
-		{
-			sflen=parse_field_length(buf, maxlength);
-		}
-		catch(const need_more_data& e)
-		{
-			return -e.howmuch();
-		}
-		catch(const exception& e)
-		{
-			return 0;
-		}
+		sflen=parse_field_length(buf, maxlength);
 
 		if(flength > frm->maxLength)
-		{
-			if(debug)
-				printf("Warning: field length exceeds max\n");
-			return 0;
+			throw invalid_argument("Warning: field length exceeds max");
 //			flength=frm->maxLength;
-		}
 
 		if(frm->lengthInclusive)
 			flength-=lenlen;
@@ -277,17 +265,9 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 		}
 
 		if(lenlen + newblength > maxlength)
-		{
-			if(debug)
-				printf("Error: Field '%s'(%lu) is bigger than buffer %lu+%lu>%lu\n", frm->get_description().c_str(), flength, lenlen, newblength, maxlength);
-			return -(lenlen+newblength); //TODO: maxlength-(lenlen+newblength)
-		}
+			throw need_more_data(lenlen+newblength, "Field is bigger than buffer"); //TODO: (lenlen+newblength)-maxLength
 //		else if(lenlen + newblength < maxlength)
-//		{
-//			if(debug)
-//				printf("Error: Field '%s'(%lu) is smaller than buffer %lu+%lu<%lu\n", frm->get_description().c_str(), flength, lenlen, newblength, maxlength);
-//			return 0;
-//		}
+//			throw invalid_argument("Field is smaller than buffer");
 	}
 
 	//Now we know the length except for ISOBITMAP
@@ -296,14 +276,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 	switch(frm->dataFormat)
 	{
 		case fldformat::fld_bcdsf:
-			try
-			{
-				parse_bcdl(buf+lenlen, data, flength, frm->fillChar);
-			}
-			catch(const exception& e)
-			{
-				return 0;
-			}
+			parse_bcdl(buf+lenlen, data, flength, frm->fillChar);
 
 			buf=data.data();
 			oldlenlen=lenlen;
@@ -318,13 +291,12 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 			else
 				cursf=frm->begin();
 			pos=lenlen;
-			minlength=0;
 			while(parse_failed)
 			{
-				parse_failed=0;
+				parse_failed=0; //TODO: use try{] block instead of parse_failed
 
 				if(frm->subfields.empty())
-					return 0;
+					throw invalid_argument("No subformats loaded");
 
 				for(; pos!=maxlength;)
 				{
@@ -342,11 +314,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 						}
 
 						if(pos+taglength>=maxlength)
-						{
-							if(debug)
-								printf("Error: Not enough length for TLV tag\n");
-							return -(pos+taglength);
-						}
+							throw need_more_data(pos+taglength, "Not enough length for TLV tag"); //TODO: check the value
 
 						lengthbuf.clear();
 						switch(frm->tagFormat)
@@ -370,17 +338,11 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 								curnum=atoi(lengthbuf.c_str());
 								break;
 							default:
-								if(debug)
-									printf("Error: Unknown tag format\n");
-								return 0;
+								throw invalid_argument("Unknown tag format");
 						}
 
 						if(!frm->sfexist(curnum))
-						{
-							if(debug)
-								printf("Error: No format for TLV tag %d.\n", curnum);
-							return 0;
-						}
+							throw invalid_argument("No format for TLV tag");
 
 						curfrm=&frm->sf(curnum);
 
@@ -491,8 +453,8 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 
 				if(parse_failed)
 				{
-					if(sflen<0 && (minlength==0 || sflen-(int)pos>minlength))
-						minlength=sflen-pos;
+					if(sflen<0 && (minlength==0 || pos+(size_t)(-sflen)<minlength))
+						minlength=pos-sflen;
 
 					while(!fieldstack.empty())
 					{
@@ -528,7 +490,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 			}
 
 			if(parse_failed)
-				return minlength;
+				throw need_more_data(minlength, "Not enough data to parse all subfields");
 
 			if(frm->dataFormat==fldformat::fld_bcdsf)
 				lenlen=oldlenlen;
@@ -541,11 +503,7 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 				flength=i*64+63;
 				newblength=i*8+8;
 				if((i+1)*8>maxlength)
-				{
-					if(debug)
-						printf("Error: Field is too long\n");
-					return -(i+1)*8;
-				}
+					throw need_more_data((i+1)*8, "Field is too long"); //TODO: //check this
 
 				if(i!=0)
 					data.push_back('0');
@@ -571,25 +529,11 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 			break;
 
 		case fldformat::fld_bcdl:
-			try
-			{
-				parse_bcdl(buf+lenlen, data, flength, frm->fillChar);
-			}
-			catch(const exception& e)
-			{
-				return 0;
-			}
+			parse_bcdl(buf+lenlen, data, flength, frm->fillChar);
 			break;
 
 		case fldformat::fld_bcdr:
-			try
-			{
-				parse_bcdr(buf+lenlen, data, flength, frm->fillChar);
-			}
-			catch(const exception& e)
-			{
-				return 0;
-			}
+			parse_bcdr(buf+lenlen, data, flength, frm->fillChar);
 			break;
 
 		case fldformat::fld_ebcdic:
@@ -597,17 +541,13 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 			break;
 
 		default:
-			if(debug)
-				printf("Error: Unknown data format\n");
-			return 0;
+			throw invalid_argument("Unknown data format");
 	}
 
 	if(!frm->data.empty() && !data.empty() && data!=frm->data)
 	{
-		if(debug)
-			printf("Error: Format mandatory data (%s) does not match field data (%s) for %s\n", frm->data.c_str(), data.c_str(), frm->get_description().c_str());
 		data.clear();
-		return 0;
+		throw invalid_argument("Format mandatory data does not match field data");
 	}
 
 	blength=lenlen+newblength;
