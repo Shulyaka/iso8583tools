@@ -26,13 +26,21 @@ long int field::parse(const char *s, size_t n)
 		return 0;
 	}
 
-	parsedlength=message.parse_field(s, n);
-
-	if(parsedlength>0)
+	try
+	{
+		parsedlength=message.parse_field(s, n);
 		moveFrom(message);
-	else
+	}
+	catch(const need_more_data& e)
+	{
 		if(debug)
 			printf("Error: Can't parse\n");
+	}
+	catch(const exception& e)
+	{
+		if(debug)
+			printf("Error: Can't parse\n");
+	}
 
 	return parsedlength;
 }
@@ -146,12 +154,8 @@ long int field::parse_field(const char *buf, size_t maxlength)
 	int newlength;
 	size_t minlength=0;
 
-	if(maxlength==0)
-	{
-		if(debug)
-			printf("Error: buf too small on %s\n", frm->get_description().c_str());
-		return -1;
-	}
+	if(!maxlength)
+		throw need_more_data(1, "Zero buffer length");
 
 	if(blength && frm->altformat)
 	{
@@ -163,9 +167,7 @@ long int field::parse_field(const char *buf, size_t maxlength)
 		}
 		catch(const exception &e)
 		{
-			if(debug)
-				printf("Error: Field was already parsed but unable to switch to altformat\n");
-			return 0;
+			throw invalid_argument("Field was already parsed but unable to switch to altformat");
 		}
 	}
 	else
@@ -202,7 +204,10 @@ long int field::parse_field(const char *buf, size_t maxlength)
 		}
 	}
 
-	return -(int)minlength;
+	if(!minlength)
+		throw invalid_argument("Parsing failed using all altformats");
+	else
+		throw need_more_data(minlength, "Parsing failed using all altformats, but you can try greater length");
 }
 
 long int field::parse_field_alt(const char *buf, size_t maxlength)
@@ -387,10 +392,20 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 								if(debug)
 									printf("trying pos %lu length %lu/%lu for %s\n", pos, i, flength+lenlen-pos, curfrm->get_description().c_str());  //TODO: remove curfrm
 								sf(curnum).blength=0;
-								sflen=sf(curnum).parse_field(buf+pos, i);
-
-								if(sflen>=0)
+								try
+								{
+									sflen=sf(curnum).parse_field(buf+pos, i);
 									break;
+								}
+								catch(const need_more_data& e)
+								{
+									sflen=-e.howmuch();
+								}
+								catch(const exception& e)
+								{
+									sflen=0;
+									break;
+								}
 
 								sf(curnum).reset_altformat(); //restore frm that might be replaced with altformat by parse_field
 
@@ -399,7 +414,20 @@ long int field::parse_field_alt(const char *buf, size_t maxlength)
 							}
 						}
 						else
-							sflen=sf(curnum).parse_field(buf+pos, flength+lenlen-pos);
+						{
+							try
+							{
+								sflen=sf(curnum).parse_field(buf+pos, flength+lenlen-pos);
+							}
+							catch(const need_more_data& e)
+							{
+								sflen=-e.howmuch();
+							}
+							catch(const exception& e)
+							{
+								sflen=0;
+							}
+						}
 
 						if(sflen==0 && sf(curnum).frm->maxLength==0)
 						{
