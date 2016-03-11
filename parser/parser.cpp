@@ -5,42 +5,22 @@
 
 using namespace std;
 
-// return value:
-// >0: successfully parsed, the value is the length
-// <0: Parse failed but you could try a greater maxlength of at least the negated returned value
-// =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
-long int field::parse(const string &msgbuf)
+// returns the parsed message size which might be less or equal to the buffer size
+// Throws need_more_data exception if parse failed but you could try a greater maxlength of at least the need_more_data.howmuch()
+size_t field::parse(const string &msgbuf)
 {
 	return parse(msgbuf.data(), msgbuf.length());
 }
 
-long int field::parse(const char *s, size_t n)
+size_t field::parse(const char *s, size_t n)
 {
 	field message(firstfrm);
-	int parsedlength;
 
 	if(!s || !n)
-	{
-		if(debug)
-			printf("Error: Empty input\n");
-		return 0;
-	}
+		throw invalid_argument("Empty input\n");
 
-	try
-	{
-		parsedlength=message.parse_field(s, n);
-		moveFrom(message);
-	}
-	catch(const need_more_data& e)
-	{
-		if(debug)
-			printf("Error: Can't parse\n");
-	}
-	catch(const exception& e)
-	{
-		if(debug)
-			printf("Error: Can't parse\n");
-	}
+	size_t parsedlength=message.parse_field(s, n);
+	moveFrom(message);
 
 	return parsedlength;
 }
@@ -145,11 +125,9 @@ size_t field::parse_field_length(const char *buf, size_t maxlength)
 	return newlength;
 }
 
-// return value:
-// >0: successfully parsed, the value is the length
-// <0: Parse failed but you could try a greater maxlength of at least the negated returned value
-// =0: Parse failed and don't try again, there is no point, it would fail anyway with any greater length
-long int field::parse_field(const char *buf, size_t maxlength)
+// returns the parsed message size which might be less or equal to the buffer size
+// Throws need_more_data exception if parse failed but you could try a greater maxlength of at least the need_more_data.howmuch()
+size_t field::parse_field(const char *buf, size_t maxlength)
 {
 	int newlength;
 	size_t minlength=0;
@@ -210,7 +188,7 @@ long int field::parse_field(const char *buf, size_t maxlength)
 		throw need_more_data(minlength, "Parsing failed using all altformats, but you can try greater length");
 }
 
-long int field::parse_field_alt(const char *buf, size_t maxlength)
+size_t field::parse_field_alt(const char *buf, size_t maxlength)
 {
 	size_t lenlen=0;
 	size_t newblength=0;

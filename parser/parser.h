@@ -120,8 +120,8 @@ class field
 
 	void fill_default(void);
 
-	long int parse_field(const char*, size_t);
-	long int parse_field_alt(const char*, size_t);
+	size_t parse_field(const char*, size_t);
+	size_t parse_field_alt(const char*, size_t);
 	size_t parse_field_length(const char*, size_t);
 	size_t build_field(std::string&);
 	size_t build_field_length(std::string&);
@@ -171,8 +171,8 @@ class field
 	void swap(field &from);
 	field& operator= (const field &from);
 
-	long int parse(const std::string&);
-	long int parse(const char*, size_t);
+	size_t parse(const std::string&);
+	size_t parse(const char*, size_t);
 	inline size_t serialize(std::string& buf) {return build_field(buf);}; //TODO: Consider changing the return type to std::string
 	size_t serialize(char*, size_t);
 	size_t get_blength(void);

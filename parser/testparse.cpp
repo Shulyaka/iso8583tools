@@ -108,9 +108,13 @@ int main(int argc, char **argv)
 
 	msglen1=msglen;
 
-	if(message.parse(msgbuf)<=0)
+	try
 	{
-		printf("Error: Unable to parse message\n");
+		message.parse(msgbuf);
+	}
+	catch(const exception& e)
+	{
+		printf("Error: Unable to parse message: %s\n", e.what());
 
 		sprintf(filename, "imessage%ld", time(NULL));
 		outfile=fopen(filename, "w");
@@ -139,7 +143,7 @@ int main(int argc, char **argv)
 	catch(const exception& e)
 	{
 		if(debug)
-			printf("Error: Unable to build %s\n", message.get_description().c_str());
+			printf("Error: Unable to build %s: %s\n", message.get_description().c_str(), e.what());
 
 		sprintf(filename, "imessage%ld", time(NULL));
 		outfile=fopen(filename, "w");
