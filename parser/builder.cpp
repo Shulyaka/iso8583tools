@@ -191,6 +191,9 @@ size_t field::get_mlength(void)
 	if(frm->lengthInclusive)
 		mlength+=lenlen;
 
+	if(frm->addLength<0 && mlength<(size_t)-frm->addLength)
+		throw invalid_argument("negative mlength");
+
 	return mlength+frm->addLength;
 }
 
