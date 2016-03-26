@@ -42,7 +42,6 @@ void fldformat::fill_default(void) //TODO: When API stabilizes, enhance construc
 	description.clear();
 	lengthFormat=fll_unknown;
 	lengthLength=0;
-	lengthInclusive=false;
 	maxLength=1024;
 	addLength=0;
 	dataFormat=fld_ascii;
@@ -73,7 +72,6 @@ bool fldformat::empty(void) const
 	return description.empty()
 	    && lengthFormat==fll_unknown
 	    && lengthLength==0
-	    && lengthInclusive==false
 	    && maxLength==1024
 	    && addLength==0
 	    && dataFormat==fld_ascii
@@ -97,7 +95,6 @@ fldformat& fldformat::operator= (const fldformat &from)
 	description=from.description;
 	lengthFormat=from.lengthFormat;
 	lengthLength=from.lengthLength;
-	lengthInclusive=from.lengthInclusive;
 	maxLength=from.maxLength;
 	addLength=from.addLength;
 	dataFormat=from.dataFormat;
@@ -130,7 +127,6 @@ void fldformat::moveFrom(fldformat &from)
 	description=from.description;
 	lengthFormat=from.lengthFormat;
 	lengthLength=from.lengthLength;
-	lengthInclusive=from.lengthInclusive;
 	maxLength=from.maxLength;
 	addLength=from.addLength;
 	dataFormat=from.dataFormat;
@@ -188,9 +184,6 @@ void fldformat::print_format(string numprefix)
 					case fll_ber:
 						break; // logic error
 				}
-
-		if(lengthInclusive)
-			printf("I");
 
 		printf("%lu", maxLength);
 
@@ -545,7 +538,7 @@ void fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 			{
 				if(orphans.count(format+1))
 				{
-					*this=*orphans[format+1].get_lastaltformat();
+					tmpfrm=orphans[format+1].get_lastaltformat();
 				}
 				else
 					throw invalid_argument("Unable to find referenced format (no parent loaded)");
@@ -565,19 +558,11 @@ void fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 				printf("Error: Unrecognized length format (%s)\n", format);
 	}
 
-	if(format[j]=='I')
-	{
-		lengthInclusive=true;
-		j++;
-	}
-	else
-		lengthInclusive=false;
-
 	for(i=j; i<strlen(format); i++)
 		if (format[i]<'0' || format[i]>'9')
 			break;
 	if(i==j)
-		throw invalid_argument("Unrecognized max length");
+		throw invalid_argument(string("Unrecognized max length: ")+format);
 
 	maxLength=atoi(format+j);
 

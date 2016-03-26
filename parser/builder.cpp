@@ -188,8 +188,8 @@ size_t field::get_mlength(void)
 			throw invalid_argument("Unknown data format");
 	}
 
-	if(frm->lengthInclusive)
-		mlength+=lenlen;
+	if(frm->addLength<0 && mlength<(size_t)-frm->addLength)
+		throw invalid_argument("Negative length");
 
 	return mlength+frm->addLength;
 }

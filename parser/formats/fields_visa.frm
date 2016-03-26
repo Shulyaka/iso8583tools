@@ -4,7 +4,7 @@
 #Number		Format		Description
 message 	BB800-2SF	Visa Message (with header)
 0		F4HEX		Visa Message Length Header B3 B4
-1		BI22SF		Visa Header
+1		B22+1SF		Visa Header
 1.2		F2BCD		Header Format
 1.3		F2BCD		Text format
 1.4		F4HEX		Total message length

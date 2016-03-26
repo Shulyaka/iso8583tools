@@ -46,7 +46,6 @@ class fldformat
 		fll_ber		// Length format for EMV tags	M
 	} lengthFormat;
 	size_t lengthLength;
-	bool lengthInclusive; //TODO: Deprecate lingthInclusive (to be replaced with addLength)
 	size_t maxLength;
 	long int addLength;
 	enum tagformat

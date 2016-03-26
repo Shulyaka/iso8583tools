@@ -112,13 +112,13 @@ size_t field::parse_field_length(const char *buf, size_t maxlength)
 				throw invalid_argument("Unknown length format");
 	}
 
+	if(frm->addLength>0 && newlength<(size_t)frm->addLength)
+		throw invalid_argument("Negative length");
+
 	newlength-=frm->addLength;
 
 	if((frm->dataFormat==fldformat::fld_bcdsf || frm->dataFormat==fldformat::fld_hex) && frm->lengthFormat!=fldformat::fll_fixed)
 		newlength*=2;
-
-	if(frm->lengthInclusive && newlength<=lenlen)
-		throw invalid_argument("Wrong length");
 
 	flength=newlength;
 
@@ -225,11 +225,8 @@ size_t field::parse_field_alt(const char *buf, size_t maxlength)
 		sflen=parse_field_length(buf, maxlength);
 
 		if(flength > frm->maxLength)
-			throw invalid_argument("Warning: field length exceeds max");
+			throw invalid_argument("field length exceeds max");
 //			flength=frm->maxLength;
-
-		if(frm->lengthInclusive)
-			flength-=lenlen;
 
 		switch(frm->dataFormat)
 		{
