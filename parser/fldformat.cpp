@@ -306,11 +306,7 @@ unsigned int fldformat::load_format(const string &filename)	//TODO: auto set max
 		if(j==2)
 			strcpy(descr, "No description");
 		else if (j!=3)
-		{
-			if(debug)
-				printf("Warning: Wrong format in line, skipping:\n%s\n", line.c_str());
-			continue;
-		}
+			throw invalid_argument(string("Wrong format in line: ") + line);
 
 		//printf("Number[%s] format[%s] descr[%s]\n", number, format, descr);
 
@@ -322,10 +318,8 @@ unsigned int fldformat::load_format(const string &filename)	//TODO: auto set max
 		}
 		catch (const exception& e)
 		{
-			if(debug)
-				printf("Error: Unable to parse format, skipping:\n%s\n", line.c_str());
 			delete frmtmp;
-			continue;
+			throw;
 		}
 
 		frmtmp->description.assign(descr);

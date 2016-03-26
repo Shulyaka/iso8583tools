@@ -276,7 +276,7 @@ size_t field::parse_field_alt(const char *buf, size_t maxlength)
 			pos=lenlen;
 			while(parse_failed)
 			{
-				parse_failed=0; //TODO: use try{] block instead of parse_failed
+				parse_failed=0; //TODO: use try{} block instead of parse_failed
 
 				if(frm->subfields.empty())
 					throw invalid_argument("No subformats loaded");

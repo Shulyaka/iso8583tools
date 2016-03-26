@@ -57,15 +57,7 @@ int main(int argc, char **argv)
 		if(debug)
 			printf("Loading %s\n", filename);
 
-		try
-		{
-			frm.load_format(filename);
-		}
-		catch (const exception& e)
-		{
-			printf("Error: Unable to load format file %s: %s\n", filename, e.what());
-			continue;
-		}
+		frm.load_format(filename);
 
 		frmcounter++;
 	}
