@@ -554,8 +554,7 @@ void fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 			return;
 
 		default:
-			if(debug)
-				printf("Error: Unrecognized length format (%s)\n", format);
+			throw invalid_argument("Unrecognized length format");
 	}
 
 	for(i=j; i<strlen(format); i++)
