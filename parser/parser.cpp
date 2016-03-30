@@ -163,11 +163,16 @@ size_t field::parse_field(const char *buf, size_t maxlength)
 		}
 		catch(const need_more_data& e)
 		{
+			if(debug)
+				printf("Please retry with length %ld: %s\n", e.howmuch(), e.what());
+
 			if(minlength==0 || e.howmuch()<minlength)
 				minlength=e.howmuch();
 		}
 		catch(const exception& e)
 		{
+			if(debug)
+				printf("Parsing of field failed: %s\n", e.what());
 		}
 
 		clear();
@@ -245,7 +250,7 @@ size_t field::parse_field_alt(const char *buf, size_t maxlength)
 		}
 
 		if(lenlen + newblength > maxlength)
-			throw need_more_data(lenlen+newblength, "Field is bigger than buffer"); //TODO: (lenlen+newblength)-maxLength
+			throw need_more_data(lenlen+newblength, string("Field is bigger than buffer (") + to_string(lenlen+newblength) + ">" + to_string(maxlength) + ")");
 //		else if(lenlen + newblength < maxlength)
 //			throw invalid_argument("Field is smaller than buffer");
 	}
@@ -370,6 +375,13 @@ size_t field::parse_field_alt(const char *buf, size_t maxlength)
 								try
 								{
 									sflen=sf(curnum).parse_field(buf+pos, i);
+
+									if((size_t)sflen<i)
+									{
+										if(debug)
+											printf("Parsed successfully but with less length of %ld/%lu\n", sflen, i);
+										sflen=0;
+									}
 									break;
 								}
 								catch(const need_more_data& e)
@@ -408,7 +420,7 @@ size_t field::parse_field_alt(const char *buf, size_t maxlength)
 						{
 							if(debug)
 								printf("Optional subfield %d (%s) skipped\n", curnum, sf(curnum).frm->get_description().c_str());
-							subfields.erase(curnum);
+							sf(curnum).clear();
 							continue;
 						}
 
@@ -416,7 +428,7 @@ size_t field::parse_field_alt(const char *buf, size_t maxlength)
 						{
 							if(debug)
 								printf("Error: unable to parse subfield %d (%s/%s, %ld)\n", curnum, get_description().c_str(), sf(curnum).frm->get_description().c_str(), sflen);
-							subfields.erase(curnum);
+							sf(curnum).clear();
 							parse_failed=1;
 							break;
 						}
@@ -433,7 +445,7 @@ size_t field::parse_field_alt(const char *buf, size_t maxlength)
 								{
 									if(debug)
 										printf("Error: No format for subfield %d which is present in bitmap\n", bitmap_start+1+i);
-									subfields.erase(curnum);
+									sf(curnum).clear();
 									bitmap_start=-1;
 									parse_failed=1;
 									break;
@@ -469,7 +481,7 @@ size_t field::parse_field_alt(const char *buf, size_t maxlength)
 						if(curnum==bitmap_start)
 							bitmap_start=-1;
 
-						if(sfexist(curnum) && ((sf(curnum).frm->lengthFormat==fldformat::fll_unknown && sf(curnum).frm->dataFormat!=fldformat::fld_isobitmap && sf(curnum).blength < flength+lenlen-sf(curnum).start) || sf(curnum).frm->altformat))
+						if(sfexist(curnum) && !sf(curnum).empty() && ((sf(curnum).frm->lengthFormat==fldformat::fll_unknown && sf(curnum).frm->dataFormat!=fldformat::fld_isobitmap && sf(curnum).blength < flength+lenlen-sf(curnum).start) || sf(curnum).frm->altformat))
 						{
 							if(debug)
 								printf("Come back to sf %d of %s (%s)\n", curnum, frm->get_description().c_str(), sf(curnum).frm->get_description().c_str());
@@ -478,13 +490,13 @@ size_t field::parse_field_alt(const char *buf, size_t maxlength)
 							break;
 						}
 						else if(sfexist(curnum))
-							subfields.erase(curnum);
+							sf(curnum).clear();
 					}
 
 					if(parse_failed)
 					{
 						if(debug)
-							printf("Not comming back (%s)\n", frm->get_description().c_str());
+							printf("Not comming back (from %s)\n", frm->get_description().c_str());
 						break;
 					}
 
@@ -493,7 +505,12 @@ size_t field::parse_field_alt(const char *buf, size_t maxlength)
 			}
 
 			if(parse_failed)
-				throw need_more_data(minlength, "Not enough data to parse all subfields");
+			{
+				if(minlength==0)
+					throw invalid_argument("Error parsing of a subfield");
+				else
+					throw need_more_data(minlength, "Not enough data to parse all subfields");
+			}
 
 			if(frm->dataFormat==fldformat::fld_bcdsf)
 				lenlen=oldlenlen;

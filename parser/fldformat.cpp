@@ -538,7 +538,7 @@ void fldformat::parseFormat(const char *format, map<string,fldformat> &orphans)
 			{
 				if(orphans.count(format+1))
 				{
-					tmpfrm=orphans[format+1].get_lastaltformat();
+					tmpfrm=&orphans[format+1];
 				}
 				else
 					throw invalid_argument("Unable to find referenced format (no parent loaded)");

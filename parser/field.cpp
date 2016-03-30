@@ -2,6 +2,7 @@
 #include <cstdlib> //for malloc(). TODO: Remove malloc()
 #include <sstream>
 #include <ctime>
+#include <vector>
 
 #include "parser.h"
 
@@ -339,13 +340,17 @@ void field::set_frm(const fldformat *frmnew, const fldformat *frmaltnew)
 void field::change_format(const fldformat *frmnew)
 {
 	iterator i;
-	const fldformat *frmold=frm;
+	vector<const fldformat*> frmold(1, frm);
+	bool sameformat(frm==frmnew);
 
 	if(!frmnew)
 		throw invalid_argument("No new format provided");
 
-	if(frm == frmnew)
-		return;
+	if(debug)
+		printf("trying to change sf %d format from %s to %s\n", tag, frm->get_description().c_str(), frmnew->get_description().c_str());
+
+	if(!data.empty() && !frmnew->data.empty() && data!=frmnew->data)
+		throw invalid_argument("data does not match mandatory data of the new format");
 
 	frm=frmnew;
 
@@ -353,10 +358,8 @@ void field::change_format(const fldformat *frmnew)
 	{
 		for(i=begin(); i!=end(); ++i)
 		{
-			if(!frmnew->sfexist(i->first))
-				throw invalid_argument("Subfield does not exist in new format");
-
-			i->second.change_format(&frmnew->sf(i->first));
+			frmold.push_back(i->second.frm);
+			i->second.set_frm(&frmnew->sf(i->first));
 		}
 	}
 	catch (const exception& e)
@@ -366,17 +369,33 @@ void field::change_format(const fldformat *frmnew)
 
 		try
 		{
-			for(frm=frmold; i!=begin(); --i)
-				i->second.change_format(&frmold->sf(i->first));
+			frmold.pop_back();
 
-			i->second.change_format(&frmold->sf(i->first));
+			if(i!=begin())
+			{
+				for(--i; i!=begin(); --i)
+				{
+					i->second.change_format(frmold.back());
+					frmold.pop_back();
+				}
+
+				i->second.change_format(frmold.back());
+				frmold.pop_back();
+			}
+
+			frm=frmold.back();
+			frmold.pop_back();
+
+			if(!frmold.empty())
+				throw runtime_error("field count mismatch");
 		}
 		catch (const exception& e1)
 		{
-			throw invalid_argument("Unable to revert to the original format. The field is in undefined state.");
+			throw runtime_error("Unable to revert to the original format. The field is in undefined state.");
 		}
 
-		throw invalid_argument("Fields don't fit in new format");
+		if(!sameformat)
+			throw invalid_argument("Fields don't fit in new format");
 	}
 
 	if(frm->hasBitmap!=-1 && !subfields.empty() && (--i)->first > frm->hasBitmap)

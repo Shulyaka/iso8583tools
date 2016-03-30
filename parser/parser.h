@@ -6,7 +6,7 @@
 #include <cstdarg>
 #include <stdexcept>
 
-extern int debug;
+extern bool debug;
 
 class fldformat;
 class field;
