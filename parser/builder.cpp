@@ -250,7 +250,7 @@ size_t field::build_field_length(string &buf)
 			if(lengthbuf.length()>lenlen)
 				throw invalid_argument("Length of length is too small");
 
-			buf.append(lenlen - lengthbuf.length(), '\0');
+			buf.append(lenlen - lengthbuf.length(), '0');
 
 			buf.append(lengthbuf);
 
