@@ -6,3 +6,22 @@ addons:
     - protobuf-compiler
     - libprotobuf-dev
     - libhiredis-dev
+
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "O9YSBLu8J5BNBTDLHB3hRKxSB6gBF3prf4G3pET21jByXcyXrk5pYjAU2U4Uno5ttDbNKHvTFgRFT+2bvSe80ejrpDW4xBOha0z4gjZ2n5ZYhaaqU402JX8yIpUeZ4gtm8K6sf9kBUesvVOh+6YBkmHwmaPXsOmttcZDf1k52X0ZKQzViRxGc/J4v4ea6YlENCYtlm7bvTUHs8l1PjVSAzNCksZAGUa8hqfHrZIZdAKJ/QPe6ZwpcNPFUjQIKLZzxKAvnP6wOJBVFiaeM8juvyUgtAIxcY79cPedjGC3dsBs+3YlIovPJJVTND/7bKev1H3ZXFiHNoGnWkkKn3MoRHv4sNW7GKfG7+cX/yodSka8s6P6mcmwCcVNw1ZffTumAcdavQhwN35g1j0x7s6nvLMVa8rl6mgYTAyHFP5hgQYgpRx7vHYokNma2klEaaVQ16UjuCBzTcygtECiM7KoRqRVN3IJSJjkhsO37yRpnfhqII/W5fWLsk1rmo4fENIjEvLECIpaYruGsKSX1rjcVd/znz0J3TF/605Z1L7ES46YvaaaVeqPj/1YIL/cyu27kbPLOSMZjIOCdYuv8gn4A4M6IFP+95yjcd6cxvX8FEPXGSF4nAOu0ML5zn9EKuKlYPPBtOKaRdIruUWs5UM6Sou2QjitMdCMc7LwWV1IoRw="
+
+#before_install:
+#      - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+
+addons:
+  coverity_scan:
+    project:
+      name: "Shulyaka/iso8583tools"
+      description: "<Your project description here>"
+    notification_email: shulyaka@gmail.com
+    build_command_prepend: "make clean"
+    build_command:   "make"
+    branch_pattern: coverity_scan
