@@ -5,3 +5,4 @@ addons:
     packages:
     - protobuf-compiler
     - libprotobuf-dev
+    - libhiredis-dev
