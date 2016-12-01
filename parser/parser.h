@@ -11,7 +11,7 @@ extern bool debug;
 class fldformat;
 class field;
 
-template<class T=fldformat, typename iterator_type=typename std::map<int,T>::iterator, typename reference_type=typename std::pair<const int,T>, typename iterator_type_const=typename std::map<int,T>::const_iterator, typename reference_type_const=const reference_type, typename iterator_type_nonconst=iterator_type, typename reference_type_nonconst=reference_type>
+template<typename iterator_type=typename std::map<int,fldformat>::iterator, typename reference_type=typename std::pair<const int,fldformat>, typename iterator_type_const=typename std::map<int,fldformat>::const_iterator, typename reference_type_const=const reference_type, typename iterator_type_nonconst=iterator_type, typename reference_type_nonconst=reference_type>
 class frmiterator;
 
 template<typename iterator_type, typename reference_type, typename map_type>
@@ -74,7 +74,7 @@ class fldformat
 
 	public:
 	typedef frmiterator<> iterator;
-	typedef frmiterator<fldformat, std::map<int,fldformat>::const_iterator, const std::pair<const int, fldformat>, std::map<int,fldformat>::const_iterator, const std::pair<const int, fldformat>, std::map<int,fldformat>::iterator, std::pair<const int, fldformat> > const_iterator;
+	typedef frmiterator<std::map<int,fldformat>::const_iterator, const std::pair<const int, fldformat>, std::map<int,fldformat>::const_iterator, const std::pair<const int, fldformat>, std::map<int,fldformat>::iterator, std::pair<const int, fldformat> > const_iterator;
 	iterator begin(void);
 	const_iterator begin(void) const;
 	iterator end(void);
@@ -370,21 +370,21 @@ class field
 	//friend inline std::istream& getline (std::istream& is, field& f) {return getline(is, f.data);};
 };
 
-template<class T, typename iterator_type, typename reference_type, typename iterator_type_const, typename reference_type_const, typename iterator_type_nonconst, typename reference_type_nonconst>
-class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pair<int,T> >
+template<typename iterator_type, typename reference_type, typename iterator_type_const, typename reference_type_const, typename iterator_type_nonconst, typename reference_type_nonconst>
+class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pair<int,fldformat> >
 {
-	friend T;
+	friend class fldformat;
 	private:
-	std::map<int,T> tmpmap;
-	const T *wildcard;
+	std::map<int,fldformat> tmpmap;
+	const fldformat *wildcard;
 	iterator_type it;
 	iterator_type next;
 	iterator_type begin;
 	iterator_type end;
 	int curnum;
 
-	frmiterator(const T*, iterator_type, iterator_type, iterator_type, int);
-	frmiterator(const std::map<int,T>&, const T*, const iterator_type&, const iterator_type&, const iterator_type&, const iterator_type&, int);
+	frmiterator(const fldformat*, iterator_type, iterator_type, iterator_type, int);
+	frmiterator(const std::map<int,fldformat>&, const fldformat*, const iterator_type&, const iterator_type&, const iterator_type&, const iterator_type&, int);
 
 	public:
 	frmiterator(void);
@@ -399,8 +399,8 @@ class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 	frmiterator& operator++(void);
 	frmiterator& operator--(void);
 
-	friend class frmiterator<T, iterator_type_nonconst, reference_type_nonconst, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst>;
-	operator frmiterator<T, iterator_type_const, reference_type_const, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst>(void) const;
+	friend class frmiterator<iterator_type_nonconst, reference_type_nonconst, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst>;
+	operator frmiterator<iterator_type_const, reference_type_const, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst>(void) const;
 };
 
 template<typename iterator_type, typename reference_type, typename map_type>
