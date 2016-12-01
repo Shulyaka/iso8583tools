@@ -4,3 +4,4 @@ addons:
   apt:
     packages:
     - protobuf-compiler
+    - libprotobuf-dev
