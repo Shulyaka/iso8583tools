@@ -1,9 +1,9 @@
 #include <iterator>
 #include "parser.h"
 
-#define ITMPL class T, typename iterator_type, typename reference_type, typename iterator_type_const, typename reference_type_const, typename iterator_type_nonconst, typename reference_type_nonconst
-#define ITPAR T, iterator_type, reference_type, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst
-#define ITPAR_CONST T, iterator_type_const, reference_type_const, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst
+#define ITMPL typename iterator_type, typename reference_type, typename iterator_type_const, typename reference_type_const, typename iterator_type_nonconst, typename reference_type_nonconst
+#define ITPAR iterator_type, reference_type, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst
+#define ITPAR_CONST iterator_type_const, reference_type_const, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst
 
 template<ITMPL>
 frmiterator<ITPAR>::frmiterator(void)
@@ -12,7 +12,7 @@ frmiterator<ITPAR>::frmiterator(void)
 }
 
 template<ITMPL>
-frmiterator<ITPAR>::frmiterator(const T *iwildcard, iterator_type iit, iterator_type ibegin, iterator_type iend, int icurnum) :
+frmiterator<ITPAR>::frmiterator(const fldformat *iwildcard, iterator_type iit, iterator_type ibegin, iterator_type iend, int icurnum) :
 	wildcard(iwildcard),
 	it(iit),
 	next(iit==iend?iend:++iit),
@@ -39,7 +39,7 @@ frmiterator<ITPAR>::frmiterator(const frmiterator &it) :
 }
 
 template<ITMPL>
-frmiterator<ITPAR>::frmiterator(const std::map<int,T> &i_tmpmap, const T *i_wildcard, const iterator_type &i_it, const iterator_type &i_next, const iterator_type &i_begin, const iterator_type &i_end, int i_curnum) :
+frmiterator<ITPAR>::frmiterator(const std::map<int,fldformat> &i_tmpmap, const fldformat *i_wildcard, const iterator_type &i_it, const iterator_type &i_next, const iterator_type &i_begin, const iterator_type &i_end, int i_curnum) :
 	tmpmap(i_tmpmap),
 	wildcard(i_wildcard),
 	it(i_it),
@@ -146,5 +146,5 @@ frmiterator<ITPAR>::operator frmiterator<ITPAR_CONST>(void) const
 }
 
 
-template class frmiterator<fldformat, std::map<int,fldformat>::iterator,	std::pair<const int, fldformat>,	std::map<int,fldformat>::const_iterator, const std::pair<const int, fldformat>, std::map<int,fldformat>::iterator, std::pair<const int, fldformat> >;
-template class frmiterator<fldformat, std::map<int,fldformat>::const_iterator,	const std::pair<const int, fldformat>,	std::map<int,fldformat>::const_iterator, const std::pair<const int, fldformat>, std::map<int,fldformat>::iterator, std::pair<const int, fldformat> >;
+template class frmiterator<std::map<int,fldformat>::iterator,	std::pair<const int, fldformat>,	std::map<int,fldformat>::const_iterator, const std::pair<const int, fldformat>, std::map<int,fldformat>::iterator, std::pair<const int, fldformat> >;
+template class frmiterator<std::map<int,fldformat>::const_iterator,	const std::pair<const int, fldformat>,	std::map<int,fldformat>::const_iterator, const std::pair<const int, fldformat>, std::map<int,fldformat>::iterator, std::pair<const int, fldformat> >;
