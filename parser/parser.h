@@ -70,7 +70,7 @@ class fldformat
 	fldformat* get_by_number(const char *number, std::map<std::string,fldformat> &orphans, bool isBitmap=false);
 	static std::string to_string(unsigned int);
 
-	friend field;
+	friend class field;
 
 	public:
 	typedef frmiterator<> iterator;
@@ -373,7 +373,7 @@ class field
 template<class T, typename iterator_type, typename reference_type, typename iterator_type_const, typename reference_type_const, typename iterator_type_nonconst, typename reference_type_nonconst>
 class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pair<int,T> >
 {
-	friend T;
+	friend class T;
 	private:
 	std::map<int,T> tmpmap;
 	const T *wildcard;
@@ -399,14 +399,14 @@ class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 	frmiterator& operator++(void);
 	frmiterator& operator--(void);
 
-	friend frmiterator<T, iterator_type_nonconst, reference_type_nonconst, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst>;
+	friend class frmiterator<T, iterator_type_nonconst, reference_type_nonconst, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst>;
 	operator frmiterator<T, iterator_type_const, reference_type_const, iterator_type_const, reference_type_const, iterator_type_nonconst, reference_type_nonconst>(void) const;
 };
 
 template<typename iterator_type, typename reference_type, typename map_type>
 class flditerator: public std::iterator<std::bidirectional_iterator_tag, std::pair<int,field> >
 {
-	friend field;
+	friend class field;
 	private:
 	iterator_type it;
 	map_type* subfields;
@@ -425,7 +425,7 @@ class flditerator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 	flditerator& operator++(void) {++it; return *this;};
 	flditerator& operator--(void) {--it; return *this;};
 
-	friend field::iterator;
+	friend class field::iterator;
 	operator field::const_iterator(void) const {return field::const_iterator(it, *subfields);};
 };
 
