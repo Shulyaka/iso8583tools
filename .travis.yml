@@ -6,6 +6,14 @@ addons:
     - protobuf-compiler
     - libprotobuf-dev
     - libhiredis-dev
+  coverity_scan:
+    project:
+      name: "Shulyaka/iso8583tools"
+      description: "<Your project description here>"
+    notification_email: shulyaka@gmail.com
+    build_command_prepend: "make clean"
+    build_command:   "make"
+    branch_pattern: coverity_scan
 
 env:
   global:
@@ -15,13 +23,4 @@ env:
 
 #before_install:
 #      - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
-
-addons:
-  coverity_scan:
-    project:
-      name: "Shulyaka/iso8583tools"
-      description: "<Your project description here>"
-    notification_email: shulyaka@gmail.com
-    build_command_prepend: "make clean"
-    build_command:   "make"
-    branch_pattern: coverity_scan
+  
