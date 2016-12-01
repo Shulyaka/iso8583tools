@@ -373,7 +373,7 @@ class field
 template<class T, typename iterator_type, typename reference_type, typename iterator_type_const, typename reference_type_const, typename iterator_type_nonconst, typename reference_type_nonconst>
 class frmiterator: public std::iterator<std::bidirectional_iterator_tag, std::pair<int,T> >
 {
-	friend class T;
+	friend T;
 	private:
 	std::map<int,T> tmpmap;
 	const T *wildcard;
@@ -425,7 +425,7 @@ class flditerator: public std::iterator<std::bidirectional_iterator_tag, std::pa
 	flditerator& operator++(void) {++it; return *this;};
 	flditerator& operator--(void) {--it; return *this;};
 
-	friend class field::iterator;
+	friend class flditerator<std::map<int,int>::iterator, std::pair<const int,field>, std::map<int,field> >;
 	operator field::const_iterator(void) const {return field::const_iterator(it, *subfields);};
 };
 
