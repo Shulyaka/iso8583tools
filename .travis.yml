@@ -3,4 +3,4 @@ script: make
 addons:
   apt:
     packages:
-    - protoc
+    - protobuf-compiler
