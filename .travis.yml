@@ -13,7 +13,7 @@ addons:
     notification_email: shulyaka@gmail.com
     build_command_prepend: "make clean"
     build_command: "make"
-    branch_pattern: cpp
+    branch_pattern: coverity_scan
 env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
