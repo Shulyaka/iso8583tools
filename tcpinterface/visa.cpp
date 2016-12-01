@@ -5,7 +5,7 @@
 #include <time.h>
 #include "visa.pb.h"
 
-int debug=0;
+bool debug=0;
 
 using namespace std;
 
