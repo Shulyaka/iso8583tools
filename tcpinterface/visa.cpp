@@ -1384,7 +1384,7 @@ int processOutgoing(field &fullmessage, isomessage *visamsg, fldformat *frm, Vis
 	if(isRequest(visamsg) && visamsg->has_track2() && (visamsg->entrymode()==isomessage::MAGSTRIPE || visamsg->entrymode()==isomessage::EM_UNKNOWN))
 		message(35)=visamsg->track2();
 
-	if(visamsg->has_rrn());
+	if(visamsg->has_rrn())
 		message(37).snprintf(13, "%012lld", visamsg->rrn());
 
 	if(visamsg->has_authid())
