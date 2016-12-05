@@ -77,7 +77,7 @@ message U1024SF		Mast Message
 46	EEE999EBCDIC	Expanded Additional Amounts
 47	EEE999EBCDIC	Additional Data—National Use
 48	EEE999SF	Additional Data—Private Use (no TCC)
-48.1	U998TLVDSEBCDIC	DE48 Subelements
+48.1	U998TLV2EBCDIC	DE48 Subelements
 48.1.10	EE16EBCDIC	Encrypted PIN Block Key
 48.1.11	EE70EBCDIC	Key Exchange Block Data (Single-Length Keys)
 48.1.12	EE1EBCDIC	Routing Indicator
@@ -90,7 +90,7 @@ message U1024SF		Mast Message
 48.1.16	EE7EBCDIC	Processor Pseudo ICA
 48.1.20 EE1EBCDIC	Cardholder Verification Method
 48.1.32	EE6EBCDIC	MasterCard Assigned ID
-48.1.33 EE43TLVDSEBCDIC	PAN Mapping File Information
+48.1.33 EE43TLV2EBCDIC	PAN Mapping File Information
 48.1.33.01 EE1EBCDIC	Account Number Indicator
 48.1.33.02 EE19EBCDIC	Account Number
 48.1.33.03 EE4EBCDIC	Expiration Date
@@ -113,17 +113,17 @@ message U1024SF		Mast Message
 48.1.39.8 F1EBCDIC	PIN
 48.1.39.9 F1EBCDIC	Magnetic Stripe
 48.1.39.10 F1EBCDIC	Personal Information
-48.1.40	EE40TLVDSEBCDIC	Electronic Commerce Merchant/Cardholder Certificate Serial Number (Visa Only)
-48.1.40.01 EE16HEX	Merchant Certificate Serial Number
-48.1.40.02 EE16HEX	Cardholder Certificate Serial Number
+48.1.40	EE40TLV2EBCDIC	Electronic Commerce Merchant/Cardholder Certificate Serial Number (Visa Only)
+48.1.40.01 EE32HEX	Merchant Certificate Serial Number
+48.1.40.02 EE32HEX	Cardholder Certificate Serial Number
 48.1.41	EE95EBCDIC	Electronic Commerce Certificate Qualifying Information
-48.1.42	EE7TLVDSEBCDIC	Electronic Commerce Indicators
+48.1.42	EE7TLV2EBCDIC	Electronic Commerce Indicators
 48.1.42.01 EE3SF	Electronic Commerce Security Level Indicator and UCAF Collection Indicator
 48.1.42.01.1 F1EBCDIC	Security Protocol
 48.1.42.01.2 F1EBCDIC	Cardholder Authentication
 48.1.42.01.3 F1EBCDIC	UCAF Collection Indicator
 48.1.43	EE32EBCDIC	Universal Cardholder Authentication Field (UCAF)
-48.1.44 EE20HEX		Visa 3-D Secure Electronic Commerce Transaction Identifier (XID)
+48.1.44 EE40HEX		Visa 3-D Secure Electronic Commerce Transaction Identifier (XID)
 48.1.45	EE1EBCDIC	Visa 3-D Secure Electronic Commerce Transaction Response Code
 48.1.46	EE2EBCDIC	Card-Level Result
 48.1.47	EE8EBCDIC	MC Payment Gateway Transaction Indicator
@@ -148,10 +148,10 @@ message U1024SF		Mast Message
 48.1.71.* F2SF		On-behalf (OB) Service
 48.1.71.*.0 F1EBCDIC	On-behalf Result 1
 48.1.71.*.1 F1EBCDIC	On-behalf Result 2
-48.1.72	EE16HEX		Issuer Chip Authentication
+48.1.72	EE32HEX		Issuer Chip Authentication
 48.1.74	EE30TLV2EBCDIC	Additional Processing Information
 48.1.74.* F1EBCDIC	Processing Information
-48.1.75 EE7TLVDSEBCDIC	Fraud Scoring Data
+48.1.75 EE7TLV2EBCDIC	Fraud Scoring Data
 48.1.75.01 EE3EBCDIC	Fraud Score
 48.1.76	EE1EBCDIC	MC Electronic Acceptance Indicator
 48.1.77 EE3EBCDIC	Payment Transaction Type Indicator
@@ -187,7 +187,7 @@ message U1024SF		Mast Message
 49	F3EBCDIC	Currency Code, Transaction
 50	F3EBCDIC	Currency Code, Settlement
 51	F3EBCDIC	Currency Code, Cardholder Billing
-52	F8HEX		Personal Identification Number (PIN) Data
+52	F16HEX		Personal Identification Number (PIN) Data
 53	F16SF		Security-Related Control Information
 53.1	F2EBCDIC	PIN Security Type Code
 53.2	F2EBCDIC        PIN Encryption Type Code
@@ -206,8 +206,8 @@ message U1024SF		Mast Message
 54.1	R54.0		Amount 2
 54.2	R54.0		Amount 3
 54.3	R54.0		Amount 4
-55	EEE255TLVEMV	Integrated Circuit Card (ICC) System-Related Data
-55.*	M255HEX		Chip data tag
+55	EEE255TLVBER	Integrated Circuit Card (ICC) System-Related Data
+55.*	M510HEX		Chip data tag
 60	EEE60SF		Advice Reason Code
 60.1	F2EBCDIC	Advice Reason Code
 60.2	F4EBCDIC	Advice Detail Code
@@ -231,7 +231,7 @@ message U1024SF		Mast Message
 63	EEE50SF		Network Data
 63.1	F3EBCDIC	Financial Network Code
 63.2	U9EBCDIC	Banknet Reference Number
-64	F8HEX		Message Authentication Code
+64	F16HEX		Message Authentication Code
 66	F1EBCDIC	Settlement Code
 67	F2EBCDIC	Extended Payment Code
 68	F3EBCDIC	Receiving Institution Country Code
@@ -283,8 +283,8 @@ message U1024SF		Mast Message
 124.2	F24EBCDIC	Sender/Payer/User ID
 124.3	F91EBCDIC	Sender/Payer Address
 124.4	F65EBCDIC	Reserved For Future Use
-125	F8HEX		New PIN Data
+125	F16HEX		New PIN Data
 126	EEE100EBCDIC	Private Data
 127	EEE100EBCDIC	Private Data
-128	EE8HEX		Message Authentication Code
+128	EE16HEX		Message Authentication Code
 

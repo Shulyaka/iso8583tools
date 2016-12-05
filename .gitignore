@@ -1,6 +1,9 @@
 *.o
 *.cc
 *.a
+*.swp
+tags
+dump.rdb
 saf/saf
 switch/switch
 tcpinterface/tcpif_*

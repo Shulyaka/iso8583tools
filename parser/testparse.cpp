@@ -1,29 +1,35 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <dirent.h>
-#include <string.h>
-#include <errno.h>
-#include <time.h>
+#include <err.h>
+#include <cstdio>
+#include <cstring>
+#include <cerrno>
+#include <ctime>
+#include <iostream>
+#include <fstream>
+#include <string>
 
 #include "parser.h"
 
-int debug=0;
+using namespace std;
+
+bool debug=false;
 
 int main(int argc, char **argv)
 {
-	fldformat *frmtmp, *frm=NULL;
-	field *message;
+	fldformat frm;
+	field message(&frm);
 	char format_dir[]="./formats";
 	char filename[sizeof(format_dir)+NAME_MAX+1];
 	DIR *frmdir;
 	struct dirent *de;
 	int frmcounter=0;
-	char msgbuf[1000];
-	char msgbuf2[1000];
-	unsigned int msglen=0;
-	unsigned int msglen1=0;
-	unsigned int msglen2=0;
-	FILE *infile=stdin, *outfile;
+	string msgbuf;
+	string msgbuf2;
+	size_t msglen=0;
+	size_t msglen1=0;
+	size_t msglen2=0;
+	FILE *outfile;
+	
 
 	if(argc>2)
 	{
@@ -34,12 +40,9 @@ int main(int argc, char **argv)
 	frmdir=opendir(format_dir);
 
 	if(!frmdir)
-	{
-		printf("Error: Can't open %s: %s\n", format_dir, strerror(errno));
-		return 2;
-	}
+		err(2, "Can't open %s", format_dir);
 
-	while(de=readdir(frmdir))
+	while((de=readdir(frmdir)))
 	{
 		#ifdef _DIRENT_HAVE_D_TYPE
 			if(de->d_type!=DT_LNK && de->d_type!=DT_REG && de->d_type!=DT_UNKNOWN)
@@ -54,23 +57,9 @@ int main(int argc, char **argv)
 		if(debug)
 			printf("Loading %s\n", filename);
 
-		frmtmp=load_format(filename, frm);
+		frm.load_format(filename);
 
-		if(!frmtmp)
-			continue;
-
-		if(frmcounter++==0)
-			frm=frmtmp;
-
-		if(frmtmp->lengthFormat!=FRM_UNKNOWN)
-		{
-			if(load_format(filename, frm))		//load again without length as an altformat
-			{
-				frmcounter++;
-				frmtmp->lengthFormat=FRM_UNKNOWN;
-				frmtmp->lengthLength=0;
-			}
-		}
+		frmcounter++;
 	}
 
 	closedir(frmdir);
@@ -84,45 +73,40 @@ int main(int argc, char **argv)
 	if(debug)
 		printf("Info: Loaded %d formats\n", frmcounter);
 
+	if(debug)
+		frm.print_format();
+
 	if(argc>1)
 	{
-		infile=fopen(argv[1], "r");
+		std::ifstream infile(argv[1]);
 		if(!infile)
-		{
-			printf("Error: Cannot open file %s: %s\n", argv[1], strerror(errno));
-			return 4;
-		}
+			err(4, "Cannot open file %s", argv[1]);
 
 		if(debug)
 			printf("Reading from %s\n", argv[1]);
+
+		msgbuf.assign(std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>());
+
+		infile.close();
 	}
 	else
+	{
 		if(debug)
 			printf("Reading from stdin\n");
+		msgbuf.assign(std::istreambuf_iterator<char>(cin), std::istreambuf_iterator<char>());
+	}
 
-	while ((msgbuf[msglen++]=fgetc(infile))!=EOF)
-		if(msglen>sizeof(msgbuf))
-		{
-			printf("Message is too big\n");
-			if(infile!=stdin)
-				fclose(infile);
-			freeFormat(frm);
-			return 5;
-		}
-
-	if(infile!=stdin)
-		fclose(infile);
-
-	msglen--;
+	msglen=msgbuf.length();
 
 	msglen1=msglen;
 
-	message=parse_message(msgbuf, msglen, frm);
-
-	if(!message)
+	try
 	{
-		printf("Error: Unable to parse message\n");
-		freeFormat(frm);
+		message.parse(msgbuf);
+	}
+	catch(const exception& e)
+	{
+		printf("Error: Unable to parse message: %s\n", e.what());
 
 		sprintf(filename, "imessage%ld", time(NULL));
 		outfile=fopen(filename, "w");
@@ -135,21 +119,23 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s parsed, length: %d\n", message->frm->description, message->blength);
+		printf("%s parsed, length: %lu\n", message.get_description().c_str(), message.get_cached_blength());
 
-	print_message(message);
+	message.print_message();
+
+	message.reset_altformat();
 
 	if(debug)
-		printf("Building %s, estimated length: %d\n", message->frm->description, get_length(message));
+		printf("Building %s, estimated length: %lu\n", message.get_description().c_str(), message.get_blength());
 
-	msglen2=build_message(msgbuf2, sizeof(msgbuf2), message);
-
-	if(!msglen2)
+	try
+	{
+		msglen2=message.serialize(msgbuf2);
+	}
+	catch(const exception& e)
 	{
 		if(debug)
-			printf("Error: Unable to build %s\n", message->frm->description);
-		freeField(message);
-		freeFormat(frm);
+			printf("Error: Unable to build %s: %s\n", message.get_description().c_str(), e.what());
 
 		sprintf(filename, "imessage%ld", time(NULL));
 		outfile=fopen(filename, "w");
@@ -162,22 +148,19 @@ int main(int argc, char **argv)
 	}
 
 	if(debug)
-		printf("%s built. Length: %d\n", message->frm->description, msglen2);
-
-	freeField(message);
-	freeFormat(frm);
+		printf("%s built. Length: %lu/%lu\n", message.get_description().c_str(), msglen2, msgbuf2.length());
 
 	if(msglen2!=msglen)
 	{
 		if(debug)
-			printf("Warning: Total length mismatch (%d != %d)\n", msglen, msglen2);
+			printf("Warning: Total length mismatch (%lu != %lu)\n", msglen, msglen2);
 	}
 	else
 		for(msglen=0; msglen<msglen2; msglen++)
 			if(msgbuf[msglen]!=msgbuf2[msglen])
 			{
 				if(debug)
-					printf("Warning: Messages don't match (starting from byte %d)\n", msglen);
+					printf("Warning: Messages don't match (starting from byte %lu)\n", msglen);
 				break;
 			}
 

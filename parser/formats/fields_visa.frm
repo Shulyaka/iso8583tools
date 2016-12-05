@@ -3,18 +3,18 @@
 # This is just an example, not a real Visa header
 #Number		Format		Description
 message 	BB800-2SF	Visa Message (with header)
-0		F2HEX		Visa Message Length Header B3 B4
-1		BI22SF		Visa Header
+0		F4HEX		Visa Message Length Header B3 B4
+1		B22+1SF		Visa Header
 1.2		F2BCD		Header Format
 1.3		F2BCD		Text format
-1.4		F2HEX		Total message length
+1.4		F4HEX		Total message length
 1.5		F6BCD		Destination ID
 1.6		F6BCD		Source ID
 1.7		F8BITSTR	Round-Trip Control Info
 1.8		F16BITSTR	BASE I Flags
 1.9		F24BITSTR	Message Status Flags
-1.10		F1HEX		Batch Number
-1.11		F3HEX		Reserved for Visa International Use
+1.10		F2HEX		Batch Number
+1.11		F6HEX		Reserved for Visa International Use
 1.12		F2BCD		User Info
 1.13		F16BITMAP	Bitmap
 1.14		F4BCD		Reject Data Group
@@ -102,7 +102,7 @@ message 	BB800-2SF	Visa Message (with header)
 2.49		F3BCD		Currency Code, Transaction
 2.50		F3BCD		Currency Code, Settlement
 2.51		F3BCD		Currency Code, Cardholder Billing
-2.52		F8HEX		Personal Identification Number (PIN) Data
+2.52		F16HEX		Personal Identification Number (PIN) Data
 2.53		F8SF		Security-Related Control Information
 2.53.1		F2BCD		security format code
 2.53.2		F2BCD           algorithm ID
@@ -122,11 +122,11 @@ message 	BB800-2SF	Visa Message (with header)
 2.54.3		R2.54.0		amount 3
 2.54.4		R2.54.0		amount 4
 2.54.5		R2.54.0		amount 5
-2.55		B255TLVDSBCD	Integrated Circuit Card (ICC)-Related Data
-2.55.00         BB252TLV2	Chip Card TLV data elements (Usage 2)
-2.55.00.*	B250HEX		Chip data tag
-2.55.01		BB252TLVEMV	Chip Card TLV data elements (VSDC)
-2.55.01.*	M250HEX		Chip data tag
+2.55		B255TLV1BCD	Integrated Circuit Card (ICC)-Related Data
+2.55.00         BB251TLV2BIN	Chip Card TLV data elements (Usage 2)
+2.55.00.*	B500HEX		Chip data tag
+2.55.01		BB251TLVBER	Chip Card TLV data elements (VSDC)
+2.55.01.*	M500HEX		Chip data tag
 2.59		B14EBCDIC	National Point-of-Service Geographic Data
 2.60		B12BCDSF	Additional POS Information
 2.60.1		F1ASC		terminal type
@@ -181,14 +181,14 @@ message 	BB800-2SF	Visa Message (with header)
 2.63.6.6	F2SF		special condition indicator
 2.63.6.6.0	F1EBCDIC	risk indication
 2.63.6.6.1	F1EBCDIC	merchant indication
-2.63.7		F16HEX		n/a
+2.63.7		F32HEX		n/a
 2.63.8		F8BCD		n/a
 2.63.9		F14SF		Fraud Data
 2.63.9.0	F1EBCDIC	fraud type
 2.63.9.1	F1EBCDIC	fraud notification code
 2.63.9.2	F1EBCDIC	check fraud indicator (POS only)
 2.63.9.3	F11EBCDIC	reserved
-2.63.10		F26HEX		n/a
+2.63.10		F52HEX		n/a
 2.63.11		F1EBCDIC	Reimbursement Attribute
 2.63.12		F30EBCDIC	Sharing Group Code
 2.63.13		F3SF		Decimal Positions Indicator
@@ -234,23 +234,23 @@ message 	BB800-2SF	Visa Message (with header)
 2.95.2		F12EBCDIC	unused
 2.95.3		F9EBCDIC	unused
 2.95.4		F9EBCDIC	unused
-2.96		F8HEX		Message Security Code
+2.96		F16HEX		Message Security Code
 2.97		F17EBCDIC	Amount, Net Settlement
 2.99		B11BCD		Settlement Institution Identification Code
 2.100		B11BCD		Receiving Institution Identification Code
 2.101		B17EBCDIC	File Name
 2.102		B28EBCDIC	Account Identification 1
 2.103		B28EBCDIC	Account Identification 2
-2.104		B255TLV1HEX	Transaction-Specific Data (Usage 2)
-2.104.*		BB252TLV1HEX	dataset ID
+2.104		B255TLV1BCD	Transaction-Specific Data (Usage 2)
+2.104.*		BB252TLV1BCD	dataset ID
 2.104.*.*	B250EBCDIC	data
 2.104		B100SF		Transaction Description (Usage 1)
 2.104.0		F1EBCDIC	billing descriptor
 2.104.1		U99EBCDIC	transaction description data
-2.105		F16HEX		Double-Length DES Key (Triple DES)
+2.105		F32HEX		Double-Length DES Key (Triple DES)
 2.115		B24EBCDIC	Additional Trace Data
-2.116		B255TLV1HEX	Card Issuer Reference Data
-2.116.*		BB252TLV1HEX	dataset ID
+2.116		B255TLV1BCD	Card Issuer Reference Data
+2.116.*		BB252TLV1BCD	dataset ID
 2.116.*.*	B250EBCDIC	data
 2.117		B255SF		National Use
 2.117.1		F3EBCDIC	country code
@@ -261,10 +261,10 @@ message 	BB800-2SF	Visa Message (with header)
 2.119		B255SF		Settlement Service Data
 2.119.1		F3EBCDIC	country code
 2.119.2		U252EBCDIC	data
-2.120		B4HEX		Original Message Type ID
+2.120		B8HEX		Original Message Type ID
 2.121		B11EBCDIC	Issuing Institution Identification Code
-2.123		B255TLV1HEX	Verification Data (TLV format)
-2.123.*		BB252TLV1HEX	dataset ID
+2.123		B255TLV1BCD	Verification Data (TLV format)
+2.123.*		BB252TLV1BCD	dataset ID
 2.123.*.*	B250EBCDIC	Verification Data TLV element
 2.123		B30SF		Verification Data (fixed format)
 2.123.0		F9EBCDIC	postal code
@@ -273,12 +273,12 @@ message 	BB800-2SF	Visa Message (with header)
 2.126		B255SF		Visa Private-Use Fields
 2.126.0		F64BITMAP	Field126 Bitmap
 2.126.6		F17SF		Cardholder Certificate Serial Number
-2.126.6.0	F1HEX		number of significant digits
-2.126.6.1	F16HEX		cardholder certificate serial number
+2.126.6.0	F2HEX		number of significant digits
+2.126.6.1	F32HEX		cardholder certificate serial number
 2.126.7		F17SF		Merchant Certificate Serial Number
-2.126.7.0	F1HEX		number of significatn digits
-2.126.7.1	F16HEX		merchant certificate serial number
-2.126.8		F20HEX		Transaction ID (XID)
+2.126.7.0	F2HEX		number of significatn digits
+2.126.7.1	F32HEX		merchant certificate serial number
+2.126.8		F40HEX		Transaction ID (XID)
 2.126.9		F20SF		TransStain/CAVV Data
 2.126.9.1	F2BCD		3-D Secure Authentication Results Code
 2.126.9.2	F2BCD		Second Factor Authentication Code
@@ -289,7 +289,7 @@ message 	BB800-2SF	Visa Message (with header)
 2.126.9.7 	F2BCDSF		Version and Authentication Action
 2.126.9.7.0	F1ASC		Version
 2.126.9.7.1	F1ASC		Authentication Value
-2.126.9.8	F4HEX		IP Address in Hex Format
+2.126.9.8	F8HEX		IP Address in Hex Format
 2.126.10	F6SF		CVV2 Authorization Request Data
 2.126.10.1	F1EBCDIC	Presence Indicator
 2.126.10.2	F1EBCDIC	Response Type
@@ -306,25 +306,29 @@ message 	BB800-2SF	Visa Message (with header)
 2.127		B255EBCDIC	File Record(s): Action and Data
 2.130		F24BITSTR	Terminal Capability Profile
 2.131		F40BITSTR	Terminal Verification Results (TVR)
-2.132		F4HEX		Unpredictable Number
+2.132		F8HEX		Unpredictable Number
 2.133		F8EBCDIC	Terminal Serial Number
-2.134		B255HEX		Visa Discretionary Data
-2.135		B15HEX		Issuer Discretionary Data
-2.136		F8HEX		Cryptogram
-2.137		F2HEX		Application Transaction Counter
+2.134		B510HEX		Visa Discretionary Data
+2.135		B30HEX		Issuer Discretionary Data
+2.136		F16HEX		Cryptogram
+2.137		F4HEX		Application Transaction Counter
 2.138		F16BITSTR	Application Interchange Profile
 2.139		F10SF		ARPC Response Cryptogram and Code
-2.139.1		F8HEX		ARPC Cryptogram
+2.139.1		F16HEX		ARPC Cryptogram
 2.139.2		F2EBCDIC	ARPC response code
 2.140		B255SF		Issuer Authentication Data
-2.140.1		F16HEX		IAD
-2.140.2		U239HEX		Reserved
-2.142		B255HEX		Issuer Script
-2.143		B20HEX		Issuer Script Result
+2.140.1		F32HEX		IAD
+2.140.2		U478HEX		Reserved
+2.142		B510HEX		Issuer Script
+2.143		B40HEX		Issuer Script Result
 2.144		F2BCD		Cryptogram Transaction Type
 2.145		F3BCD		Terminal Country Code
 2.146		F6BCD		Terminal Transaction Date
 2.147		F12BCD		Cryptogram Amount
 2.148		F3BCD		Cryptogram Currency Code
 2.149		F12BCD		Cryptogram Cashback Amount
-2.152		F8HEX		Secondary PIN Block
+2.152		F16HEX		Secondary PIN Block
+
+#message 	U800SF		Visa Message (with header, no length)
+#1		R1		Visa Header
+#2		R2		Visa Message
