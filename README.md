@@ -1,4 +1,4 @@
-ISO 8583 Tools
+ISO 8583 Tools [![Build Status](https://travis-ci.org/Shulyaka/iso8583tools.svg?branch=master)](https://travis-ci.org/Shulyaka/iso8583tools) [![Coverity Scan Build Status](https://scan.coverity.com/projects/11012/badge.svg)](https://scan.coverity.com/projects/shulyaka-iso8583tools)
 ============
 
 Open Source set of tools for dealing with ISO8583 communication standard.
