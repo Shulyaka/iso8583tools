@@ -1,12 +1,10 @@
 *.o
 *.cc
-*.a
 *.swp
 tags
 dump.rdb
 saf/saf
 switch/switch
 tcpinterface/tcpif_*
-parser/testparse
 debit/debit
 issuer/issuer
